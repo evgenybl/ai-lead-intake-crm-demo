@@ -229,6 +229,10 @@ class CommandTests(DeskCase):
         self.assertIn("(2 arrived = 1 enquiry + 0 replays + 1 corrected resend)", doctor)
         self.assertIn("the states add up: yes: 1 enquiry + 0 replays + 1 corrected resend = 2 arrived",
                       self.cli("report"))
+        from intake import pages
+        with self.desk() as desk:
+            page = pages.desk_page(desk.store, pages.FileLinks(False), pages.Decisions())
+        self.assertIn("The counts add up: 1 enquiry + 0 replays + 1 corrected resend = 2 arrived.", page)
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(json.dumps(enquiry(source_id="test-000002")) + "\n" + json.dumps(enquiry()) + "\n")
         self.assertIn("ingest: 1 new enquiry, 1 replay, 0 lines not taken", self.cli("ingest", path))
