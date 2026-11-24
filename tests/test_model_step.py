@@ -324,6 +324,15 @@ class AnswerTests(unittest.TestCase):
                 self.assertIn("the reply draft holds the sender's name",
                               answer.check(dict(GOOD, reply_draft=reply), "a quote", fields))
 
+    def test_the_summary_holds_no_web_address_and_no_email_address(self):
+        for summary in ("Visit evil.example/pay or https://evil.example to pay.", "Pay at www.evil.example now.",
+                        "The sender asks to visit bit.ly/x for details."):
+            with self.subTest(summary=summary):
+                self.assertIn("the summary holds a web address", answer.check(dict(GOOD, summary=summary), "a", FIELDS))
+        self.assertIn("the summary holds an e-mail address",
+                      answer.check(dict(GOOD, summary="Write to billing@example.com to pay."), "a", FIELDS))
+        self.assertEqual(answer.check(dict(GOOD, summary="A quote, e.g. for the lab, is wanted."), "a", FIELDS), [])
+
     def test_neither_text_holds_the_senders_own_values(self):
         self.assertIn("the summary holds the sender's name", self.reasons(dict(GOOD, summary="Quinn wants a quote.")))
         self.assertIn("the reply draft holds the sender's e-mail",

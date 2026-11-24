@@ -12,7 +12,8 @@ The checks:
 - every number written in digits in the summary and the reply appears in the message the model saw
   (1,200 and 1200 are one number; 02 and 2 are one number);
 - the reply holds the placeholder {{name}}, and no e-mail address, phone number or web address, with or
-  without its scheme (evil.example/pay counts, and so does javascript:);
+  without its scheme (evil.example/pay counts, and so does javascript:); the summary, which a person reads
+  first, holds no e-mail address or web address either;
 - neither text holds the sender's own name, e-mail or phone.
 An answer that fails any check is not used. The reasons say which check, never a personal value; where a
 reason names something from the answer (a key, a number), it is quoted and cut to a fixed length.
@@ -119,6 +120,10 @@ def check(obj: dict, seen_message: str, fields: dict) -> list:
         reasons.append(f"the summary has more than {SUMMARY_MAX_CHARS} characters")
     if summary and hidden_characters(summary):
         reasons.append("the summary holds control characters")
+    if summary and EMAIL_SHAPE.search(summary):  # the summary is what a person reads first
+        reasons.append("the summary holds an e-mail address")
+    if summary and _WEB.search(summary):
+        reasons.append("the summary holds a web address")
     if intent not in INTENTS:
         reasons.append("the intent is not one of the fixed list")
     if urgency not in URGENCIES:

@@ -327,7 +327,8 @@ The answer must be one JSON object with exactly four keys: a summary, an intent,
 **The checks:** a fifth key refuses the whole answer; the summary and the reply have limits in words and in
 characters; no field may hold a control character (the reply may hold line breaks); the intent and urgency must
 come from fixed lists; every number in the summary and the reply must appear in the message; the reply must hold
-the placeholder `{{name}}` and no e-mail address, phone number or web address (with or without `https://`);
+the placeholder `{{name}}` and no e-mail address, phone number or web address (with or without `https://`), and the
+summary, which a person reads first, no e-mail address or web address either;
 neither text may hold the sender's own name, e-mail or phone. An answer that fails is not used: the desk shows "AI
 draft refused" with the reason, and the plan is the same as with no AI text.
 

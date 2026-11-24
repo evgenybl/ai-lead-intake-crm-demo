@@ -390,7 +390,8 @@ for good (see "Limits").
 - **The limits:** a summary of 1 to 40 words and at most 400 characters; a reply of at most 120 words and
   1,200 characters. No field may hold a control character, a bidi control or a zero-width character; the
   reply may hold line breaks (LF). A web address in the reply is refused with or without its scheme
-  (`evil.example/pay`, `bit.ly/x`, `javascript:`), as are an e-mail address and a phone number.
+  (`evil.example/pay`, `bit.ly/x`, `javascript:`), as are an e-mail address and a phone number. The summary, which
+  a person reads first, is refused for a web address or an e-mail address too.
 - **Numbers** are compared as numbers written in digits: `1,200` and `1200` are one, `02` and `2` are one.
   Each must appear in the message the model saw.
 - **An answer that fails** is not used: the desk keeps no part of it, shows "AI draft refused" with the
