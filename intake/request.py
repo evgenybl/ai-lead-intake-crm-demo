@@ -161,7 +161,7 @@ def fold(text: str) -> str:
     dotless i of Turkish compared as i, which case folding alone does not do ("İBRAHİM" folds to two dotted i's,
     "İbrahim" to one). "Weiß" and "WEISS" fold to one form, as do a composed and a decomposed "ë"."""
     folded = unicodedata.normalize("NFKC", unicodedata.normalize("NFKC", text).casefold())
-    return folded.replace("i̇", "i").replace("ı", "i")
+    return folded.replace("i\u0307", "i").replace("\u0131", "i")  # i with a dot above; dotless i
 
 
 def _is_mark(ch: str) -> bool:
