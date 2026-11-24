@@ -24,8 +24,9 @@ flowchart LR
   G --> C[("CRM")]
 ```
 
-Here is one enquiry as a person sees it before deciding (`python -I desk.py plan --key webform:wf-000109 --full`):
-a returning customer whose phone number has changed. The plan adds this note and this task to the existing contact;
+Here is one enquiry as a person sees it before deciding (`python -I desk.py plan --key webform:wf-000109 --full
+--home try-it`, once the first two commands of "Try it" below have made that desk): a returning customer whose
+phone number has changed. The plan adds this note and this task to the existing contact;
 the new number is shown to the person and is not written over the old one.
 
 <!-- from examples/plan-one-in-full.txt -->
@@ -61,7 +62,8 @@ Everything runs on one computer with Python's standard library. All people, comp
 ## Try it
 
 Python 3.11 or later · standard library only · nothing to install · MIT licence. Run the commands from the
-repository's folder.
+repository's folder. They are written `python`; on macOS and Linux the command may be `python3` instead, and it must
+be Python 3.11 or later (`python3 --version` says which).
 
 Every `desk.py` command works on the folder named by `--home`, which holds the desk's two files; this page uses
 `--home try-it` throughout. Setting `INTAKE_NOW` fixes the desk's clock, so that what you see matches this page

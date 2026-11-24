@@ -112,6 +112,25 @@ class ReadmeCommandTests(unittest.TestCase):
         self.assertIn("python -I demo.py --case apply-twice", whats)
         self.assertTrue(any(what.startswith("the server") for what in whats))
 
+    def test_the_opening_command_prints_the_opening_block_after_the_first_two_commands_of_try_it(self):
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as handle:
+            readme = handle.read()
+        opening = re.search(r"\(`(python -I desk\.py plan [^`]+)`, once the first two commands of \"Try it\"", readme)
+        self.assertIsNotNone(opening)
+        block = re.search(r"<!-- from examples/plan-one-in-full.txt -->\n```text\n(.*?)\n```", readme, re.DOTALL)
+        first, second = [command for command, _ in commands(readme_blocks()[0][1])][:2]
+        self.assertEqual((first.split()[3], second.split()[3]), ("init", "ingest"))
+        self.desk(first)
+        self.desk(second)
+        printed = self.desk(" ".join(opening.group(1).split()))
+        self.assertTrue(shown_in(["...", *block.group(1).split("\n"), "..."], printed), "\n".join(printed))
+
+    def test_the_commands_may_be_python3_with_3_11_or_later(self):
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as handle:
+            try_it = " ".join(handle.read().split("## Try it", 1)[1].split("<!-- run:", 1)[0].split())
+        self.assertIn("on macOS and Linux the command may be `python3` instead, and it must be Python 3.11 or later",
+                      try_it)
+
     def test_every_command_prints_what_the_readme_shows_in_the_readme_s_order(self):
         server = None
         try:
