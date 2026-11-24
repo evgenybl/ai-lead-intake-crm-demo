@@ -120,9 +120,11 @@ def check(obj: dict, seen_message: str, fields: dict) -> list:
         reasons.append(f"the summary has more than {SUMMARY_MAX_CHARS} characters")
     if summary and hidden_characters(summary):
         reasons.append("the summary holds control characters")
-    if summary and EMAIL_SHAPE.search(summary):  # the summary is what a person reads first
+    # The summary is what a person reads first. A summary over its length is refused already, and these two
+    # searches take time that grows with the square of one long word, so they read only a summary within it.
+    if summary and len(summary) <= SUMMARY_MAX_CHARS and EMAIL_SHAPE.search(summary):
         reasons.append("the summary holds an e-mail address")
-    if summary and _WEB.search(summary):
+    if summary and len(summary) <= SUMMARY_MAX_CHARS and _WEB.search(summary):
         reasons.append("the summary holds a web address")
     if intent not in INTENTS:
         reasons.append("the intent is not one of the fixed list")

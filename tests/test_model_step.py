@@ -344,6 +344,9 @@ class AnswerTests(unittest.TestCase):
         self.assertIn("the summary holds an e-mail address",
                       answer.check(dict(GOOD, summary="Write to billing@example.com to pay."), "a", FIELDS))
         self.assertEqual(answer.check(dict(GOOD, summary="A quote, e.g. for the lab, is wanted."), "a", FIELDS), [])
+        # Over its length, a summary is refused for that alone: the address searches do not read it.
+        self.assertEqual(answer.check(dict(GOOD, summary="Pay at evil.example " + "x" * 400), "a", FIELDS),
+                         ["the summary has more than 400 characters"])
 
     def test_neither_text_holds_the_senders_own_values(self):
         self.assertIn("the summary holds the sender's name", self.reasons(dict(GOOD, summary="Quinn wants a quote.")))
