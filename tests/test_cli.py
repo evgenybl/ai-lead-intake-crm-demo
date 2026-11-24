@@ -1,5 +1,6 @@
 """End-to-end tests that drive `desk.py` through main(argv), on new files in a temporary folder."""
 import os
+import re
 import unittest
 
 from tests.helpers import DATA_FILE, FIXED, PERSON, DeskCase
@@ -131,7 +132,7 @@ class CommandTests(DeskCase):
         self.cli("approve", key, "--by", PERSON)
         self.cli("apply")
         self.assertEqual(self.crm_counts()["contacts"], 11)
-        self.assertIn(f"{PERSON:<20} resolution", self.cli("trail", key))
+        self.assertRegex(self.cli("trail", key), re.escape(PERSON) + r" +resolution ")
 
     def test_a_possible_duplicate_resolved_as_the_contact_adds_to_it(self):
         self.cli("ingest", DATA_FILE)

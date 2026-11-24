@@ -58,7 +58,7 @@ def trail_lines(store, key: str) -> list:
     lines = [f"trail of {key} (state now: {enquiry.state})"]
     for row in audit.rows(store.conn, key):
         row_id, at, _, event, detail, actor = row[:6]
-        lines.append(f"#{row_id:<5} {at}  {actor:<20} {event:<20} {_brief(json.loads(detail))}")
+        lines.append(f"#{row_id:<5} {at}  {actor:<26} {event:<20} {_brief(json.loads(detail))}")
     return lines
 
 
