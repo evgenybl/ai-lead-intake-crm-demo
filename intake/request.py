@@ -63,9 +63,12 @@ def phone_spans(text: str) -> list:
     return spans
 
 
+MARKER_WORDS = frozenset({"invented"})  # the data's "(invented)" marks a name; it is not part of one
+
+
 def name_words(name: str) -> list:
-    """The words of the sender's name that are personal: letters only, two or more of them."""
-    return sorted({w.casefold() for w in _NAME_WORD.findall(name or "")})
+    """The words of the sender's name that are personal: letters only, two or more of them, not the marker."""
+    return sorted({w.casefold() for w in _NAME_WORD.findall(name or "")} - MARKER_WORDS)
 
 
 def _word(word: str) -> re.Pattern:

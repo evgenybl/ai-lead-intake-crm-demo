@@ -24,7 +24,7 @@ sys.path.insert(0, ROOT)
 
 from intake import request, validate  # noqa: E402
 from intake.arrive import read_lines  # noqa: E402
-from intake.draft import RECORDED_DIR, first_sentence  # noqa: E402
+from intake.draft import RECORDED_DIR, RecordedBackend, first_sentence  # noqa: E402
 from intake.identity import idempotency_key  # noqa: E402
 
 DATA_FILE = os.path.join(ROOT, "data", "enquiries.synthetic.jsonl")
@@ -186,18 +186,32 @@ def cmd_add(sha: str, answer_path: str, how: str) -> int:
 
 
 def cmd_status() -> int:
-    recorded = constructed = none = 0
+    """Each request, the answer the desk would use for it, and what the desk's own checks make of that answer."""
+    counts = {"recorded": 0, "constructed": 0, "none": 0}
+    used = {"recorded": 0, "constructed": 0}
     for case, fields in model_enquiries():
         sha = request.build(fields).sha256
         if os.path.exists(os.path.join(RECORDED_DIR, "answers", sha + ".json")):
-            kind, recorded = "recorded", recorded + 1
+            kind = "recorded"
         elif os.path.exists(os.path.join(RECORDED_DIR, "constructed", sha + ".json")):
-            kind, constructed = "constructed", constructed + 1
+            kind = "constructed"
         else:
-            kind, none = "none", none + 1
-        print(f"{sha[:12]}  {kind:<12} {case}")
-    print(f"requests: {recorded + constructed + none}; recorded answers: {recorded}; "
-          f"constructed answers only: {constructed}; no answer: {none}")
+            kind = "none"
+        counts[kind] += 1
+        verdict = "-"
+        reason = ""
+        if kind != "none":
+            folder = "answers" if kind == "recorded" else "constructed"
+            result = RecordedBackend(sources={folder: kind}).draft(fields)
+            verdict = "used" if result["outcome"] == "used" else "not used"
+            reason = "" if verdict == "used" else result["reason"]
+            used[kind] += verdict == "used"
+        print(f"{sha[:12]}  {kind:<12} {verdict:<9} {case}")
+        if reason:
+            print(f"{'':14}{reason}")
+    print(f"requests: {sum(counts.values())}; recorded answers: {counts['recorded']} ({used['recorded']} used, "
+          f"{counts['recorded'] - used['recorded']} not used); constructed answers only: {counts['constructed']}; "
+          f"no answer: {counts['none']}")
     return 0
 
 

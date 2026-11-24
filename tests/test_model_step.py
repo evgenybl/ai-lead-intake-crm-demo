@@ -54,6 +54,12 @@ class RequestTests(unittest.TestCase):
         scrubbed = request.build(fields).message
         self.assertEqual(scrubbed, "[name] here: [email], or [phone]. [name] Dental, [name].")
 
+    def test_the_marker_word_invented_is_not_a_name_word(self):
+        self.assertEqual(request.name_words("Kira Osei (invented)"), ["kira", "osei"])
+        fields = dict(FIELDS, name="Quinn Hart (invented)", message="Quinn invented a new rota for the lab.")
+        self.assertEqual(request.build(fields).message, "[name] invented a new rota for the lab.")
+        self.assertEqual(answer.check(dict(GOOD, summary="The sender invented a rota."), "a rota", fields), [])
+
     def test_any_email_or_phone_shape_is_scrubbed_but_dates_and_figures_are_kept(self):
         fields = dict(FIELDS, message="Write to a.b@example.com or call +000 (000) 555-0199. We need 3 rooms, "
                                       "1,200 a month, from 2026-02-02; order 123456.")
@@ -93,6 +99,21 @@ class RequestTests(unittest.TestCase):
                         meta = json.load(handle)
                     self.assertEqual(meta["origin"], "constructed", name)
                     self.assertIn("Not from a model", meta["how"])
+
+
+class DraftLineTests(unittest.TestCase):
+    """How the dry run shows the model step: never "None" where an answer was refused."""
+
+    def test_each_outcome_in_one_line(self):
+        from intake.reports import draft_line
+
+        used = {"label": "Recorded", "outcome": "used", "summary": "A quote.", "intent": "quote_request",
+                "urgency": "normal"}
+        refused = {"label": "Recorded", "outcome": "refused", "reason": "the answer lacks urgency", "summary": None}
+        none = {"label": "no recording", "outcome": "none", "reason": "no recording for this request", "summary": None}
+        self.assertEqual(draft_line(used), "draft (Recorded; intent quote_request, urgency normal): A quote.")
+        self.assertEqual(draft_line(refused), "draft (Recorded): AI draft refused: the answer lacks urgency")
+        self.assertEqual(draft_line(none), "draft (no recording): no AI text: no recording for this request")
 
 
 class AnswerTests(unittest.TestCase):

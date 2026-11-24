@@ -76,13 +76,26 @@ def _brief(detail: dict) -> str:
     return " ".join(parts)
 
 
+def draft_line(draft: dict) -> str:
+    """The model step in one line: what it suggested, or why there is no AI text. A reply draft is never sent."""
+    outcome = draft.get("outcome")
+    if outcome == "used":
+        return (f"draft ({draft['label']}; intent {draft.get('intent')}, urgency {draft.get('urgency')}): "
+                f"{draft.get('summary')}")
+    if outcome == "stand-in":
+        return f"draft ({draft['label']}): {draft.get('summary')}"
+    if outcome == "refused":
+        return f"draft ({draft['label']}): AI draft refused: {draft.get('reason')}"
+    return f"draft ({draft['label']}): no AI text: {draft.get('reason')}"
+
+
 def enquiry_lines(store, enquiry, crm_note: str = "") -> list:
     lines = [f"{enquiry.key}  [{enquiry.state}]"]
     found = enquiry.identity or {}
     if found:
         lines.append(f"  identity: {_brief(found)}")
     if enquiry.draft:
-        lines.append(f"  draft ({enquiry.draft['label']}): {enquiry.draft['summary']}")
+        lines.append("  " + draft_line(enquiry.draft))
     if enquiry.state in ("held_two_contacts", "held_possible_duplicate"):
         candidates = sorted(set(found.get("by_email", []) + found.get("by_phone", []) + found.get("by_name_and_company", [])))
         lines.append(f"  waits for a person: desk.py resolve {enquiry.key} --as new|contact:<id> --by <name>"
