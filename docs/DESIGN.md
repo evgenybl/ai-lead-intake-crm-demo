@@ -228,7 +228,8 @@ one: the third copy of the first enquiry, whose message was edited.
 - **The request** is one text: a fixed prompt, the fixed list of intents, and the message. It never holds
   the name, e-mail or phone fields. The message is scrubbed of the sender's own e-mail and phone as written,
   of anything shaped like an e-mail address or a phone number (7 to 15 digits; an ISO date such as
-  2026-02-02 is kept), and of each word of the sender's name, as whole words in any letter case. All
+  2026-02-02 is kept), and of each word of the sender's name, as whole words in any letter case (the data's
+  marker word "invented", from "(invented)", is not a name word and stays). All
   replacements are found on the original text in one pass, so one replacement never makes or hides another.
   A guard reads the finished request again and refuses to send it if any of these is still there. Any
   number of 7 or more digits counts as a possible phone, so a large figure in a message is scrubbed too.
@@ -254,8 +255,24 @@ one: the third copy of the first enquiry, whose message was edited.
   answer in `recorded/constructed/` is "Constructed answer, not from a model"; its meta file says
   `"origin": "constructed"` and how it was made. `tools/recordings.py add` is the only writer of
   `"origin": "recorded"`, and it copies the answer byte for byte.
+- **The real answers.** All 20 requests have a recorded answer. Each meta file's `how` records how it was
+  obtained: the request text, whole and unchanged, given as the whole prompt to a Claude Code subagent on
+  2026-11-24, whose transcript names the model as claude-haiku-5-5; such a subagent also runs under its
+  harness's own system prompt, so this is not the live path's API call. A sha256 shows only that a file has
+  not changed since it was added and which request it answers; the origin is the author's record.
+  `python -I tools/recordings.py status` runs the desk's own checks on each kept answer and prints the
+  result.
+- **When a constructed answer is used:** the `recorded` backend reads `recorded/answers/` first and
+  `recorded/constructed/` only for a request with no recorded answer, so with all 20 recorded the desk and
+  the demo use none of them. They stay as the fallback, and they are what a test uses (in a folder that holds
+  only constructed answers) to show the label.
 - **The gallery** (`recorded/gallery/`) holds constructed bad answers for two demo cases: one with a fifth
-  key, one with a figure that is not in the message. Each is named as constructed.
+  key, one with a figure that is not in the message. Each is named as constructed. Four of the twenty real
+  answers carried a fifth key of their own and are refused whole in the same way.
+- **The template** shows the message's own first sentence on the local desk, with intent "other". No model
+  is involved and nothing leaves the computer, so it is neither scrubbed nor checked.
+- **The dry run** (`plan`) prints the model step in one line: the label, the intent, the urgency and the
+  summary of a used answer, or "AI draft refused" with the reasons, or why there is no AI text.
 
 ## The desk pages
 
@@ -265,9 +282,13 @@ one: the third copy of the first enquiry, whose message was edited.
   for a person first. Each enquiry names the label of its model step.
 - **Approve and Reject** appear as forms only when `serve` was started with `--allow-decisions`. Each needs
   the ticked confirmation box and a name (the two locks), and carries the plan's sha256, so the approval is
-  for the plan on the page. Each form also carries a token made when the server started; the server answers
-  only requests addressed to 127.0.0.1 or localhost on its own port, and takes a decision only when the
-  Origin, if the browser sends one, is its own. Without the switch the page shows the commands.
+  for the plan on the page. Without the switch the page shows the commands.
+- **The form token and the Host and Origin checks** are the author's design for a page served on one's own
+  computer, not a security claim: each form carries a token made when the server started; the server
+  answers only requests addressed to 127.0.0.1 or localhost on its own port; and it takes a decision only when
+  the Origin, if the browser sends one, is its own. They are meant to stop a web page elsewhere from reading
+  the desk or posting a decision to it through the browser. They have not been reviewed as a defence, and the
+  desk has no login.
 - `serve` with no secret still shows the desk; only `POST /intake` answers 503. `listen` stays as before:
   the intake alone, refusing every request when it has no secret.
 - `render --out` writes the same pages as files, with relative links and never a form. A key becomes a file
@@ -304,8 +325,8 @@ one: the third copy of the first enquiry, whose message was edited.
   `listen` offers `POST /intake` alone; `serve` adds the desk pages.
 - Unknown fields in an enquiry are ignored, and their names are recorded in the trail.
 - Blank lines in a `.jsonl` file are skipped and not reported.
-- **The model step adds a fourth kind of draft source**, the constructed answer, so that the desk and the
-  demo show the model step before real answers are recorded. It is never labelled "Recorded".
+- **The model step adds a fourth kind of draft source**, the constructed answer: the fallback for a request
+  with no recorded answer, and the two gallery cases. It is never labelled "Recorded".
 - **The answer may sit in one ```` ```json ```` fence**, and `reply_draft` may be null.
 - **The live path asks for the server-side fallback** on a refusal, as the Messages API documentation
   advises for this model.
@@ -322,3 +343,12 @@ one: the third copy of the first enquiry, whose message was edited.
   matches; a CRM whose search folds letters differently could miss a possible duplicate.
 - A note written while search lags, on a contact other than the one the plan names, would not be seen;
   the gate looks on the named contact first, where it is written.
+- **The checks cannot catch an answer that is well formed and wrong.** The real answers show four kinds, each
+  passing every check: an assumed date (the figures enquiry: "2026-02-02 appears to be in the past", though
+  the model was given no date and the enquiry arrives in January 2026); an invented service ("Yes, we do clean
+  windows on the outside", and the same for the pottery studio and the sawdust workshop); a commitment nobody
+  made ("We will call you after 5pm as you asked"); a mistaken intent (the refillable-products supplier classed
+  as `quote_request` and answered as if the business were the supplier). The model was told nothing about the
+  business or the date. No code check is added for these: a check for "invents a service" would be a
+  pretence. This is why a person approves each plan and edits each reply; the reply is never sent by this
+  project. The README quotes each sentence, and a test checks it is in its recorded answer file.

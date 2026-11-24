@@ -36,3 +36,5 @@ jobs:
           python -I tools/recordings.py requests --check
           python -I tools/recordings.py construct --check
           python -I tools/list_tests.py --check
+      - name: Nothing tracked was changed by the run
+        run: git diff --exit-code

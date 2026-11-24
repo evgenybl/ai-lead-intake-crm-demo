@@ -1,7 +1,9 @@
 """The documents say only what a run printed; the demo and the examples are what their commands make."""
 import contextlib
+import hashlib
 import importlib.util
 import io
+import json
 import os
 import re
 import tempfile
@@ -10,6 +12,7 @@ import unittest
 from tests.helpers import ROOT
 
 QUOTE = re.compile(r"<!-- from (examples/[^ ]+) -->\n([ \t]*)```[a-z]*\n(.*?)\n[ \t]*```", re.DOTALL)
+ANSWER_QUOTE = re.compile(r"<!-- quote (recorded/answers/[0-9a-f]{64}\.answer\.txt) -->\n[ \t]*> (.+)\n")
 IMAGE = re.compile(r"!\[[^\]]*\]\(([^)\s]+)\)|<img[^>]+src=\"([^\"]+)\"")
 SECTION_5_CASES = ["replay-three-times", "returning-contact", "two-contacts-held", "possible-duplicate-held",
                    "refused-inputs", "hidden-instruction", "ai-answer-refused", "apply-without-approval",
@@ -63,6 +66,31 @@ class DocumentTests(unittest.TestCase):
                 self.assertTrue(any(original[i:i + len(lines)] == lines for i in starts),
                                 f"the block quoted from {source} is not in it as quoted")
 
+    def test_every_quoted_model_sentence_is_a_real_slice_of_its_recorded_answer(self):
+        quotes = ANSWER_QUOTE.findall(read("README.md"))
+        self.assertGreaterEqual(len(quotes), 6)
+        for source, sentence in quotes:
+            with self.subTest(source=source):
+                with open(os.path.join(ROOT, *source.split("/")), "rb") as handle:
+                    raw = handle.read()
+                meta_path = source.replace(".answer.txt", ".json")
+                meta = json.loads(read(*meta_path.split("/")))
+                self.assertEqual(meta["origin"], "recorded")
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), meta["answer_sha256"])  # unchanged since added
+                answer = json.loads(raw.decode("utf-8"))
+                said = [answer.get("summary") or "", answer.get("reply_draft") or ""]
+                self.assertTrue(any(sentence.strip() in text for text in said), sentence)
+
+    def test_the_status_output_on_the_readme_is_what_the_command_prints(self):
+        block = re.search(r"<!-- output of python -I tools/recordings.py status -->\n```text\n(.*?)```",
+                          read("README.md"), re.DOTALL)
+        self.assertIsNotNone(block)
+        recordings = load("recordings_for_docs", "tools", "recordings.py")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            recordings.main(["status"])
+        self.assertEqual(block.group(1), out.getvalue())
+
     def test_the_test_list_is_generated_from_the_tests(self):
         tool = load("list_tests", "tools", "list_tests.py")
         out = io.StringIO()
@@ -83,8 +111,13 @@ class DocumentTests(unittest.TestCase):
                                 "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"])
         self.assertIn("os: [ubuntu-latest, windows-latest]", ci)
         self.assertIn('python: ["3.11", "3.13"]', ci)
-        for command in ("python -I run_tests.py", "python -I demo.py --out demo-run", "python -I make_examples.py --check"):
-            self.assertIn(command, ci)
+        commands = ["python -I run_tests.py", "python -I demo.py --out demo-run", "python -I make_examples.py --check",
+                    "python -I data/generate.py --check", "python -I tools/recordings.py requests --check",
+                    "python -I tools/recordings.py construct --check", "python -I tools/list_tests.py --check",
+                    "git diff --exit-code"]
+        positions = [ci.find(command) for command in commands]
+        self.assertNotIn(-1, positions)
+        self.assertEqual(positions, sorted(positions))  # in this order, the diff last
 
     def test_the_readme_never_says_live_for_a_path_that_was_run(self):
         table = read("README.md").split("## What is real here")[1].split("\n## ")[0]

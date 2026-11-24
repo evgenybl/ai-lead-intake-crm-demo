@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-227 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+233 test methods in 16 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -90,6 +90,8 @@ The documents say only what a run printed; the demo and the examples are what th
 
 - `test_every_image_a_markdown_file_embeds_exists`
 - `test_every_block_quoted_from_the_examples_is_a_real_slice_of_its_file`
+- `test_every_quoted_model_sentence_is_a_real_slice_of_its_recorded_answer`
+- `test_the_status_output_on_the_readme_is_what_the_command_prints`
 - `test_the_test_list_is_generated_from_the_tests`
 - `test_the_licence_is_mit_with_its_copyright_line`
 - `test_ci_pins_its_actions_by_commit_and_runs_both_systems_and_pythons`
@@ -207,11 +209,18 @@ Section 3.4: the request and its guard, the strict answer, the three backends, a
 
 - `test_the_request_never_carries_the_name_the_email_or_the_phone`: For every invented enquiry that reaches the model.
 - `test_the_message_is_scrubbed_of_the_senders_own_values_in_any_case`
+- `test_the_marker_word_invented_is_not_a_name_word`
 - `test_any_email_or_phone_shape_is_scrubbed_but_dates_and_figures_are_kept`
 - `test_the_guard_refuses_a_request_that_still_holds_personal_data`
 - `test_the_request_is_named_by_its_sha256`
 - `test_the_request_files_are_what_the_generator_writes`
 - `test_the_constructed_answers_are_what_the_tool_writes_and_say_so`
+
+### DraftLineTests
+
+How the dry run shows the model step: never "None" where an answer was refused.
+
+- `test_each_outcome_in_one_line`
 
 ### AnswerTests
 
@@ -266,9 +275,11 @@ Section 3.8: the desk pages, `render` and `serve`. No script on any page; everyt
 
 - `test_render_writes_the_desk_and_a_page_per_enquiry_with_links_that_exist`
 - `test_no_page_holds_a_script_or_a_form`
+- `test_every_page_is_self_contained_and_loads_nothing_from_a_network`
 - `test_markup_in_a_message_is_shown_as_text`
 - `test_the_counts_come_first_in_plain_words`
-- `test_each_enquiry_names_the_label_of_its_model_step`
+- `test_each_enquiry_names_the_label_of_its_model_step`: Every invented enquiry that reaches the model has a recorded answer; four of them were refused whole.
+- `test_where_no_recording_exists_a_constructed_answer_is_labelled_so`
 - `test_a_replay_with_different_content_is_shown_on_the_desk`
 
 ### EscapingTests
