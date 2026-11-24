@@ -290,7 +290,7 @@ def cmd_apply(args, say, home, choice, clock, environ, out) -> int:
     for result in results:
         tally[result.outcome] = tally.get(result.outcome, 0) + 1
         detail = f": {', '.join(result.steps)}" if result.steps else ""
-        say(f"{result.key}: {result.message}{detail}")
+        say(f"{result.key}: {reports.printable(result.message)}{reports.printable(detail)}")
     if not results:
         say("apply: nothing is approved")
         return 0

@@ -1,10 +1,22 @@
-"""The text the commands print: report, trail, plan, status and doctor. Plain lines, no colour."""
+"""The text the commands print: report, trail, plan, status and doctor. Plain lines, no colour.
+
+Text that came from outside the desk (a sender's message, a model's answer, a CRM's error) is printed through
+`printable`, so it can never move the cursor, clear the screen or start a line of its own."""
 from __future__ import annotations
 
 import json
+import unicodedata
 
 from . import audit, validate
 from .doctor import PROMISES
+
+
+_HIDDEN = ("Cc", "Cf", "Co", "Cs", "Zl", "Zp")
+
+
+def printable(text) -> str:
+    """One line a terminal shows as it is: each control, format or line-separating character as its escape."""
+    return "".join(repr(c)[1:-1] if unicodedata.category(c) in _HIDDEN else c for c in str(text))
 
 
 def report_lines(store) -> list:
@@ -30,7 +42,7 @@ def report_lines(store) -> list:
     failed = store.enquiries(in_states=("apply_failed",))
     if failed:
         lines.append("apply_failed, named:")
-        lines += [f"  {e.key}: {e.error}" for e in failed]
+        lines += [f"  {e.key}: {printable(e.error)}" for e in failed]
     else:
         lines.append("apply_failed: none")
     different = different_replays(store)
@@ -65,7 +77,7 @@ def trail_lines(store, key: str) -> list:
     lines = [f"trail of {key} (state now: {enquiry.state})"]
     for row in audit.rows(store.conn, key):
         row_id, at, _, event, detail, actor = row[:6]
-        lines.append(f"#{row_id:<5} {at}  {actor:<26} {event:<20} {_brief(json.loads(detail))}")
+        lines.append(f"#{row_id:<5} {at}  {printable(actor):<26} {event:<20} {_brief(json.loads(detail))}")
     return lines
 
 
@@ -79,21 +91,22 @@ def _brief(detail: dict) -> str:
             text = value[:12] if is_sha else value
         else:
             text = json.dumps(value, ensure_ascii=False, sort_keys=True)
-        parts.append(f"{name}={text}")
+        parts.append(f"{name}={printable(text)}")
     return " ".join(parts)
 
 
 def draft_line(draft: dict) -> str:
     """The model step in one line: what it suggested, or why there is no AI text. A reply draft is never sent."""
     outcome = draft.get("outcome")
+    label = printable(draft.get("label"))
     if outcome == "used":
-        return (f"draft ({draft['label']}; intent {draft.get('intent')}, urgency {draft.get('urgency')}): "
-                f"{draft.get('summary')}")
+        return (f"draft ({label}; intent {printable(draft.get('intent'))}, urgency {printable(draft.get('urgency'))}):"
+                f" {printable(draft.get('summary'))}")
     if outcome == "stand-in":
-        return f"draft ({draft['label']}): {draft.get('summary')}"
+        return f"draft ({label}): {printable(draft.get('summary'))}"
     if outcome == "refused":
-        return f"draft ({draft['label']}): AI draft refused: {draft.get('reason')}"
-    return f"draft ({draft['label']}): no AI text: {draft.get('reason')}"
+        return f"draft ({label}): AI draft refused: {printable(draft.get('reason'))}"
+    return f"draft ({label}): no AI text: {printable(draft.get('reason'))}"
 
 
 def enquiry_lines(store, enquiry, crm_note: str = "") -> list:
@@ -108,7 +121,7 @@ def enquiry_lines(store, enquiry, crm_note: str = "") -> list:
         lines.append(f"  waits for a person: desk.py resolve {enquiry.key} --as new|contact:<id> --by <name>"
                      f"  (contacts found: {', '.join(candidates)})")
     if enquiry.state == "received" and enquiry.error:
-        lines.append(f"  not assessed yet: {enquiry.error}")
+        lines.append(f"  not assessed yet: {printable(enquiry.error)}")
     if enquiry.plan_sha and enquiry.state in ("awaiting_approval", "approved", "apply_failed"):
         plan = json.loads(store.plan_body(enquiry.plan_sha))
         lines.append(f"  plan {enquiry.plan_sha}")
@@ -121,7 +134,7 @@ def enquiry_lines(store, enquiry, crm_note: str = "") -> list:
         if enquiry.state == "awaiting_approval":
             lines.append(f"  to approve: desk.py approve {enquiry.key} --by <name> --plan {enquiry.plan_sha[:12]}")
     if enquiry.state == "apply_failed":
-        lines.append(f"  apply_failed: {enquiry.error}")
+        lines.append(f"  apply_failed: {printable(enquiry.error)}")
     if crm_note:
         lines.append(f"  {crm_note}")
     return lines

@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-251 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+261 test methods in 16 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -228,6 +228,11 @@ Section 3.4: the request and its guard, the strict answer, the three backends, a
 - `test_the_message_is_scrubbed_of_the_senders_own_values_in_any_case`
 - `test_the_marker_word_invented_is_not_a_name_word`
 - `test_any_email_or_phone_shape_is_scrubbed_but_dates_and_figures_are_kept`
+- `test_the_senders_phone_is_found_by_its_digits_whatever_stands_between_them`
+- `test_an_address_with_letters_outside_ascii_is_scrubbed`
+- `test_a_long_number_is_scrubbed_but_a_date_and_a_short_figure_are_kept`
+- `test_a_name_word_next_to_an_underscore_is_scrubbed`
+- `test_what_the_scrub_does_not_recognise_reaches_the_model`
 - `test_the_guard_refuses_a_request_that_still_holds_personal_data`
 - `test_the_request_is_named_by_its_sha256`
 - `test_the_request_files_are_what_the_generator_writes`
@@ -238,10 +243,15 @@ Section 3.4: the request and its guard, the strict answer, the three backends, a
 How the dry run shows the model step: never "None" where an answer was refused.
 
 - `test_each_outcome_in_one_line`
+- `test_text_from_outside_is_printed_on_one_line_that_cannot_move_the_cursor`
 
 ### AnswerTests
 
 - `test_a_good_answer_passes`
+- `test_control_characters_are_refused_and_a_line_break_only_in_the_reply`
+- `test_each_text_has_a_length_in_characters_as_well_as_in_words`
+- `test_a_web_address_with_no_scheme_is_refused_in_the_reply`
+- `test_a_key_name_from_the_answer_is_quoted_and_cut_in_the_reason`
 - `test_an_unknown_key_refuses_the_whole_answer`
 - `test_the_shape_and_the_limits`
 - `test_the_reply_holds_no_email_phone_or_web_address`

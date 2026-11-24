@@ -1,23 +1,38 @@
-"""Section 3.4: the request to a model, and the guard that refuses to send personal data.
+"""The request to a model, and the guard that refuses to send what the scrub is meant to take out.
 
 The request is one text: a fixed prompt, the fixed list of intents, and the enquiry's message with the
 sender's own name, e-mail and phone taken out. It never carries the name, the e-mail or the phone fields.
 Its sha256 (of the text as UTF-8) names it: a recorded answer is found by that sha256.
 
-The message is scrubbed of
-- the sender's own e-mail and phone as written, in any letter case,
-- anything shaped like an e-mail address, and anything shaped like a phone number (7 to 15 digits, with
-  spaces, dots, dashes or brackets between them; a date written 2026-02-02 is not a phone),
-- every word of the sender's own name (two letters or more), as a whole word, in any letter case.
-Each is replaced by [email], [phone] or [name]. All are found on the original text in one pass, so one
-replacement never creates or hides another.
+A run of digits is digits with nothing but non-letters between them: spaces of any kind, line breaks,
+dashes of any kind, dots, slashes, underscores, brackets. "000/000/0199", "000_000_0199", "000 - 000 -
+0199" and "000-000-" at the end of one line with "0199" on the next are each one run of ten digits.
 
-The guard looks again at the finished request and refuses to send it if any of these is still there.
+The message is scrubbed of exactly these, each replaced by [email], [phone] or [name]:
+- the sender's own e-mail as written, in any letter case;
+- the digits of the sender's own phone, wherever a run of digits holds them, whatever stands between
+  them ("tel:0000000199" too);
+- anything shaped like an e-mail address: letters of any alphabet, digits and . _ % + - before an @, and
+  a domain with a dot after it;
+- any run of 7 or more digits (a long figure, a card number, a phone of anyone), except a date written
+  2026-02-02;
+- every word of the sender's own name (two letters or more), as a whole word in any letter case, where
+  an underscore also ends a word ("Dana_Reviewer" is two words).
+All are found on the original text in one pass, so one replacement never creates or hides another.
+
+It does NOT recognise, and the model may see: an address written out in words ("dana at example dot com",
+"dana(at)example.com", spaces around the @); a name joined to another word with no separator
+("DanaReviewer"), changed ("Danas"), or given as an initial; anyone else's name; a street address; a
+number of 6 digits or fewer; anything else that identifies a person.
+
+The guard looks again at the finished request and refuses to send it if any of the five is still there,
+by the same comparisons.
 """
 from __future__ import annotations
 
 import hashlib
 import re
+import unicodedata
 from dataclasses import dataclass
 
 from . import normalise
@@ -47,20 +62,64 @@ PROMPT = (
     "Message:\n"
 )
 
-EMAIL_SHAPE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
-_PHONE_CANDIDATE = re.compile(r"(?<!\w)\+?\(?\d[\d \t().-]{5,}\d(?!\w)")
-_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+EMAIL_SHAPE = re.compile(r"[\w.%+-]+@[\w-]+(?:\.[\w-]+)+")
+_DIGIT_RUN = re.compile(r"\+?\(?\d(?:[\W_]*\d)*")  # digits, with only non-letters between; a leading + or (
+_DATE_IN_TEXT = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)")
 _NAME_WORD = re.compile(r"[^\W\d_]{2,}")
+LONG_NUMBER_DIGITS = 7  # a run of this many digits or more is taken out as a possible phone number
+
+
+@dataclass(frozen=True)
+class DigitRun:
+    start: int
+    end: int
+    digits: str  # the run's digits as ASCII digits
+    positions: tuple  # where each digit stands in the text
+
+    def span_of(self, index: int, length: int) -> tuple:
+        """(start, end) in the text of `length` digits of the run, from its digit number `index`."""
+        return self.positions[index], self.positions[index + length - 1] + 1
+
+
+def digit_runs(text: str, dates_apart: bool = False) -> list:
+    """Every run of digits in the text. With dates_apart, a date written 2026-02-02 is never part of a run,
+    so two dates side by side ("2026-02-02 (2026-03-01)") are not read as one long number."""
+    text = text or ""
+    if dates_apart:
+        text = _DATE_IN_TEXT.sub(lambda m: "x" * len(m.group(0)), text)
+    runs = []
+    for match in _DIGIT_RUN.finditer(text):
+        positions = tuple(match.start() + i for i, ch in enumerate(match.group(0)) if ch.isdecimal())
+        digits = "".join(str(unicodedata.decimal(text[p])) for p in positions)
+        runs.append(DigitRun(match.start(), match.end(), digits, positions))
+    return runs
+
+
+def long_number_spans(text: str) -> list:
+    """(start, end) of every run of 7 or more digits; a date written 2026-02-02 is not one, nor part of one."""
+    return [(run.start, run.end) for run in digit_runs(text, dates_apart=True) if len(run.digits) >= LONG_NUMBER_DIGITS]
+
+
+def own_phone_spans(text: str, phone: str) -> list:
+    """(start, end) of every place a run of digits holds the digits of `phone`, whatever stands between them."""
+    own = normalise.phone_digits(phone or "")
+    spans = []
+    if not own:
+        return spans
+    for run in digit_runs(text):
+        at = run.digits.find(own)
+        while at >= 0:
+            start, end = run.span_of(at, len(own))
+            while start > run.start and text[start - 1] in "+(":  # a leading + or ( goes with the number
+                start -= 1
+            spans.append((start, end))
+            at = run.digits.find(own, at + len(own))
+    return spans
 
 
 def phone_spans(text: str) -> list:
-    """(start, end) of every run shaped like a phone number: 7 to 15 digits, not an ISO date."""
-    spans = []
-    for match in _PHONE_CANDIDATE.finditer(text):
-        found = match.group(0)
-        if normalise.is_phone(normalise.phone_digits(found)) and not _ISO_DATE.match(found):
-            spans.append(match.span())
-    return spans
+    """(start, end) of every run that counts as a possible phone number: 7 or more digits, not a date."""
+    return long_number_spans(text)
 
 
 MARKER_WORDS = frozenset({"invented"})  # the data's "(invented)" marks a name; it is not part of one
@@ -72,7 +131,8 @@ def name_words(name: str) -> list:
 
 
 def _word(word: str) -> re.Pattern:
-    return re.compile(r"(?<!\w)" + re.escape(word) + r"(?!\w)", re.IGNORECASE)
+    """The word on its own: not next to another letter or digit. An underscore ends a word."""
+    return re.compile(r"(?<![^\W_])" + re.escape(word) + r"(?![^\W_])", re.IGNORECASE)
 
 
 def scrub(message: str, fields: dict) -> str:
@@ -90,6 +150,8 @@ def scrub(message: str, fields: dict) -> str:
     if own_phone:
         for m in re.finditer(re.escape(own_phone), message, re.IGNORECASE):
             add(*m.span(), "[phone]")
+        for start, end in own_phone_spans(message, own_phone):
+            add(start, end, "[phone]")
     for m in EMAIL_SHAPE.finditer(message):
         add(*m.span(), "[email]")
     for start, end in phone_spans(message):
@@ -132,11 +194,9 @@ def guard(text: str, fields: dict) -> list:
     lowered = text.casefold()
     own_email = normalise.email(fields.get("email", ""))
     own_phone = (fields.get("phone") or "").strip()
-    own_digits = normalise.phone_digits(own_phone)
     if EMAIL_SHAPE.search(text) or (own_email and own_email in lowered):
         found.append("an e-mail address")
-    digit_runs = {normalise.phone_digits(text[s:e]) for s, e in phone_spans(text)}
-    if digit_runs or (own_phone and own_phone.casefold() in lowered) or (own_digits and own_digits in digit_runs):
+    if phone_spans(text) or own_phone_spans(text, own_phone) or (own_phone and own_phone.casefold() in lowered):
         found.append("a phone number")
     if any(_word(word).search(message) for word in name_words(fields.get("name", ""))):
         found.append("the sender's name")

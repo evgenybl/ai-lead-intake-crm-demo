@@ -258,20 +258,20 @@ What the desk's own checks make of each answer, `python -I tools/recordings.py s
 ```text
 7c91d82d9625  recorded     used      new: quote_request
 7d0d2e346a29  recorded     not used  new: support
-              the answer has keys beyond the four: urgency_note; it is refused whole
+              the answer has keys beyond the four: 'urgency_note'; it is refused whole
 5cbc44218a3c  recorded     used      new: booking
 6ee637aab7ff  recorded     used      new: partnership
 4f6b80b167aa  recorded     used      new: job_application
 8600046aa896  recorded     used      new: spam
 eb8dfd2a8bf4  recorded     not used  new: other
-              the answer has keys beyond the four: urgency_note; it is refused whole
+              the answer has keys beyond the four: 'urgency_note'; it is refused whole
 e8e6df756ae8  recorded     used      returning: by e-mail, nothing differs
 db890210e130  recorded     used      returning: by e-mail, a changed phone shown
 925a01ff0688  recorded     used      returning: by e-mail, fills the empty company
 5ed37f9dc686  recorded     not used  held: only the phone matches, and the contact has an e-mail
-              the answer has keys beyond the four: urgency_note; it is refused whole
+              the answer has keys beyond the four: 'urgency_note'; it is refused whole
 e895a17472c8  recorded     not used  held: the e-mail and the phone belong to two contacts
-              the answer has keys beyond the four: reply_draft_placeholder_check; it is refused whole
+              the answer has keys beyond the four: 'reply_draft_placeholder_check'; it is refused whole
 304521acd462  recorded     used      held: a new address with the name and company of an existing contact
 dd8847f26402  recorded     used      new: the message repeats the sender's own phone
 b781ac80d4af  recorded     used      new: figures in the message

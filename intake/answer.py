@@ -1,36 +1,57 @@
-"""Section 3.4: reading a model's answer strictly, and the checks it must pass to be used.
+"""Reading a model's answer strictly, and the checks it must pass to be used.
 
 The answer is one JSON object with exactly the keys summary, intent, urgency and reply_draft. A key
 beyond the four refuses the whole answer: nothing of it is used. The object may stand alone or inside one
 ```json fence; any other text around it refuses it.
 
 The checks:
-- the shape and the limits: a summary of 1 to 40 words; an intent and an urgency from the fixed lists;
-  a reply draft of at most 120 words, or null;
+- the shape and the limits: a summary of 1 to 40 words and at most 400 characters; an intent and an
+  urgency from the fixed lists; a reply draft of at most 120 words and 1,200 characters, or null;
+- no control characters, and no characters that reorder or hide text (bidi controls, zero width), in any
+  of the four; the reply alone may hold line breaks (LF);
 - every number written in digits in the summary and the reply appears in the message the model saw
   (1,200 and 1200 are one number; 02 and 2 are one number);
-- the reply holds the placeholder {{name}}, and no e-mail address, phone number or web address;
+- the reply holds the placeholder {{name}}, and no e-mail address, phone number or web address, with or
+  without its scheme (evil.example/pay counts, and so does javascript:);
 - neither text holds the sender's own name, e-mail or phone.
-An answer that fails any check is not used. The reasons say which check, never a personal value.
+An answer that fails any check is not used. The reasons say which check, never a personal value; where a
+reason names something from the answer (a key, a number), it is quoted and cut to a fixed length.
 """
 from __future__ import annotations
 
 import json
 import re
+import unicodedata
 
 from . import normalise
-from .request import EMAIL_SHAPE, INTENTS, PLACEHOLDER, URGENCIES, name_words, phone_spans
+from .request import EMAIL_SHAPE, INTENTS, PLACEHOLDER, URGENCIES, name_words, own_phone_spans, phone_spans
+from .request import _word as word_pattern
 
 KEYS = ("summary", "intent", "urgency", "reply_draft")
 SUMMARY_MAX_WORDS = 40
 REPLY_MAX_WORDS = 120
+SUMMARY_MAX_CHARS = 400
+REPLY_MAX_CHARS = 1200
+SHOWN_MAX_CHARS = 40  # how much of a key or a number from the answer a reason may quote
 
 _FENCE = re.compile(r"^```(?:json)?[ \t]*\n(.*)\n```$", re.DOTALL)
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
 _WEB = re.compile(
-    r"https?://|www\.|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|io|co|info|biz|app|dev|uk|us|de|fr|il|eu)\b",
+    r"[a-z][a-z0-9+.-]*://|www\.|\b(?:javascript|vbscript|data|file|mailto|tel|sms):"
+    r"|(?<![\w@.-])(?:[\w-]+\.)+[^\W\d_]{2,63}(?![\w@-])",  # a domain with no scheme: evil.example, bit.ly/x
     re.IGNORECASE,
 )
+_HIDDEN = ("Cc", "Cf", "Co", "Cs", "Zl", "Zp")  # control, format (bidi, zero width), private, surrogate, separators
+
+
+def shown(value) -> str:
+    """Something from the answer, as a reason may name it: quoted, escaped, cut to a fixed length."""
+    text = str(value)
+    return repr(text[:SHOWN_MAX_CHARS]) + ("..." if len(text) > SHOWN_MAX_CHARS else "")
+
+
+def hidden_characters(text: str, allow: str = "") -> bool:
+    return any(unicodedata.category(c) in _HIDDEN and c not in allow for c in text)
 
 
 class _Duplicate(ValueError):
@@ -55,7 +76,7 @@ def parse(text: str) -> tuple:
     try:
         obj = json.loads(body, object_pairs_hook=_no_duplicates)
     except _Duplicate as dup:
-        return None, f"the key {str(dup)!r} appears twice"
+        return None, f"the key {shown(dup)} appears twice"
     except ValueError:
         return None, "the answer is not one JSON object"
     if not isinstance(obj, dict):
@@ -82,7 +103,9 @@ def check(obj: dict, seen_message: str, fields: dict) -> list:
     keys = set(obj)
     extra = sorted(keys - set(KEYS))
     if extra:
-        return [f"the answer has keys beyond the four: {', '.join(extra)}; it is refused whole"]
+        more = f" and {len(extra) - 3} more" if len(extra) > 3 else ""
+        return [f"the answer has keys beyond the four: {', '.join(shown(k) for k in extra[:3])}{more}; "
+                "it is refused whole"]
     missing = [k for k in KEYS if k not in keys]
     if missing:
         return [f"the answer lacks {', '.join(missing)}"]
@@ -93,6 +116,10 @@ def check(obj: dict, seen_message: str, fields: dict) -> list:
         summary = ""
     elif _words(summary) > SUMMARY_MAX_WORDS:
         reasons.append(f"the summary has more than {SUMMARY_MAX_WORDS} words")
+    elif len(summary) > SUMMARY_MAX_CHARS:
+        reasons.append(f"the summary has more than {SUMMARY_MAX_CHARS} characters")
+    if summary and hidden_characters(summary):
+        reasons.append("the summary holds control characters")
     if intent not in INTENTS:
         reasons.append("the intent is not one of the fixed list")
     if urgency not in URGENCIES:
@@ -104,6 +131,10 @@ def check(obj: dict, seen_message: str, fields: dict) -> list:
     if reply is not None:
         if _words(reply) > REPLY_MAX_WORDS:
             reasons.append(f"the reply draft has more than {REPLY_MAX_WORDS} words")
+        elif len(reply) > REPLY_MAX_CHARS:
+            reasons.append(f"the reply draft has more than {REPLY_MAX_CHARS} characters")
+        if hidden_characters(reply, allow="\n"):
+            reasons.append("the reply draft holds control characters other than a line break")
         if PLACEHOLDER not in reply:
             reasons.append("the reply draft does not hold the placeholder " + PLACEHOLDER)
         if EMAIL_SHAPE.search(reply):
@@ -115,15 +146,14 @@ def check(obj: dict, seen_message: str, fields: dict) -> list:
     allowed = _numbers(seen_message)
     invented = sorted(set().union(*(_numbers(t) for t in texts)) - allowed)
     if invented:
-        reasons.append(f"a number that is not in the message: {', '.join(invented)}")
+        more = f" and {len(invented) - 5} more" if len(invented) > 5 else ""
+        reasons.append(f"a number that is not in the message: {', '.join(shown(n) for n in invented[:5])}{more}")
     own_email = normalise.email(fields.get("email", ""))
-    own_digits = normalise.phone_digits(fields.get("phone", ""))
     for label, text in (("summary", summary), ("reply draft", reply or "")):
         if own_email and own_email in text.casefold():
             reasons.append(f"the {label} holds the sender's e-mail")
-        if own_digits and any(normalise.phone_digits(text[s:e]) == own_digits for s, e in phone_spans(text)):
+        if own_phone_spans(text, fields.get("phone", "")):
             reasons.append(f"the {label} holds the sender's phone")
-        if any(re.search(r"(?<!\w)" + re.escape(w) + r"(?!\w)", text, re.IGNORECASE)
-               for w in name_words(fields.get("name", ""))):
+        if any(word_pattern(w).search(text) for w in name_words(fields.get("name", ""))):
             reasons.append(f"the {label} holds the sender's name")
     return reasons

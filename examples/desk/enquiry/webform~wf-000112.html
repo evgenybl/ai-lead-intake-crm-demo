@@ -25,7 +25,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <blockquote>Could the cleaning of the yoga studio start an hour earlier?</blockquote>
 <p><b>Who it is:</b> The e-mail belongs to contact 7 and the phone to contact 8. A person decides which one it is; nothing is planned until then.</p>
 <p><b>Model step:</b> <span class="label">Recorded</span></p>
-<p class="bad">AI draft refused: the answer has keys beyond the four: reply_draft_placeholder_check; it is refused whole. The enquiry goes on with no AI text, and its plan is the same as without it.</p>
+<p class="bad">AI draft refused: the answer has keys beyond the four: &#x27;reply_draft_placeholder_check&#x27;; it is refused whole. The enquiry goes on with no AI text, and its plan is the same as without it.</p>
 <p><b>To resolve:</b></p>
 <pre>python -I desk.py resolve webform:wf-000112 --as new --by "Your name"
 python -I desk.py resolve webform:wf-000112 --as contact:&lt;id&gt; --by "Your name"</pre>
@@ -34,7 +34,7 @@ python -I desk.py resolve webform:wf-000112 --as contact:&lt;id&gt; --by "Your n
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>34</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 79a52a822281e506c37ea57a8a77804833ce007637f4dc39169240f696feca7f; reasons: []; state: received; via: file</td></tr>
-<tr><td>35</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: refused; reason: the answer has keys beyond the four: reply_draft_placeholder_check; it is refused whole; request: e895a17472c80264a4698323ae0387122737537f4d47f4bd2d2108f08e1d5373</td></tr>
+<tr><td>35</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: refused; reason: the answer has keys beyond the four: &#x27;reply_draft_placeholder_check&#x27;; it is refused whole; request: e895a17472c80264a4698323ae0387122737537f4d47f4bd2d2108f08e1d5373</td></tr>
 <tr><td>36</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: refused; from: received; identity: two_contacts; plan: null; state: held_two_contacts</td></tr>
 <tr><td>118</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T10:36:00Z; same_content: true; state_now: held_two_contacts; via: file</td></tr>
 </table>

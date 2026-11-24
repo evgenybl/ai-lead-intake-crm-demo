@@ -25,7 +25,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <blockquote>Do you work on public holidays, or only on working days?</blockquote>
 <p><b>Who it is:</b> A new contact: no contact in the CRM has this e-mail or phone.</p>
 <p><b>Model step:</b> <span class="label">Recorded</span></p>
-<p class="bad">AI draft refused: the answer has keys beyond the four: urgency_note; it is refused whole. The enquiry goes on with no AI text, and its plan is the same as without it.</p>
+<p class="bad">AI draft refused: the answer has keys beyond the four: &#x27;urgency_note&#x27;; it is refused whole. The enquiry goes on with no AI text, and its plan is the same as without it.</p>
 <p><b>The plan</b> (plan c7727aa49fdb): exactly what would be written to the CRM, and nothing else.</p>
 <ol>
 <li>Create a contact: name Pia Lund (invented), e-mail pia.lund@example.com, phone 000-000-0207, company Lund Bookshop (invented).</li>
@@ -44,7 +44,7 @@ python -I desk.py reject webform:wf-000107 --by "Your name" --reason "why"</pre>
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>19</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 59ac0d70b23cda4fca5f790d942c102bbcf57165929f00252eef2f9dcd362a86; reasons: []; state: received; via: file</td></tr>
-<tr><td>20</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: refused; reason: the answer has keys beyond the four: urgency_note; it is refused whole; request: eb8dfd2a8bf448f7c755bcf83b918a6e53d36b7c20df4a41b9bbd141da87d3bb</td></tr>
+<tr><td>20</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: refused; reason: the answer has keys beyond the four: &#x27;urgency_note&#x27;; it is refused whole; request: eb8dfd2a8bf448f7c755bcf83b918a6e53d36b7c20df4a41b9bbd141da87d3bb</td></tr>
 <tr><td>21</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: refused; from: received; identity: new; plan: c7727aa49fdb49ea2321d3b7581cb559d7d790c5e07ff371846cfc1cbfcc0216; state: awaiting_approval</td></tr>
 <tr><td>113</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T09:20:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
 </table>

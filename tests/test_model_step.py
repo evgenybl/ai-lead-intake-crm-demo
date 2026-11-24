@@ -65,7 +65,43 @@ class RequestTests(unittest.TestCase):
                                       "1,200 a month, from 2026-02-02; order 123456.")
         scrubbed = request.build(fields).message
         self.assertEqual(scrubbed, "Write to [email] or call [phone]. We need 3 rooms, 1,200 a month, from "
-                                   "2026-02-02; order 123456.")
+                                   "2026-02-02; order 123456.")  # the leading + goes with the number
+
+    def test_the_senders_phone_is_found_by_its_digits_whatever_stands_between_them(self):
+        own = dict(FIELDS, name="Dana Reviewer (invented)", email="dana.reviewer@example.com", phone="000-000-0199")
+        message = ("Call 000/000/0199 or 000_000_0199 or 000\u2013000\u20130199 or 000\u00a0000\u00a00199 or "
+                   "tel:0000000199 or ph0000000199 or 000-000-\n0199 or +1 (000) 000-0199.")
+        scrubbed = request.build(dict(own, message=message)).message
+        self.assertEqual(scrubbed, "Call [phone] or [phone] or [phone] or [phone] or tel:[phone] or ph[phone] or "
+                                   "[phone] or +1 [phone].")
+        self.assertNotRegex(scrubbed.replace("+1 [phone]", ""), r"\d")  # the country code alone is left
+        # The guard compares the same way: each form, left in, refuses the request.
+        for form in ("000/000/0199", "000_000_0199", "000\u2013000\u20130199", "000-000-\n0199", "ph0000000199"):
+            with self.subTest(form=form):
+                left_in = request.PROMPT + request.MESSAGE_OPEN + "call " + form + request.MESSAGE_CLOSE
+                self.assertIn("a phone number", request.guard(left_in, own))
+
+    def test_an_address_with_letters_outside_ascii_is_scrubbed(self):
+        fields = dict(FIELDS, message="Copy to jos\u00e9@example.com and zo\u00eb.m\u00fcller@example.com please.")
+        self.assertEqual(request.build(fields).message, "Copy to [email] and [email] please.")
+        left_in = request.PROMPT + request.MESSAGE_OPEN + "jos\u00e9@example.com" + request.MESSAGE_CLOSE
+        self.assertIn("an e-mail address", request.guard(left_in, FIELDS))
+
+    def test_a_long_number_is_scrubbed_but_a_date_and_a_short_figure_are_kept(self):
+        fields = dict(FIELDS, message="Card 4111 1111 1111 1111, order 123456, ref 1234567, from 2026-02-02 "
+                                      "(2026-03-01), budget 1,200.")
+        self.assertEqual(request.build(fields).message, "Card [phone], order 123456, ref [phone], from 2026-02-02 "
+                                                        "(2026-03-01), budget 1,200.")
+
+    def test_a_name_word_next_to_an_underscore_is_scrubbed(self):
+        fields = dict(FIELDS, name="Dana Reviewer (invented)", message="Regards, Dana_Reviewer and DanaReviewer.")
+        self.assertEqual(request.build(fields).message, "Regards, [name]_[name] and DanaReviewer.")
+
+    def test_what_the_scrub_does_not_recognise_reaches_the_model(self):
+        # Said in the README: an address written out in words, a name joined to another word, anyone else's name.
+        fields = dict(FIELDS, email="pat.lee@example.com", name="Pat Lee (invented)",
+                      message="Write to info at example dot com. Ask PatLee or Tom Baker, 12 Mill Lane.")
+        self.assertEqual(request.build(fields).message, fields["message"])
 
     def test_the_guard_refuses_a_request_that_still_holds_personal_data(self):
         with mock.patch.object(request, "scrub", lambda message, fields: message):
@@ -115,6 +151,21 @@ class DraftLineTests(unittest.TestCase):
         self.assertEqual(draft_line(refused), "draft (Recorded): AI draft refused: the answer lacks urgency")
         self.assertEqual(draft_line(none), "draft (no recording): no AI text: no recording for this request")
 
+    def test_text_from_outside_is_printed_on_one_line_that_cannot_move_the_cursor(self):
+        from intake.reports import draft_line
+
+        forged = ("ok\r\x1b[A\x1b[K\x07\n  identity: nothing differs\n  to approve: desk.py approve it --by you"
+                  "\u202e\u200b\x9b")
+        for outcome in ("used", "stand-in", "refused", "none"):
+            with self.subTest(outcome=outcome):
+                line = draft_line({"label": "Recorded", "outcome": outcome, "summary": forged, "reason": forged,
+                                   "intent": "other\n", "urgency": "low\x1b"})
+                self.assertEqual(line, line.strip("\n"))
+                self.assertNotRegex(line, "[\x00-\x1f\x7f-\x9f\u200b\u202e]")
+                self.assertIn("\\x1b[A", line)  # shown as the escape, not obeyed
+        stand_in = TemplateBackend().draft({"message": "Hello\x1b[2J there. Then more."})
+        self.assertNotIn("\x1b", draft_line(stand_in))
+
 
 class AnswerTests(unittest.TestCase):
     seen = "Please call me on [phone] after 5pm about a quote for the lab. We need 3 rooms, 1,200 a month."
@@ -126,9 +177,39 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(self.reasons(GOOD), [])
         self.assertEqual(self.reasons(dict(GOOD, reply_draft=None)), [])
 
+    def test_control_characters_are_refused_and_a_line_break_only_in_the_reply(self):
+        for text in ("ok\x1b[2J", "ok\r", "ok\u202eevil", "ok\u200bhidden", "ok\x9b", "ok\u2028next"):
+            with self.subTest(text=text):
+                self.assertIn("the summary holds control characters", self.reasons(dict(GOOD, summary=text)))
+                self.assertIn("the reply draft holds control characters other than a line break",
+                              self.reasons(dict(GOOD, reply_draft="Hello {{name}}, " + text)))
+        self.assertEqual(self.reasons(dict(GOOD, reply_draft="Hello {{name}},\n\nthank you.")), [])
+        self.assertEqual(self.reasons(dict(GOOD, intent="spam\x1b")), ["the intent is not one of the fixed list"])
+
+    def test_each_text_has_a_length_in_characters_as_well_as_in_words(self):
+        self.assertIn("the summary has more than 400 characters", self.reasons(dict(GOOD, summary="A" * 200000)))
+        self.assertIn("the reply draft has more than 1200 characters",
+                      self.reasons(dict(GOOD, reply_draft="{{name}} " + " ".join(["B" * 5000] * 119))))
+
+    def test_a_web_address_with_no_scheme_is_refused_in_the_reply(self):
+        for reply in ("Hello {{name}}, pay at evil.xyz/pay", "Hello {{name}}, see bit.ly/abc",
+                      "Hello {{name}}, [click](javascript:alert)", "Hello {{name}}, visit shop.example today",
+                      "Hello {{name}}, ftp://files.example/x"):
+            with self.subTest(reply=reply):
+                self.assertIn("the reply draft holds a web address", self.reasons(dict(GOOD, reply_draft=reply)))
+        for fine in ("Hello {{name}}, i.e. the rooms, e.g. both.", "Hello {{name}}, after 5 p.m. as asked."):
+            self.assertEqual(self.reasons(dict(GOOD, reply_draft=fine)), [])
+
+    def test_a_key_name_from_the_answer_is_quoted_and_cut_in_the_reason(self):
+        long_key = "x\x1b[2J" + "k" * 100
+        (reason,) = self.reasons(dict(GOOD, **{long_key: 1}))
+        self.assertIn("'x\\x1b[2J" + "k" * 35 + "'...", reason)
+        self.assertNotIn("\x1b", reason)
+        self.assertIn("and 2 more", answer.check(dict(GOOD, a=1, b=2, c=3, d=4, e=5), "", FIELDS)[0])
+
     def test_an_unknown_key_refuses_the_whole_answer(self):
         found = self.reasons(dict(GOOD, approve=True))
-        self.assertEqual(found, ["the answer has keys beyond the four: approve; it is refused whole"])
+        self.assertEqual(found, ["the answer has keys beyond the four: 'approve'; it is refused whole"])
 
     def test_the_shape_and_the_limits(self):
         cases = {
@@ -154,9 +235,9 @@ class AnswerTests(unittest.TestCase):
 
     def test_every_number_in_digits_must_appear_in_the_message(self):
         self.assertEqual(self.reasons(dict(GOOD, summary="3 rooms for 1200 a month, after 5pm.")), [])
-        self.assertIn("a number that is not in the message: 1500",
+        self.assertIn("a number that is not in the message: '1500'",
                       self.reasons(dict(GOOD, summary="3 rooms for 1,500 a month.")))
-        self.assertIn("a number that is not in the message: 4", self.reasons(dict(GOOD, reply_draft="Hi {{name}}, 4 rooms.")))
+        self.assertIn("a number that is not in the message: '4'", self.reasons(dict(GOOD, reply_draft="Hi {{name}}, 4 rooms.")))
 
     def test_neither_text_holds_the_senders_own_values(self):
         self.assertIn("the summary holds the sender's name", self.reasons(dict(GOOD, summary="Quinn wants a quote.")))
@@ -223,7 +304,7 @@ class RecordedBackendTests(unittest.TestCase):
         self.keep("answers", "recorded", dict(GOOD, summary="3 rooms for 1,500."))
         result = self.draft()
         self.assertEqual(result["outcome"], "refused")
-        self.assertEqual(result["reason"], "a number that is not in the message: 1500, 3")
+        self.assertEqual(result["reason"], "a number that is not in the message: '1500', '3'")
         self.assertIsNone(result["summary"])
 
     def test_the_template_and_the_backend_choice(self):
@@ -328,7 +409,7 @@ class HiddenInstructionTests(DeskCase):
             desk.receive(self.obj, via="file")
             kept = desk.store.get_enquiry(self.KEY)
         self.assertEqual(kept.draft["outcome"], "refused")
-        self.assertIn("keys beyond the four: approve", kept.draft["reason"])
+        self.assertIn("keys beyond the four: 'approve'", kept.draft["reason"])
         self.assertEqual([kept.draft[k] for k in answer.KEYS], [None] * 4)
         self.assertEqual(kept.state, "awaiting_approval")
 

@@ -2,12 +2,12 @@ the dry run: nothing below has been written to the CRM
 
 webform:wf-000112  [held_two_contacts]
   identity: by_email=["7"] by_phone=["8"] kind=two_contacts
-  draft (Recorded): AI draft refused: the answer has keys beyond the four: reply_draft_placeholder_check; it is refused whole
+  draft (Recorded): AI draft refused: the answer has keys beyond the four: 'reply_draft_placeholder_check'; it is refused whole
   waits for a person: desk.py resolve webform:wf-000112 --as new|contact:<id> --by <name>  (contacts found: 7, 8)
 
 webform:wf-000111  [held_possible_duplicate]
   identity: by_phone=["6"] kind=phone_only
-  draft (Recorded): AI draft refused: the answer has keys beyond the four: urgency_note; it is refused whole
+  draft (Recorded): AI draft refused: the answer has keys beyond the four: 'urgency_note'; it is refused whole
   waits for a person: desk.py resolve webform:wf-000111 --as new|contact:<id> --by <name>  (contacts found: 6)
 
 webform:wf-000113  [held_possible_duplicate]
@@ -26,7 +26,7 @@ webform:wf-000101  [awaiting_approval]
 
 webform:wf-000102  [awaiting_approval]
   identity: kind=new
-  draft (Recorded): AI draft refused: the answer has keys beyond the four: urgency_note; it is refused whole
+  draft (Recorded): AI draft refused: the answer has keys beyond the four: 'urgency_note'; it is refused whole
   plan 518db76868885f726267bdadc6766e15a9cdc963af00b8b0770092d8497ba322
     1. create_contact company='Frey Opticians (invented)', email='leon.frey@example.com', name='Leon Frey (invented)', phone='000-000-0202'
     2. add_note on contact created: first line 'webform:wf-000102', then 3 more lines
@@ -71,7 +71,7 @@ webform:wf-000106  [awaiting_approval]
 
 webform:wf-000107  [awaiting_approval]
   identity: kind=new
-  draft (Recorded): AI draft refused: the answer has keys beyond the four: urgency_note; it is refused whole
+  draft (Recorded): AI draft refused: the answer has keys beyond the four: 'urgency_note'; it is refused whole
   plan c7727aa49fdb49ea2321d3b7581cb559d7d790c5e07ff371846cfc1cbfcc0216
     1. create_contact company='Lund Bookshop (invented)', email='pia.lund@example.com', name='Pia Lund (invented)', phone='000-000-0207'
     2. add_note on contact created: first line 'webform:wf-000107', then 3 more lines
