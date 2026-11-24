@@ -76,7 +76,21 @@ CREATE TABLE IF NOT EXISTS ledger (
 
 
 class HomeError(Exception):
-    """A desk or CRM file that is missing, or already there when it should not be."""
+    """A desk or CRM file that is missing, already there when it should not be, or made by an earlier version."""
+
+
+def schema_problem(conn: sqlite3.Connection, path: str) -> str | None:
+    """Why this file is not a desk this version can use, with the remedy; None when it is one.
+
+    A desk made before the ledger recorded the contact of each write lacks that column. This is a demonstration:
+    old desks are not migrated, and a new desk is one command away."""
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(ledger)")}
+    if "contact" in columns:
+        return None
+    made = ("was made by an earlier version of this desk, whose ledger did not record the contact of each write"
+            if columns else "holds no desk")
+    return (f"the desk file {os.path.basename(path)} {made}. This is a demonstration, and old desks are not "
+            "migrated: make a new desk with `desk.py init --home <a new folder>`")
 
 
 class ApplyBusy(Exception):
@@ -154,7 +168,16 @@ class DeskStore:
     def open(cls, path: str, clock) -> "DeskStore":
         if not os.path.exists(path):
             raise HomeError(f"no desk at {path}: run `desk.py init` first")
-        return cls(_connect(path), clock, path)
+        conn = _connect(path)
+        try:
+            problem = schema_problem(conn, path)
+        except BaseException:
+            conn.close()
+            raise
+        if problem:
+            conn.close()
+            raise HomeError(problem)
+        return cls(conn, clock, path)
 
     def close(self) -> None:
         self.conn.close()

@@ -503,6 +503,9 @@ for good (see "Limits").
 ## Limits
 
 - The doctor lists only the practice CRM; with the HTTP adapter its CRM checks say "not checked".
+- A desk file made by an earlier version, before the ledger recorded the contact of each write, is not migrated:
+  every command refuses it with one line that says so and names the remedy (a new desk, `desk.py init` with a new
+  `--home`), and `status` says the same of it.
 - The HTTP adapter's look-up by name sends the first word of the normalised name and keeps exact
   matches; a CRM whose search folds letters differently could miss a possible duplicate.
 - A note written while search lags, on a contact other than the one the plan names, would not be seen;

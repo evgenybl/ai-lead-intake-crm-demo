@@ -12,6 +12,63 @@ from intake.flow import DeskError
 from tests.helpers import DATA_FILE, FIXED, PERSON, DeskCase
 
 
+class DeskOfAnEarlierVersionTests(DeskCase):
+    """A desk file made before the ledger recorded the contact of each write: no command uses it, and each says so
+    in one plain line that names the remedy."""
+
+    REMEDY = ("error: the desk file desk.sqlite3 was made by an earlier version of this desk, whose ledger did not "
+              "record the contact of each write. This is a demonstration, and old desks are not migrated: make a new "
+              "desk with `desk.py init --home <a new folder>`")
+
+    def setUp(self):
+        import sqlite3
+
+        from intake import store
+        from intake.home import desk_path
+
+        super().setUp()
+        self.init()
+        schema = store._schema()
+        earlier = schema.replace("    contact TEXT,\n", "")
+        self.assertNotEqual(earlier, schema)
+        os.remove(desk_path(self.home))
+        conn = sqlite3.connect(desk_path(self.home))
+        conn.executescript(earlier)
+        conn.close()
+
+    def test_every_command_answers_one_plain_line_that_names_the_remedy(self):
+        key = "webform:wf-000101"
+        commands = [["ingest", DATA_FILE], ["plan"], ["approve", key, "--by", PERSON, "--plan", "0123456789ab"],
+                    ["reject", key, "--by", PERSON, "--reason", "not for us"], ["withdraw", key, "--by", PERSON],
+                    ["resolve", key, "--as", "new", "--by", PERSON], ["apply"], ["trail", key], ["report"], ["doctor"],
+                    ["render", "--out", os.path.join(self._tmp.name, "pages")]]
+        for command in commands:
+            with self.subTest(command=command[0]):
+                self.assertEqual(self.cli(*command, expect=2).splitlines(), [self.REMEDY])
+        self.assertIn("To make a new desk, give init a new --home", self.cli("init", expect=2))
+        status = self.cli("status", expect=1)
+        self.assertIn("desk file        desk.sqlite3 in --home: " + self.REMEDY.replace("error: ", "error (", 1) + ")",
+                      status)
+
+    def test_serve_and_listen_refuse_it_at_start(self):
+        import subprocess
+        import sys
+
+        from tests.helpers import ROOT
+
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("INTAKE_", "ANTHROPIC_"))}
+        env.update({"INTAKE_SECRET": secrets.token_urlsafe(24), "PYTHONIOENCODING": "utf-8"})
+        for command in ("serve", "listen"):
+            with self.subTest(command=command):
+                try:  # a real process: had it started, it would serve until stopped
+                    done = subprocess.run([sys.executable, "-I", os.path.join(ROOT, "desk.py"), command, "--port", "0",
+                                           "--home", self.home], capture_output=True, text=True, encoding="utf-8",
+                                          env=env, timeout=20)
+                except subprocess.TimeoutExpired:
+                    self.fail(f"{command} started on a desk of an earlier version")
+                self.assertEqual((done.returncode, done.stdout.splitlines(), done.stderr), (2, [self.REMEDY], ""))
+
+
 class StoryTests(DeskCase):
     """The whole story of the invented data, command by command."""
 

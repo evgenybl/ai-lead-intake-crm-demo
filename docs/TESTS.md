@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-334 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+336 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -31,6 +31,13 @@ Integration tests on a real desk file: the append-only trail and the store's rul
 ## tests/test_cli.py
 
 End-to-end tests that drive `desk.py` through main(argv), on new files in a temporary folder.
+
+### DeskOfAnEarlierVersionTests
+
+A desk file made before the ledger recorded the contact of each write: no command uses it, and each says so in one plain line that names the remedy.
+
+- `test_every_command_answers_one_plain_line_that_names_the_remedy`
+- `test_serve_and_listen_refuse_it_at_start`
 
 ### StoryTests
 

@@ -40,6 +40,7 @@ from dataclasses import dataclass, field
 
 from . import audit, normalise, states
 from .canonical import sha256_hex
+from .store import HomeError, schema_problem
 from .ops import ALLOWED_OPS, operations_outside
 
 PROMISES = {
@@ -85,8 +86,21 @@ def _reading(path: str):
         raise Unreadable(f"{os.path.basename(path)} is not a database the doctor can read ({error})") from None
 
 
+def check_desk(desk_path: str) -> None:
+    """Stop before any check on a desk file the doctor cannot read, or one made by an earlier version."""
+    desk = _read_only(desk_path)
+    try:
+        with _reading(desk_path):
+            problem = schema_problem(desk, desk_path)
+    finally:
+        desk.close()
+    if problem:
+        raise HomeError(problem)
+
+
 def examine(desk_path: str, crm_path: str | None) -> list:
     """Every check, in promise order. A CRM path of None skips the CRM checks and says so."""
+    check_desk(desk_path)
     with _reading(crm_path or ""):
         crm = _crm_records(crm_path) if crm_path else None
     desk = _read_only(desk_path)

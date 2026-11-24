@@ -136,7 +136,7 @@ def cmd_init(args, say, home, choice, clock, environ, out) -> int:
     desk_file, crm_file = desk_path(home), crm_path(home)
     for path in (desk_file, crm_file):
         if os.path.exists(path):
-            raise HomeError(f"{path} is already there; nothing was changed")
+            raise HomeError(f"{path} is already there; nothing was changed. To make a new desk, give init a new --home")
     os.makedirs(home, exist_ok=True)
     DeskStore.create(desk_file, clock).close()
     say(f"created {os.path.basename(desk_file)} in {home}")
@@ -374,6 +374,7 @@ def cmd_doctor(args, say, home, choice, clock, environ, out) -> int:
     desk_file = desk_path(home)
     if not os.path.exists(desk_file):
         raise HomeError(f"no desk at {desk_file}: run `desk.py init` first")
+    doctor.check_desk(desk_file)  # one plain line, before anything else, for a file it cannot check
     crm_file = crm_path(home) if choice == "practice" and os.path.exists(crm_path(home)) else None
     crm_named = os.path.basename(crm_file) if crm_file else f"not checked ({choice} adapter)"
     say(f"doctor: desk {os.path.basename(desk_file)}; CRM {crm_named}; both in --home")
