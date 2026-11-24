@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="872" height="541" viewBox="0 0 872 541" role="img" aria-label="Terminal output: python -I demo.py --out demo-run   (its closing table)">
+<rect width="872" height="541" rx="8" fill="#0d1117"/>
+<rect width="872" height="34" rx="8" fill="#161b22"/>
+<rect y="26" width="872" height="8" fill="#161b22"/>
+<circle cx="18" cy="17" r="5.5" fill="#f85149"/><circle cx="36" cy="17" r="5.5" fill="#d29922"/><circle cx="54" cy="17" r="5.5" fill="#3fb950"/>
+<text x="436" y="22" fill="#8b949e" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12.5" text-anchor="middle">python -I demo.py --out demo-run   (its closing table)</text>
+<g fill="#e6edf3" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" xml:space="preserve">
+<text x="16" y="63">closing table: one line per step and case</text>
+<text x="16" y="82" fill="#7ee787">PASS  story 1 init                  a new desk; 10 starting contacts in the practice CRM</text>
+<text x="16" y="101" fill="#7ee787">PASS  story 2 ingest the file       27 new enquiries, 3 replays</text>
+<text x="16" y="120" fill="#7ee787">PASS  story 3 report                the states add up: 27 enquiries + 3 replays = 30 arrived</text>
+<text x="16" y="139" fill="#7ee787">PASS  story 4 dry run (plan)        plans printed; nothing written to the CRM</text>
+<text x="16" y="158" fill="#7ee787">PASS  story 5 approve 5             a person approves 5 plans, each by its sha256</text>
+<text x="16" y="177" fill="#7ee787">PASS  story 6 apply                 5 written: 1 new contact; 4 returning contacts updated</text>
+<text x="16" y="196" fill="#7ee787">PASS  story 7 ingest it again       0 new, 30 replays; nothing new written</text>
+<text x="16" y="215" fill="#7ee787">PASS  story 8 apply again           nothing approved; nothing written</text>
+<text x="16" y="234" fill="#7ee787">PASS  story 9 report again          the states add up: 27 enquiries + 33 replays = 60 arrived</text>
+<text x="16" y="253" fill="#7ee787">PASS  story 10 doctor               the doctor: 16 of 16 checks passed</text>
+<text x="16" y="272" fill="#7ee787">PASS  replay-three-times            one contact, one note; the edited copy shown</text>
+<text x="16" y="291" fill="#7ee787">PASS  returning-contact             no second contact; empty field filled; phone shown, kept</text>
+<text x="16" y="310" fill="#7ee787">PASS  two-contacts-held             held, no plan; resolved as contact 7, then as 8</text>
+<text x="16" y="329" fill="#7ee787">PASS  possible-duplicate-held       held, no plan; resolved as new, then as contact 5</text>
+<text x="16" y="348" fill="#ffa198">PASS  refused-inputs                7 not taken, each with its reason; model and CRM untouched</text>
+<text x="16" y="367" fill="#7ee787">PASS  hidden-instruction            waits for a person; the answer with a 5th key not used</text>
+<text x="16" y="386" fill="#ffa198">PASS  ai-answer-refused             a figure not in the message: not used; plan the same</text>
+<text x="16" y="405" fill="#7ee787">PASS  apply-without-approval        the gate stops it: no approval; nothing written</text>
+<text x="16" y="424" fill="#7ee787">PASS  approval-for-another-plan     the CRM changed since approval: planned again, waits</text>
+<text x="16" y="443" fill="#7ee787">PASS  apply-twice                   the approval is used once; the second apply writes nothing</text>
+<text x="16" y="462" fill="#7ee787">PASS  crm-down-then-retry           apply_failed, named; the retry completed; nothing doubled</text>
+<text x="16" y="481" fill="#7ee787">PASS  wrong-secret                  401; nothing kept</text>
+<text x="16" y="500" fill="#7ee787">PASS  no-secret-configured          503: no secret configured, every request is turned away</text>
+<text x="16" y="519">total: 23 of 23 steps and cases as expected</text>
+</g></svg>

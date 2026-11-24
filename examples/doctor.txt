@@ -1,0 +1,22 @@
+doctor: desk desk.sqlite3; CRM practice-crm.sqlite3; both in --home
+promise 1: No lead is lost
+  ok    every enquiry is in exactly one named state
+  ok    the arrivals add up (60 arrived = 27 enquiries + 33 replays)
+  ok    every key in the trail is an enquiry on the desk
+  ok    every apply_failed enquiry names its error
+promise 2: No duplicate is created
+  ok    one contact per normalised e-mail
+  ok    no two notes with the same enquiry key
+  ok    no two tasks with the same enquiry key
+  ok    no two contacts created by the same enquiry
+promise 3: Nothing is written before a person approves
+  ok    every applied enquiry has a used approval for its plan
+  ok    every ledger row has an approval of its plan
+  ok    every CRM record that carries an enquiry key has an approval
+  ok    every operation is in the allow-list
+  ok    every stored plan matches its sha256
+promise 4: Every step is on the record
+  ok    the audit triggers are in place
+  ok    the audit chain is unbroken
+  ok    each enquiry's state is the last state its trail records
+doctor: 16 of 16 checks passed

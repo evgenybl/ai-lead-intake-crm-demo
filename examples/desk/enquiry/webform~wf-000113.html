@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enquiry webform:wf-000113</title><style>:root{color-scheme:light}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;max-width:62rem;margin:1.5rem auto;padding:0 1rem;
+color:#1f2328;background:#ffffff;line-height:1.45}
+h1{margin-bottom:.2rem}h2{margin-top:2rem;border-bottom:1px solid #d0d7de;padding-bottom:.2rem}
+.note{color:#57606a;font-size:.92rem}
+table{border-collapse:collapse;margin:.5rem 0}td,th{border:1px solid #d0d7de;padding:.3rem .6rem;text-align:left;
+vertical-align:top}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.card{border:1px solid #d0d7de;border-radius:6px;padding:.6rem 1rem;margin:.8rem 0;background:#f6f8fa}
+.card h4{margin:.2rem 0}.state{font-weight:600}.waiting{color:#9a6700}.done{color:#1a7f37}.stop{color:#57606a}
+blockquote{margin:.4rem 0;padding:.4rem .8rem;background:#ffffff;border-left:4px solid #d0d7de;white-space:pre-wrap}
+pre{white-space:pre-wrap;background:#ffffff;border:1px solid #d0d7de;padding:.4rem .6rem;margin:.3rem 0}
+.label{display:inline-block;border:1px solid #57606a;border-radius:4px;padding:0 .4rem;font-size:.85rem}
+.ok{color:#1a7f37}.bad{color:#cf222e}
+form{background:#ffffff;border:1px solid #d0d7de;padding:.5rem .8rem;margin:.4rem 0}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head><body>
+<p><a href="../index.html">Back to the desk</a></p>
+<h1>Enquiry webform:wf-000113</h1>
+<section class="card" id="webform~wf-000113">
+<h2><a href="webform~wf-000113.html">webform:wf-000113</a></h2>
+<p class="state waiting">Held: might be the same person as an existing contact</p>
+<p>From: Elena Ruiz (invented) · Ruiz Architects (invented) · elena.r.studio@example.com · 000-000-0213. Received 2026-01-05T10:56:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
+<blockquote>We opened a second studio and need a quote for it.</blockquote>
+<p><b>Who it is:</b> Contact 5 has the same name and company, but not this e-mail or phone. It might be the same person. A person decides; the desk never merges contacts.</p>
+<p><b>Model step:</b> <span class="label">Constructed answer, not from a model</span></p>
+<table>
+<tr><th>Summary</th><td>We opened a second studio and need a quote for it.</td></tr>
+<tr><th>Intent</th><td>quote_request</td></tr>
+<tr><th>Urgency</th><td>normal</td></tr>
+<tr><th>Reply draft</th><td><pre>Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet.</pre></td></tr>
+</table>
+<p class="note">A reply draft is only a draft: the desk never sends anything to a person who enquired.</p>
+<p><b>To resolve:</b></p>
+<pre>python -I desk.py resolve webform:wf-000113 --as new --by "Your name"
+python -I desk.py resolve webform:wf-000113 --as contact:&lt;id&gt; --by "Your name"</pre>
+</section>
+<h2>Its trail</h2>
+<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
+<table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
+<tr><td>37</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>reasons: []; state: received; via: file</td></tr>
+<tr><td>38</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Constructed answer, not from a model; outcome: used; request: 304521acd4628c0997688db1284947f1734aaebc251b9e1f1a72e1004eb29da1</td></tr>
+<tr><td>39</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: possible_duplicate; plan: null; state: held_possible_duplicate</td></tr>
+<tr><td>105</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T10:56:00Z; same_content: true; state_now: held_possible_duplicate; via: file</td></tr>
+</table>
+</body></html>

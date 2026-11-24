@@ -1,0 +1,25 @@
+closing table: one line per step and case
+PASS  story 1 init                  a new desk; 10 starting contacts in the practice CRM
+PASS  story 2 ingest the file       27 new enquiries, 3 replays
+PASS  story 3 report                the states add up: 27 enquiries + 3 replays = 30 arrived
+PASS  story 4 dry run (plan)        plans printed; nothing written to the CRM
+PASS  story 5 approve 5             a person approves 5 plans, each by its sha256
+PASS  story 6 apply                 5 written: 1 new contact; 4 returning contacts updated
+PASS  story 7 ingest it again       0 new, 30 replays; nothing new written
+PASS  story 8 apply again           nothing approved; nothing written
+PASS  story 9 report again          the states add up: 27 enquiries + 33 replays = 60 arrived
+PASS  story 10 doctor               the doctor: 16 of 16 checks passed
+PASS  replay-three-times            one contact, one note; the edited copy shown
+PASS  returning-contact             no second contact; empty field filled; phone shown, kept
+PASS  two-contacts-held             held, no plan; resolved as contact 7, then as 8
+PASS  possible-duplicate-held       held, no plan; resolved as new, then as contact 5
+PASS  refused-inputs                7 not taken, each with its reason; model and CRM untouched
+PASS  hidden-instruction            waits for a person; the answer with a 5th key not used
+PASS  ai-answer-refused             a figure not in the message: not used; plan the same
+PASS  apply-without-approval        the gate stops it: no approval; nothing written
+PASS  approval-for-another-plan     the CRM changed since approval: planned again, waits
+PASS  apply-twice                   the approval is used once; the second apply writes nothing
+PASS  crm-down-then-retry           apply_failed, named; the retry completed; nothing doubled
+PASS  wrong-secret                  401; nothing kept
+PASS  no-secret-configured          503: no secret configured, every request is turned away
+total: 23 of 23 steps and cases as expected

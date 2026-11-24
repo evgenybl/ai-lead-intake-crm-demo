@@ -1,5 +1,6 @@
-# The desk's working files (desk.py --home defaults to ./work)
+# The desk's working files (desk.py --home defaults to ./work), and a demo run's files
 work/
+demo-run/
 *.sqlite3
 *.sqlite3-journal
 *.sqlite3-wal

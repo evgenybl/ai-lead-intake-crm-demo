@@ -1,0 +1,52 @@
+the whole story, on new files, with the invented data and a fixed clock
+[story 1 init] expected: a new desk; 10 starting contacts | happened: 10 contacts, 0 notes, 0 tasks | as expected
+[story 2 ingest the file] expected: 27 new enquiries, 3 replays | happened: 27 new enquiries, 3 replays, 0 lines not taken | as expected
+[story 3 report] expected: the states add up | happened: yes: 27 enquiries + 3 replays = 30 arrived | as expected
+[story 4 dry run (plan)] expected: every waiting plan printed; nothing written | happened: 20 waiting (1 held_two_contacts, 1 held_possible_duplicate, 18 awaiting_approval); CRM 10 contacts, 0 notes, 0 tasks | as expected
+[story 5 approve 5] expected: 5 approvals recorded | happened: 5 approvals recorded | as expected
+[story 6 apply] expected: 5 applied: 1 new contact, 5 notes, 5 tasks | happened: 5 applied; CRM 11 contacts, 5 notes, 5 tasks | as expected
+[story 7 ingest it again] expected: 30 replays; nothing new written | happened: 0 new enquiries, 30 replays, 0 lines not taken; CRM 11 contacts, 5 notes, 5 tasks | as expected
+[story 8 apply again] expected: nothing is approved; nothing written | happened: nothing is approved; CRM 11 contacts, 5 notes, 5 tasks | as expected
+[story 9 report again] expected: the states add up, with 33 replays | happened: yes: 27 enquiries + 33 replays = 60 arrived | as expected
+[story 10 doctor] expected: every check of the four promises passes | happened: 16 of 16 checks passed | as expected
+
+every case of the gallery, each on new files
+[replay-three-times] expected: one contact, one note | happened: 1 new contact, 1 note; edited copy named | as expected
+[returning-contact] expected: updated, no second contact, a differing field shown not overwritten | happened: 10 contacts; empty company filled; phone kept as 000-000-0102 | as expected
+[two-contacts-held] expected: held; nothing planned until resolved; then resolved each way | happened: held with no plan; as new: not allowed (the e-mail is taken); resolved as contact 7, as contact 8 | as expected
+[possible-duplicate-held] expected: held; nothing planned until resolved; then resolved each way | happened: held with no plan; resolved as new (a contact to create), and as contact 5 | as expected
+[refused-inputs] expected: each refused with its reason; nothing reaches the model or the CRM | happened: 7 refused (a message above 5,000 characters; an e-mail that is not an address; consent is not true; neither e-mail nor phone; no name; the honeypot field is filled); model step run for 0; CRM untouched | as expected
+[hidden-instruction] expected: still waiting for a person; an answer with an extra key refused | happened: waits for approval (Constructed answer, not from a model); with an extra key: the answer has keys beyond the four: approve; it is refused whole; the gate wrote nothing | as expected
+[ai-answer-refused] expected: a figure not in the message: not used; the plan unchanged | happened: AI draft refused: a number that is not in the message: 1500; plan cfe7d0e9b0ed with it, cfe7d0e9b0ed without | as expected
+[apply-without-approval] expected: stopped; nothing written | happened: the gate: no approval in the state approved; CRM 10 contacts, 0 notes, 0 tasks | as expected
+[approval-for-another-plan] expected: stopped; nothing written; planned again | happened: the contact now exists, so the plan changed; the gate stopped it; it waits again | as expected
+[apply-twice] expected: stopped; nothing written | happened: the second apply wrote nothing; CRM 11 contacts, 1 note, 1 task | as expected
+[crm-down-then-retry] expected: apply_failed, named; the retry completes; nothing doubled | happened: apply_failed, named in the report; the retry completed; CRM 11 contacts, 1 note, 1 task | as expected
+[wrong-secret] expected: 401 | happened: 401; enquiries kept: 0 | as expected
+[no-secret-configured] expected: 503 | happened: 503; enquiries kept: 0 | as expected
+
+closing table: one line per step and case
+PASS  story 1 init                  a new desk; 10 starting contacts in the practice CRM
+PASS  story 2 ingest the file       27 new enquiries, 3 replays
+PASS  story 3 report                the states add up: 27 enquiries + 3 replays = 30 arrived
+PASS  story 4 dry run (plan)        plans printed; nothing written to the CRM
+PASS  story 5 approve 5             a person approves 5 plans, each by its sha256
+PASS  story 6 apply                 5 written: 1 new contact; 4 returning contacts updated
+PASS  story 7 ingest it again       0 new, 30 replays; nothing new written
+PASS  story 8 apply again           nothing approved; nothing written
+PASS  story 9 report again          the states add up: 27 enquiries + 33 replays = 60 arrived
+PASS  story 10 doctor               the doctor: 16 of 16 checks passed
+PASS  replay-three-times            one contact, one note; the edited copy shown
+PASS  returning-contact             no second contact; empty field filled; phone shown, kept
+PASS  two-contacts-held             held, no plan; resolved as contact 7, then as 8
+PASS  possible-duplicate-held       held, no plan; resolved as new, then as contact 5
+PASS  refused-inputs                7 not taken, each with its reason; model and CRM untouched
+PASS  hidden-instruction            waits for a person; the answer with a 5th key not used
+PASS  ai-answer-refused             a figure not in the message: not used; plan the same
+PASS  apply-without-approval        the gate stops it: no approval; nothing written
+PASS  approval-for-another-plan     the CRM changed since approval: planned again, waits
+PASS  apply-twice                   the approval is used once; the second apply writes nothing
+PASS  crm-down-then-retry           apply_failed, named; the retry completed; nothing doubled
+PASS  wrong-secret                  401; nothing kept
+PASS  no-secret-configured          503: no secret configured, every request is turned away
+total: 23 of 23 steps and cases as expected

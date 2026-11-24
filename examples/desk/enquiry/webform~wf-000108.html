@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enquiry webform:wf-000108</title><style>:root{color-scheme:light}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;max-width:62rem;margin:1.5rem auto;padding:0 1rem;
+color:#1f2328;background:#ffffff;line-height:1.45}
+h1{margin-bottom:.2rem}h2{margin-top:2rem;border-bottom:1px solid #d0d7de;padding-bottom:.2rem}
+.note{color:#57606a;font-size:.92rem}
+table{border-collapse:collapse;margin:.5rem 0}td,th{border:1px solid #d0d7de;padding:.3rem .6rem;text-align:left;
+vertical-align:top}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.card{border:1px solid #d0d7de;border-radius:6px;padding:.6rem 1rem;margin:.8rem 0;background:#f6f8fa}
+.card h4{margin:.2rem 0}.state{font-weight:600}.waiting{color:#9a6700}.done{color:#1a7f37}.stop{color:#57606a}
+blockquote{margin:.4rem 0;padding:.4rem .8rem;background:#ffffff;border-left:4px solid #d0d7de;white-space:pre-wrap}
+pre{white-space:pre-wrap;background:#ffffff;border:1px solid #d0d7de;padding:.4rem .6rem;margin:.3rem 0}
+.label{display:inline-block;border:1px solid #57606a;border-radius:4px;padding:0 .4rem;font-size:.85rem}
+.ok{color:#1a7f37}.bad{color:#cf222e}
+form{background:#ffffff;border:1px solid #d0d7de;padding:.5rem .8rem;margin:.4rem 0}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head><body>
+<p><a href="../index.html">Back to the desk</a></p>
+<h1>Enquiry webform:wf-000108</h1>
+<section class="card" id="webform~wf-000108">
+<h2><a href="webform~wf-000108.html">webform:wf-000108</a></h2>
+<p class="state done">Written to the CRM</p>
+<p>From: Ada Fenwick (invented) · Fenwick Dental (invented) · Ada.Fenwick@Example.com  · 000-000-0101. Received 2026-01-05T09:42:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
+<blockquote>Please send me a new quote that adds the two rooms upstairs.</blockquote>
+<p><b>Who it is:</b> Returning: contact 1 (found by e-mail and phone).</p>
+<p><b>Model step:</b> <span class="label">Constructed answer, not from a model</span></p>
+<table>
+<tr><th>Summary</th><td>Please send me a new quote that adds the two rooms upstairs.</td></tr>
+<tr><th>Intent</th><td>quote_request</td></tr>
+<tr><th>Urgency</th><td>normal</td></tr>
+<tr><th>Reply draft</th><td><pre>Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet.</pre></td></tr>
+</table>
+<p class="note">A reply draft is only a draft: the desk never sends anything to a person who enquired.</p>
+<p><b>The plan</b> (plan 34cb9ad37fda): exactly what would be written to the CRM, and nothing else.</p>
+<ol>
+<li>Add a note to contact 1. Its first line is the enquiry's key, so it is never added twice:<pre>webform:wf-000108
+Enquiry from webform, received 2026-01-05T09:42:00Z.
+
+Please send me a new quote that adds the two rooms upstairs.</pre></li>
+<li>Add a task to contact 1:<pre>webform:wf-000108
+Answer the enquiry from Ada Fenwick (invented).</pre></li>
+</ol>
+<p><b>Decisions:</b></p>
+<ul>
+<li>Dana Reviewer (invented) approved, and used when it was written to the CRM (plan 34cb9ad37fda, at 2026-01-05T09:30:00Z)</li>
+</ul>
+</section>
+<h2>Its trail</h2>
+<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
+<table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
+<tr><td>22</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>reasons: []; state: received; via: file</td></tr>
+<tr><td>23</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Constructed answer, not from a model; outcome: used; request: e8e6df756ae8225cb075c16b7ad963fdf7f3a5c67f8de699cc8464f8b0afc640</td></tr>
+<tr><td>24</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: returning; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041; state: awaiting_approval</td></tr>
+<tr><td>72</td><td>2026-01-05T09:30:00Z</td><td>Dana Reviewer (invented)</td><td>approved</td><td>approval: 2; from: awaiting_approval; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041; state: approved</td></tr>
+<tr><td>80</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_note; ref: 2</td></tr>
+<tr><td>81</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_task; ref: 2</td></tr>
+<tr><td>82</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>applied</td><td>from: approved; operations: [&quot;add_note written (2)&quot;, &quot;add_task written (2)&quot;]; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041; state: applied</td></tr>
+<tr><td>100</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T09:42:00Z; same_content: true; state_now: applied; via: file</td></tr>
+</table>
+</body></html>

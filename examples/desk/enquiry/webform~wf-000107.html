@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enquiry webform:wf-000107</title><style>:root{color-scheme:light}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;max-width:62rem;margin:1.5rem auto;padding:0 1rem;
+color:#1f2328;background:#ffffff;line-height:1.45}
+h1{margin-bottom:.2rem}h2{margin-top:2rem;border-bottom:1px solid #d0d7de;padding-bottom:.2rem}
+.note{color:#57606a;font-size:.92rem}
+table{border-collapse:collapse;margin:.5rem 0}td,th{border:1px solid #d0d7de;padding:.3rem .6rem;text-align:left;
+vertical-align:top}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.card{border:1px solid #d0d7de;border-radius:6px;padding:.6rem 1rem;margin:.8rem 0;background:#f6f8fa}
+.card h4{margin:.2rem 0}.state{font-weight:600}.waiting{color:#9a6700}.done{color:#1a7f37}.stop{color:#57606a}
+blockquote{margin:.4rem 0;padding:.4rem .8rem;background:#ffffff;border-left:4px solid #d0d7de;white-space:pre-wrap}
+pre{white-space:pre-wrap;background:#ffffff;border:1px solid #d0d7de;padding:.4rem .6rem;margin:.3rem 0}
+.label{display:inline-block;border:1px solid #57606a;border-radius:4px;padding:0 .4rem;font-size:.85rem}
+.ok{color:#1a7f37}.bad{color:#cf222e}
+form{background:#ffffff;border:1px solid #d0d7de;padding:.5rem .8rem;margin:.4rem 0}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head><body>
+<p><a href="../index.html">Back to the desk</a></p>
+<h1>Enquiry webform:wf-000107</h1>
+<section class="card" id="webform~wf-000107">
+<h2><a href="webform~wf-000107.html">webform:wf-000107</a></h2>
+<p class="state waiting">Waiting for your approval</p>
+<p>From: Pia Lund (invented) · Lund Bookshop (invented) · pia.lund@example.com · 000-000-0207. Received 2026-01-05T09:20:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
+<blockquote>Do you work on public holidays, or only on working days?</blockquote>
+<p><b>Who it is:</b> A new contact: no contact in the CRM has this e-mail or phone.</p>
+<p><b>Model step:</b> <span class="label">Constructed answer, not from a model</span></p>
+<table>
+<tr><th>Summary</th><td>Do you work on public holidays, or only on working days?</td></tr>
+<tr><th>Intent</th><td>other</td></tr>
+<tr><th>Urgency</th><td>normal</td></tr>
+<tr><th>Reply draft</th><td><pre>Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet.</pre></td></tr>
+</table>
+<p class="note">A reply draft is only a draft: the desk never sends anything to a person who enquired.</p>
+<p><b>The plan</b> (plan c7727aa49fdb): exactly what would be written to the CRM, and nothing else.</p>
+<ol>
+<li>Create a contact: name Pia Lund (invented), e-mail pia.lund@example.com, phone 000-000-0207, company Lund Bookshop (invented).</li>
+<li>Add a note to the new contact. Its first line is the enquiry's key, so it is never added twice:<pre>webform:wf-000107
+Enquiry from webform, received 2026-01-05T09:20:00Z.
+
+Do you work on public holidays, or only on working days?</pre></li>
+<li>Add a task to the new contact:<pre>webform:wf-000107
+Answer the enquiry from Pia Lund (invented).</pre></li>
+</ol>
+<p><b>To decide</b> (the page takes no decisions unless the server was started with <code>--allow-decisions</code>):</p>
+<pre>python -I desk.py approve webform:wf-000107 --by "Your name" --plan c7727aa49fdb
+python -I desk.py reject webform:wf-000107 --by "Your name" --reason "why"</pre>
+</section>
+<h2>Its trail</h2>
+<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
+<table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
+<tr><td>19</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>reasons: []; state: received; via: file</td></tr>
+<tr><td>20</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Constructed answer, not from a model; outcome: used; request: eb8dfd2a8bf448f7c755bcf83b918a6e53d36b7c20df4a41b9bbd141da87d3bb</td></tr>
+<tr><td>21</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: new; plan: c7727aa49fdb49ea2321d3b7581cb559d7d790c5e07ff371846cfc1cbfcc0216; state: awaiting_approval</td></tr>
+<tr><td>99</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T09:20:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
+</table>
+</body></html>

@@ -1,0 +1,10 @@
+intake endpoint  POST /intake, 127.0.0.1 only: not configured (INTAKE_SECRET unset or under 16 characters: every request gets 503)
+desk file        desk.sqlite3 in --home: connected
+crm practice     Local: it really runs: connected (11 contacts, 5 notes, 5 tasks)
+  capabilities: find a contact by e-mail; find a contact by phone; find a contact by name and company; find a contact by origin key; create a contact; fill empty fields; list, search and add notes; list and add tasks: connected
+crm http         Mock: tested against a strict fake in the tests; not any vendor's API: not configured (set INTAKE_CRM_URL and INTAKE_CRM_TOKEN)
+  capabilities: find a contact by e-mail; find a contact by phone; find a contact by name and company; find a contact by origin key; create a contact; fill empty fields; list, search and add notes; list and add tasks: not configured
+draft recorded   answers found by the request's sha256: connected (20 requests, 0 recorded answers, 20 constructed answers)
+draft template   stand-in, no model: connected (a stand-in that runs locally, no model)
+draft anthropic  Live path: not configured (set ANTHROPIC_API_KEY)
+active CRM adapter: practice; active draft backend: recorded

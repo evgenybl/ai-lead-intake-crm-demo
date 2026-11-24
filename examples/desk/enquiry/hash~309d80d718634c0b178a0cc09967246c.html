@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enquiry hash:309d80d718634c0b178a0cc09967246c</title><style>:root{color-scheme:light}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;max-width:62rem;margin:1.5rem auto;padding:0 1rem;
+color:#1f2328;background:#ffffff;line-height:1.45}
+h1{margin-bottom:.2rem}h2{margin-top:2rem;border-bottom:1px solid #d0d7de;padding-bottom:.2rem}
+.note{color:#57606a;font-size:.92rem}
+table{border-collapse:collapse;margin:.5rem 0}td,th{border:1px solid #d0d7de;padding:.3rem .6rem;text-align:left;
+vertical-align:top}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.card{border:1px solid #d0d7de;border-radius:6px;padding:.6rem 1rem;margin:.8rem 0;background:#f6f8fa}
+.card h4{margin:.2rem 0}.state{font-weight:600}.waiting{color:#9a6700}.done{color:#1a7f37}.stop{color:#57606a}
+blockquote{margin:.4rem 0;padding:.4rem .8rem;background:#ffffff;border-left:4px solid #d0d7de;white-space:pre-wrap}
+pre{white-space:pre-wrap;background:#ffffff;border:1px solid #d0d7de;padding:.4rem .6rem;margin:.3rem 0}
+.label{display:inline-block;border:1px solid #57606a;border-radius:4px;padding:0 .4rem;font-size:.85rem}
+.ok{color:#1a7f37}.bad{color:#cf222e}
+form{background:#ffffff;border:1px solid #d0d7de;padding:.5rem .8rem;margin:.4rem 0}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head><body>
+<p><a href="../index.html">Back to the desk</a></p>
+<h1>Enquiry hash:309d80d718634c0b178a0cc09967246c</h1>
+<section class="card" id="hash~309d80d718634c0b178a0cc09967246c">
+<h2><a href="hash~309d80d718634c0b178a0cc09967246c.html">hash:309d80d718634c0b178a0cc09967246c</a></h2>
+<p class="state waiting">Waiting for your approval</p>
+<p>From: Victor Moss (invented) · Moss Joinery (invented) · victor.moss@example.com · 000-000-0227. Received 2026-01-05T14:32:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
+<blockquote>Do you clean workshops with sawdust?</blockquote>
+<p><b>Who it is:</b> A new contact: no contact in the CRM has this e-mail or phone.</p>
+<p><b>Model step:</b> <span class="label">Constructed answer, not from a model</span></p>
+<table>
+<tr><th>Summary</th><td>Do you clean workshops with sawdust?</td></tr>
+<tr><th>Intent</th><td>other</td></tr>
+<tr><th>Urgency</th><td>normal</td></tr>
+<tr><th>Reply draft</th><td><pre>Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet.</pre></td></tr>
+</table>
+<p class="note">A reply draft is only a draft: the desk never sends anything to a person who enquired.</p>
+<p><b>The plan</b> (plan da372b68127a): exactly what would be written to the CRM, and nothing else.</p>
+<ol>
+<li>Create a contact: name Victor Moss (invented), e-mail victor.moss@example.com, phone 000-000-0227, company Moss Joinery (invented).</li>
+<li>Add a note to the new contact. Its first line is the enquiry's key, so it is never added twice:<pre>hash:309d80d718634c0b178a0cc09967246c
+Enquiry from paper-form, received 2026-01-05T14:32:00Z.
+
+Do you clean workshops with sawdust?</pre></li>
+<li>Add a task to the new contact:<pre>hash:309d80d718634c0b178a0cc09967246c
+Answer the enquiry from Victor Moss (invented).</pre></li>
+</ol>
+<p><b>To decide</b> (the page takes no decisions unless the server was started with <code>--allow-decisions</code>):</p>
+<pre>python -I desk.py approve hash:309d80d718634c0b178a0cc09967246c --by "Your name" --plan da372b68127a
+python -I desk.py reject hash:309d80d718634c0b178a0cc09967246c --by "Your name" --reason "why"</pre>
+</section>
+<h2>Its trail</h2>
+<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
+<table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
+<tr><td>65</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>reasons: []; state: received; via: file</td></tr>
+<tr><td>66</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Constructed answer, not from a model; outcome: used; request: cae60b28840e8ddb481c6d6e4c1d5f68a779dc839497c417589b2f1396e4019d</td></tr>
+<tr><td>67</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: new; plan: da372b68127a5c0b0ae054c5b3b3fe814299edbe5fc6259ebeec7b2479679840; state: awaiting_approval</td></tr>
+<tr><td>70</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T14:39:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
+<tr><td>119</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T14:32:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
+<tr><td>122</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T14:39:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
+</table>
+</body></html>

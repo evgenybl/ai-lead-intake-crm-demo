@@ -8,8 +8,8 @@ from intake.server import HOST
 
 from tests.helpers import ROOT
 
-SKIP_DIRS = {".git", "__pycache__", "work"}
-TEXT_SUFFIXES = {".py", ".md", ".jsonl", ".json", ".txt", ".toml", ".yml", ".yaml", ".cfg", ".ini"}
+SKIP_DIRS = {".git", "__pycache__", "work", "demo-run"}
+TEXT_SUFFIXES = {".py", ".md", ".jsonl", ".json", ".txt", ".toml", ".yml", ".yaml", ".cfg", ".ini", ".html", ".svg"}
 TEXT_NAMES = {".gitignore", ".gitattributes", "LICENSE"}
 CRM_WRITES = {"create_contact", "fill_empty_fields", "add_note", "add_task"}
 
@@ -21,8 +21,10 @@ KEY_SHAPES = [
     re.compile("AK" + "IA[0-9A-Z]{16}"),
     re.compile("xo" + "x[abposr]-[A-Za-z0-9-]{10,}"),
     re.compile("-----BEGIN" + " [A-Z ]*PRIVATE KEY"),
-    re.compile("[\"'][A-Za-z0-9+/_=-]{32,}[\"']"),
+    # a quoted run of 32 or more token characters that mixes letters and digits
+    re.compile("[\"'](?=[A-Za-z0-9+/_=-]*[0-9])(?=[A-Za-z0-9+/_=-]*[A-Za-z])[A-Za-z0-9+/_=-]{32,}[\"']"),
 ]
+SHA256_LITERAL = re.compile("[\"'][0-9a-f]{64}[\"']")
 ABSOLUTE_PATH = re.compile(
     r"(?<![A-Za-z0-9])[A-Za-z]:[\\/]"  # a drive letter
     + "|/" + "home/|/" + "Users/"  # a home folder
@@ -60,8 +62,11 @@ class RepositoryRuleTests(unittest.TestCase):
         self.assertEqual(found, [])
 
     def test_no_key_shaped_or_token_shaped_literal_in_any_file(self):
-        found = [f"{relative(p)}: {shape.pattern}" for p in repository_files()
-                 for shape in KEY_SHAPES if shape.search(read(p).decode("utf-8"))]
+        """A sha256 digest (exactly 64 lowercase hex digits) names a file's content; it is not a secret."""
+        found = []
+        for path in repository_files():
+            text = SHA256_LITERAL.sub('""', read(path).decode("utf-8"))
+            found += [f"{relative(path)}: {shape.pattern}" for shape in KEY_SHAPES if shape.search(text)]
         self.assertEqual(found, [])
 
     def test_every_email_address_is_at_example_com(self):
