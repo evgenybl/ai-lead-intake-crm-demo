@@ -328,13 +328,30 @@ class CommandTests(DeskCase):
         self.assertEqual(self.crm_counts(), {"contacts": 12, "notes": 1, "tasks": 1})
         self.assertRegex(self.cli("doctor"), r"doctor: (\d+) of \1 checks passed")
 
+    def test_status_says_what_it_found_in_each_file_not_only_that_the_file_is_there(self):
+        from intake.home import crm_path, desk_path
+
+        self.cli("ingest", DATA_FILE)
+        self.assertIn("desk file        desk.sqlite3 in --home: opens, 27 enquiries", self.cli("status"))
+        not_a_database = b"this is a text file, not a database made by the desk" * 4
+        for path, said in ((desk_path(self.home), "desk file        desk.sqlite3 in --home: error (not a database "
+                                                   "this desk can read: file is not a database)"),
+                           (crm_path(self.home), "crm practice     Local: it really runs: error (the file cannot be "
+                                                  "read (file is not a database))")):
+            with self.subTest(path=os.path.basename(path)):
+                with open(path, "wb") as handle:
+                    handle.write(not_a_database)
+                self.assertIn(said, self.cli("status", expect=1))
+
     def test_status_names_each_adapter(self):
         out = self.cli("status")
         self.assertIn("intake endpoint  POST /intake, 127.0.0.1 only: not configured", out)
-        self.assertIn("crm practice     Local: it really runs: connected (10 contacts, 0 notes, 0 tasks)", out)
+        self.assertIn("crm practice     Local: it really runs: opens (10 contacts, 0 notes, 0 tasks)", out)
         self.assertIn("crm http", out)
         self.assertIn("not configured (set INTAKE_CRM_URL and INTAKE_CRM_TOKEN)", out)
-        self.assertIn("draft template   stand-in, no model: connected", out)
+        self.assertIn("draft template   stand-in, no model: available", out)
+        self.assertIn("desk file        desk.sqlite3 in --home: opens, 0 enquiries", out)
+        self.assertNotIn("connected", out)  # nothing here answered as a server would
         configured = self.cli("status", env={"INTAKE_SECRET": secrets.token_urlsafe(24)})
         self.assertIn("intake endpoint  POST /intake, 127.0.0.1 only: configured", configured)
         # The live path, with a key and an address no server answers: status makes no call, so it never says connected.

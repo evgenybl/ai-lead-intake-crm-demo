@@ -108,7 +108,8 @@ class CRM:
 
     # -- health --
     def check(self) -> tuple:
-        """("connected" | "error", a short detail)."""
+        """(what was checked, a short detail): "opens" for a local file read, "connected" for a server that
+        answered, or "error"."""
         raise NotImplementedError
 
     def close(self) -> None:

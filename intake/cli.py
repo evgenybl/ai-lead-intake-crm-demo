@@ -85,7 +85,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("report", parents=[common], help="the counts by state, and whether they add up")
     sub.add_parser("doctor", parents=[common], help="run the invariants of the four promises on both files")
     sub.add_parser("status", parents=[common],
-                   help="each adapter and capability: connected, configured (not called), not configured or error")
+                   help="each file, adapter and capability, by what was checked: opens (a local file was read), "
+                        "connected (a server answered), configured (not called), not configured or error")
     return parser
 
 
@@ -390,8 +391,8 @@ def cmd_status(args, say, home, choice, clock, environ, out) -> int:
         secret, state = None, f"error ({error})"
     say("intake endpoint  POST /intake, 127.0.0.1 only: " + state)
     desk_file = desk_path(home)
-    say(f"desk file        {os.path.basename(desk_file)} in --home: "
-        + ("connected" if os.path.exists(desk_file) else "not configured (run desk.py init)"))
+    desk_state = _desk_file_state(desk_file, clock)
+    say(f"desk file        {os.path.basename(desk_file)} in --home: {desk_state}")
     states_seen = {}
     if os.path.exists(crm_path(home)):
         crm = PracticeCRM(crm_path(home))
@@ -416,7 +417,7 @@ def cmd_status(args, say, home, choice, clock, environ, out) -> int:
     for name in ("practice", "http"):
         state, detail = states_seen[name]
         say(f"crm {name:<12} {labels[name]}: {state} ({detail})")
-        say(f"  capabilities: {'; '.join(CAPABILITIES)}: {state}")
+        say(f"  capabilities: {'; '.join(CAPABILITIES)}: {'available' if state in ('opens', 'connected') else state}")
     state, detail = RecordedBackend().check()
     say(f"draft recorded   answers found by the request's sha256: {state} ({detail})")
     template = TemplateBackend()
@@ -433,7 +434,25 @@ def cmd_status(args, say, home, choice, clock, environ, out) -> int:
     else:
         say(f"draft anthropic  Live path: not configured (set {KEY_ENV})")
     say(f"active CRM adapter: {choice}; active draft backend: {args.draft or environ.get(DRAFT_ENV) or 'recorded'}")
-    return 1 if states_seen[choice][0] == "error" else 0
+    return 1 if states_seen[choice][0] == "error" or desk_state.startswith("error") else 0
+
+
+def _desk_file_state(desk_file: str, clock) -> str:
+    """The desk file as status finds it when it opens and reads it; never only that the file is there."""
+    if not os.path.exists(desk_file):
+        return "not configured (run desk.py init)"
+    try:
+        store = DeskStore.open(desk_file, clock)
+        try:
+            counts = store.state_counts()
+        finally:
+            store.close()
+    except HomeError as error:
+        return f"error ({error})"
+    except sqlite3.DatabaseError as error:
+        return f"error (not a database this desk can read: {error})"
+    total = sum(counts.values())
+    return f"opens, {total} enquir{'y' if total == 1 else 'ies'}"
 
 
 def _read_file(path: str) -> bytes:

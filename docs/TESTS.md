@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-333 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+334 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -59,6 +59,7 @@ The whole story of the invented data, command by command.
 - `test_a_possible_duplicate_resolved_as_new_creates_a_contact`
 - `test_a_possible_duplicate_resolved_as_the_contact_adds_to_it`
 - `test_a_match_by_the_phone_alone_can_be_resolved_as_new_and_is_then_planned_as_a_new_contact`
+- `test_status_says_what_it_found_in_each_file_not_only_that_the_file_is_there`
 - `test_status_names_each_adapter`
 - `test_the_trail_shows_one_enquirys_life_in_order`
 

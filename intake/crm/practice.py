@@ -249,4 +249,4 @@ class PracticeCRM(CRM):
             counts = self.counts()
         except sqlite3.Error as error:
             return "error", f"the file cannot be read ({error})"
-        return "connected", f"{counts['contacts']} contacts, {counts['notes']} notes, {counts['tasks']} tasks"
+        return "opens", f"{counts['contacts']} contacts, {counts['notes']} notes, {counts['tasks']} tasks"

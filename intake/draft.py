@@ -92,7 +92,7 @@ class TemplateBackend:
             "urgency": None, "reply_draft": None})
 
     def check(self) -> tuple:
-        return "connected", "a stand-in that runs locally, no model"
+        return "available", "a stand-in that runs locally, no model"
 
 
 class RecordedBackend:
@@ -152,7 +152,7 @@ class RecordedBackend:
 
     def check(self) -> tuple:
         counts = self.counts()
-        return "connected", (f"{counts['requests']} requests, {counts.get('answers', 0)} recorded answers, "
+        return "found", (f"{counts['requests']} requests, {counts.get('answers', 0)} recorded answers, "
                              f"{counts.get('constructed', 0)} constructed answers")
 
 
