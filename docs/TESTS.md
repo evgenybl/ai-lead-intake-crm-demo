@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-329 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+330 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -544,6 +544,7 @@ End-to-end tests of POST /intake: it fails closed, and it binds 127.0.0.1 only.
 What a client sends on the request line: answered, and logged as one plain line it cannot write into.
 
 - `test_a_request_line_that_cannot_be_read_is_answered_400`
+- `test_a_line_of_the_http_layer_is_written_with_each_control_character_escaped`
 - `test_the_log_line_writes_a_control_character_as_its_escape_and_cuts_a_long_path`
 
 ### SlowAndBusyTests

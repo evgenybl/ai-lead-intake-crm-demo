@@ -173,6 +173,14 @@ class RawRequestTests(IntakeEndpointCase):
         self.assertNotIn("ended without an answer", log)
         self.assertEqual(log.count("- - 400\n"), 4)
 
+    def test_a_line_of_the_http_layer_is_written_with_each_control_character_escaped(self):
+        # Python's own messages quote what the client sent; the log does not rely on that.
+        handler = server_module.IntakeHandler.__new__(server_module.IntakeHandler)
+        handler.server = self.server
+        handler.log_message("code %d, message %s", 400, "Bad \x1b[2J request\nline")
+        self.assertIn("http: code 400, message Bad \\x1b[2J request\\nline\n", self.log.getvalue())
+        self.assertNotIn("\x1b", self.log.getvalue())
+
     def test_the_log_line_writes_a_control_character_as_its_escape_and_cuts_a_long_path(self):
         self.raw(b"GET /x\x1b[31mRED-FROM-A-CLIENT\x1b[0m HTTP/1.1\r\nHost: x\r\n\r\n")
         self.raw(b"GE\x1b[2JT /intake HTTP/1.1\r\n\r\n")

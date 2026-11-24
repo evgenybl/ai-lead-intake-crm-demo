@@ -111,8 +111,6 @@ class IntakeHandler(BaseHTTPRequestHandler):
     server_version = "lead-intake-desk"
     sys_version = ""
     protocol_version = "HTTP/1.1"
-    # A request line that cannot be read leaves no version; without this the 400 would go out with no status line.
-    default_request_version = "HTTP/1.0"
     timeout = 10
 
     def setup(self):
