@@ -136,6 +136,11 @@ class DocumentTests(unittest.TestCase):
         self.assertEqual(sorted(named - defined), [])
         self.assertEqual(sorted(set(re.findall(r"`(test_\w+)`", design)) - defined), [])  # anywhere in DESIGN
 
+    def test_the_readme_says_a_resemblance_of_an_invented_name_is_a_coincidence(self):
+        said = " ".join(read("README.md").split())
+        self.assertIn("All people, companies and enquiries are invented; any resemblance of an invented name to a real "
+                      "person or business is a coincidence.", said)
+
     def test_the_licence_is_mit_with_its_copyright_line(self):
         licence = read("LICENSE")
         self.assertTrue(licence.startswith("MIT License\n\nCopyright (c) 2026 Evgeny Blekhman\n"))

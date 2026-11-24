@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-327 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+328 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -104,6 +104,7 @@ The documents say only what a run printed; the demo and the examples are what th
 - `test_the_status_output_on_the_readme_is_what_the_command_prints`
 - `test_the_test_list_is_generated_from_the_tests`
 - `test_each_row_of_the_design_s_table_of_hand_edits_names_a_test_that_exists_or_says_it_is_not_tested`
+- `test_the_readme_says_a_resemblance_of_an_invented_name_is_a_coincidence`
 - `test_the_licence_is_mit_with_its_copyright_line`
 - `test_ci_pins_its_actions_by_commit_and_runs_both_systems_and_pythons`
 - `test_the_readme_never_says_live_for_a_path_that_was_run`

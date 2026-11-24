@@ -57,7 +57,8 @@ webform:wf-000109  [awaiting_approval]
 - The `draft` line is a model's suggested summary of the enquiry (see "The model step"). The model also drafts a
   reply for the person to edit; **this project never sends a reply, or anything else, to a person who enquired.**
 
-Everything runs on one computer with Python's standard library. All people, companies and enquiries are invented.
+Everything runs on one computer with Python's standard library. All people, companies and enquiries are invented;
+any resemblance of an invented name to a real person or business is a coincidence.
 
 ## Try it
 
