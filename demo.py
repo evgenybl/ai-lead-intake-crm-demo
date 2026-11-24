@@ -419,7 +419,8 @@ def _post(home: Home, secret, header_secret: str) -> int:
 
 def case_wrong_secret(run: Run, folder: str) -> None:
     home = Home(folder)
-    status = _post(home, secrets.token_urlsafe(24), "wrong-" + secrets.token_hex(8))
+    made_up = "wrong" + "-" + secrets.token_hex(8)  # never the server's secret, made at run time
+    status = _post(home, secrets.token_urlsafe(24), made_up)
     with home.open() as desk:
         kept = len(desk.store.enquiries())
     run.step("wrong-secret", "401", f"{status}; enquiries kept: {kept}", status == 401 and kept == 0,

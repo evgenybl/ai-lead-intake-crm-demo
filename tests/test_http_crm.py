@@ -9,7 +9,7 @@ from intake.crm.base import CRMConflict, CRMError
 from intake.crm.http_crm import HttpCRM
 
 from tests.fake_crm import FakeCRM
-from tests.helpers import PERSON, DeskCase, enquiry
+from tests.helpers import PERSON, WRONG, DeskCase, enquiry, made_up
 
 KEY = "webform:test-000001"
 
@@ -47,7 +47,7 @@ class StrictFakeTests(FakeCRMCase):
         self.assertEqual(len(self.fake.violations), 4)
 
     def test_the_fake_refuses_a_wrong_token(self):
-        self.assertEqual(self.raw("GET", "/health", token="wrong-" + secrets.token_hex(4)), 401)
+        self.assertEqual(self.raw("GET", "/health", token=made_up(4)), 401)
 
 
 class AdapterTests(FakeCRMCase):
@@ -83,7 +83,7 @@ class AdapterTests(FakeCRMCase):
         state, detail = self.crm.check()
         self.assertEqual(state, "error")
         self.assertIn("GET /health: HTTP 500", detail)
-        wrong = HttpCRM(self.url, "wrong-" + self.token)
+        wrong = HttpCRM(self.url, WRONG + self.token)
         with self.assertRaises(CRMError) as caught:
             wrong.find_by_email("a@example.com")
         self.assertNotIn(self.token, str(caught.exception))

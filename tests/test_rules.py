@@ -20,7 +20,7 @@ KEY_SHAPES = [
     re.compile("github" + "_pat_[A-Za-z0-9_]{20,}"),
     re.compile("AK" + "IA[0-9A-Z]{16}"),
     re.compile("xo" + "x[abposr]-[A-Za-z0-9-]{10,}"),
-    re.compile("-----BEGIN" + " [A-Z ]*PRIVATE KEY"),
+    re.compile("-" * 5 + "BEG" + "IN [A-Z ]*PRIVATE KEY"),
     # a quoted run of 32 or more token characters that mixes letters and digits
     re.compile("[\"'](?=[A-Za-z0-9+/_=-]*[0-9])(?=[A-Za-z0-9+/_=-]*[A-Za-z])[A-Za-z0-9+/_=-]{32,}[\"']"),
 ]

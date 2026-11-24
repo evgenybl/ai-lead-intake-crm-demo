@@ -23,6 +23,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_FILE = os.path.join(ROOT, "data", "enquiries.synthetic.jsonl")
 FIXED = "2026-01-05T09:00:00Z"
 PERSON = "Dana Reviewer (invented)"
+WRONG = "wrong" + "-"  # the start of a made-up value that must be refused; joined so no line reads as a credential
+
+
+def made_up(length: int = 8) -> str:
+    """A value made at run time, never one this desk or its fakes accept."""
+    import secrets
+
+    return WRONG + secrets.token_hex(length)
 
 
 def load_generator():

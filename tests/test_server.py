@@ -14,7 +14,9 @@ from intake.clock import Clock
 from intake.home import open_desk
 from intake.server import IntakeServer, secret_from
 
-from tests.helpers import FIXED, ROOT, DeskCase, enquiry
+from tests.helpers import FIXED, ROOT, DeskCase, enquiry, made_up
+
+THE_RIGHT_ONE = object()  # post() sends the server's own secret unless told otherwise
 
 
 class IntakeEndpointCase(DeskCase):
@@ -37,11 +39,11 @@ class IntakeEndpointCase(DeskCase):
 
         self.addCleanup(stop)
 
-    def post(self, body, secret="use-the-right-one", path="/intake", method="POST", raw=None, headers=None):
+    def post(self, body, secret=THE_RIGHT_ONE, path="/intake", method="POST", raw=None, headers=None):
         connection = http.client.HTTPConnection("127.0.0.1", self.server.port, timeout=10)
         try:
             sent = {"Content-Type": "application/json"}
-            if secret == "use-the-right-one":
+            if secret is THE_RIGHT_ONE:
                 secret = self.secret
             if secret is not None:
                 sent["X-Intake-Secret"] = secret
@@ -58,9 +60,10 @@ class NoSecretTests(IntakeEndpointCase):
     secret_configured = False
 
     def test_with_no_secret_configured_every_request_is_refused_with_503(self):
+        any_value = made_up()
         for method, path in (("POST", "/intake"), ("GET", "/intake"), ("GET", "/anything")):
             with self.subTest(method=method, path=path):
-                status, _ = self.post(enquiry(), secret="anything", path=path, method=method)
+                status, _ = self.post(enquiry(), secret=any_value, path=path, method=method)
                 self.assertEqual(status, 503)
         self.assertEqual(self.crm_counts()["notes"], 0)
         with self.desk() as desk:
@@ -78,7 +81,7 @@ class IntakeTests(IntakeEndpointCase):
 
     def test_a_wrong_or_missing_secret_is_401_and_nothing_is_kept(self):
         self.assertEqual(self.post(enquiry(), secret=None)[0], 401)
-        self.assertEqual(self.post(enquiry(), secret="wrong-" + secrets.token_hex(8))[0], 401)
+        self.assertEqual(self.post(enquiry(), secret=made_up())[0], 401)
         self.assertEqual(self.post(enquiry(), secret=self.secret + "x")[0], 401)
         with self.desk() as desk:
             self.assertEqual(desk.store.enquiries(), [])
@@ -127,7 +130,7 @@ class IntakeTests(IntakeEndpointCase):
 
     def test_the_secret_is_never_written_to_the_log(self):
         self.post(enquiry())
-        self.post(enquiry(), secret="wrong-" + secrets.token_hex(8))
+        self.post(enquiry(), secret=made_up())
         log = self.log.getvalue()
         self.assertIn("POST /intake 201", log)
         self.assertIn("POST /intake 401", log)
