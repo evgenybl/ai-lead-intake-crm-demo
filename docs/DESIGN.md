@@ -327,7 +327,9 @@ script):
   has one writer and no client holds the server open. Each request has a deadline of 10 seconds from
   connecting to its last byte; a client that drips its request slowly is cut off, and the next one is served.
 - A body above 64 KiB is 413; no `Content-Length` is 411. A body that is a JSON object but has a key
-  twice, `NaN`, or text UTF-8 cannot carry is 400.
+  twice, `NaN`, or text UTF-8 cannot carry is 400. A request line that cannot be read (one word, a carriage
+  return inside it, a version that is not one) is answered 400 with a status line, and logged with `-` for the
+  method and the path it lacks.
 - A refused enquiry is answered 201 with its state `refused` and no reasons: a script that fills the
   honeypot is not told which rule caught it. `ingest` shows the reasons to the operator.
 - If the CRM cannot be read when an enquiry arrives, the enquiry is kept as `received` and the answer is

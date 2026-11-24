@@ -149,7 +149,7 @@ class IntakeTests(IntakeEndpointCase):
 
 
 class RawRequestTests(IntakeEndpointCase):
-    """What a client sends on the request line is logged as one plain line it cannot write into."""
+    """What a client sends on the request line: answered, and logged as one plain line it cannot write into."""
 
     def raw(self, data: bytes) -> bytes:
         with socket.create_connection(("127.0.0.1", self.server.port), timeout=10) as connection:
@@ -163,6 +163,15 @@ class RawRequestTests(IntakeEndpointCase):
 
     def logged(self) -> str:
         return self.log.getvalue()  # each line is written before its answer goes out, so it is there by now
+
+    def test_a_request_line_that_cannot_be_read_is_answered_400(self):
+        for line in (b"GARBAGE", b"GET /a\rb HTTP/1.1", b"GET /x HTTP/9", b"POST"):
+            with self.subTest(line=line):
+                answer = self.raw(line + b"\r\n\r\n")
+                self.assertTrue(answer.startswith(b"HTTP/1.1 400 "), answer[:80])
+        log = self.logged()
+        self.assertNotIn("ended without an answer", log)
+        self.assertEqual(log.count("- - 400\n"), 4)
 
     def test_the_log_line_writes_a_control_character_as_its_escape_and_cuts_a_long_path(self):
         self.raw(b"GET /x\x1b[31mRED-FROM-A-CLIENT\x1b[0m HTTP/1.1\r\nHost: x\r\n\r\n")

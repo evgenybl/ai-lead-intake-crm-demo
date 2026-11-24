@@ -20,7 +20,7 @@ The intake secret is read from INTAKE_SECRET and compared in constant time. It m
 header carries nothing else); a secret with any other character stops the server at start, with the reason.
 It is never printed or logged; the log line of a request is its method, its path and its status, each with
 every control character written as its escape and cut to 200 characters, so a client cannot write to the
-terminal.
+terminal. A request line that cannot be read is answered 400 and logged with "-" for what it lacks.
 
 One request at a time, so each has a deadline: a client that has not sent its whole request within 10
 seconds of connecting is cut off, however slowly it drips. A desk file that another program holds locked
@@ -111,6 +111,8 @@ class IntakeHandler(BaseHTTPRequestHandler):
     server_version = "lead-intake-desk"
     sys_version = ""
     protocol_version = "HTTP/1.1"
+    # A request line that cannot be read leaves no version; without this the 400 would go out with no status line.
+    default_request_version = "HTTP/1.0"
     timeout = 10
 
     def setup(self):
@@ -321,9 +323,11 @@ class IntakeHandler(BaseHTTPRequestHandler):
         self._write(303, "text/plain; charset=utf-8", b"", {"Location": location})
 
     def log_request(self, code="-", size="-"):
+        """Method, path and status; "-" for what a request line that could not be read does not have."""
         if self.server.log is not None:
-            path = urllib.parse.urlsplit(self.path).path
-            self.server.log.write(f"{loggable(self.command)} {loggable(path)} {code}\n")
+            path = getattr(self, "path", None)
+            shown = loggable(urllib.parse.urlsplit(path).path) if path is not None else "-"
+            self.server.log.write(f"{loggable(self.command or '-')} {shown} {code}\n")
             self.server.log.flush()
 
     def log_message(self, format, *args):  # errors of the HTTP layer itself: no headers, no body
