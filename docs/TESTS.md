@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-236 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+239 test methods in 16 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -350,6 +350,14 @@ The four promises of section 2, one test each, named by the promise; and the doc
 - `test_promise_2_no_duplicate_is_created_a_replay_writes_nothing_and_a_returning_contact_is_not_doubled`
 - `test_promise_3_nothing_is_written_before_a_person_approves`
 - `test_promise_4_every_step_is_on_the_record_in_a_trail_the_database_refuses_to_change`
+
+### CorrectedResendTests
+
+A refused enquiry never holds its key against a later copy that passes.
+
+- `test_refused_then_a_copy_that_passes_becomes_the_enquiry_and_the_trail_says_why_the_first_was_refused`
+- `test_a_good_enquiry_then_a_bad_copy_stays_a_replay_and_changes_nothing`
+- `test_refused_twice_stays_refused_and_the_second_is_a_replay`
 
 ### DoctorFindsEachBrokenPromiseTests
 

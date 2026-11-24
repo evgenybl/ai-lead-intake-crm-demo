@@ -1,6 +1,7 @@
 arrived                       30
   first arrivals              27
   replays                      3
+  corrected resends            0
 enquiries by state
   received                     0
   refused                      7

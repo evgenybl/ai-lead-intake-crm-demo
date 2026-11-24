@@ -3,6 +3,8 @@
 The five controls of section 6 (tests/test_controls.py) break the properties these rest on."""
 import unittest
 
+from intake import audit
+
 from tests.helpers import DATA_FILE, PERSON, DeskCase, FlakyCRM, enquiry
 
 
@@ -73,6 +75,55 @@ class PromiseTests(DeskCase):
         self.assertEqual(self.problems(), [])
 
 
+class CorrectedResendTests(DeskCase):
+    """A refused enquiry never holds its key against a later copy that passes."""
+
+    def setUp(self):
+        super().setUp()
+        self.init()
+
+    def events(self, key):
+        with self.desk() as desk:
+            return [(row[3], audit.detail_of(row)) for row in desk.store.trail(key)]
+
+    def test_refused_then_a_copy_that_passes_becomes_the_enquiry_and_the_trail_says_why_the_first_was_refused(self):
+        for label, key_fields in (("keyed", {}), ("hashed", {"source_id": ""})):
+            with self.subTest(label=label):
+                with self.desk() as desk:
+                    first = desk.receive(enquiry(consent=False, **key_fields), via="http")
+                    second = desk.receive(enquiry(**key_fields), via="http")
+                    stored = desk.store.get_enquiry(second.key)
+                self.assertEqual((first.state, first.key), ("refused", second.key))
+                self.assertEqual((second.state, second.replay, second.resent), ("awaiting_approval", False, True))
+                self.assertTrue(second.as_dict()["earlier_copy_refused"])
+                self.assertIs(stored.payload["consent"], True)
+                self.assertEqual(stored.reasons, [])
+                events = self.events(second.key)
+                self.assertEqual([e for e, _ in events][:3], ["arrived", "resent", "draft"])
+                resent = events[1][1]
+                self.assertEqual((resent["from"], resent["state"], resent["earlier_copy_refused"],
+                                  resent["fields_changed"]), ("refused", "received", ["no_consent"], ["consent"]))
+                self.assertEqual(self.problems(), [])
+        report = self.cli("report")
+        self.assertIn("corrected resends            2", report)
+        self.assertIn("the states add up: yes: 2 enquiries + 0 replays + 2 corrected resends = 4 arrived", report)
+
+    def test_a_good_enquiry_then_a_bad_copy_stays_a_replay_and_changes_nothing(self):
+        with self.desk() as desk:
+            good = desk.receive(enquiry(), via="http")
+            bad = desk.receive(enquiry(consent=False), via="http")
+            self.assertEqual(desk.store.get_enquiry(good.key).payload["consent"], True)
+        self.assertEqual((good.state, bad.replay, bad.state, bad.resent), ("awaiting_approval", True, "awaiting_approval", False))
+        self.assertEqual(self.problems(), [])
+
+    def test_refused_twice_stays_refused_and_the_second_is_a_replay(self):
+        with self.desk() as desk:
+            desk.receive(enquiry(consent=False), via="file")
+            again = desk.receive(enquiry(consent=False, website="filled"), via="file")
+        self.assertEqual((again.replay, again.state), (True, "refused"))
+        self.assertEqual(self.problems(), [])
+
+
 class DoctorFindsEachBrokenPromiseTests(DeskCase):
     """Beyond the five controls: the doctor names a break of each promise, made directly in the files."""
 
@@ -94,7 +145,7 @@ class DoctorFindsEachBrokenPromiseTests(DeskCase):
 
     def test_promise_1_an_enquiry_with_no_arrival_is_found(self):
         self.desk_db().execute("DELETE FROM arrivals WHERE key = 'webform:wf-000102'")
-        self.assertIn("the arrivals add up: webform:wf-000102 has 0 first arrivals, not 1", self.problems())
+        self.assertIn("the arrivals add up, and agree with the trail: webform:wf-000102 has 0 first arrivals, not 1", self.problems())
 
     def test_promise_1_a_failure_with_no_error_named_is_found(self):
         conn = self.desk_db()

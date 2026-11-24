@@ -91,6 +91,7 @@ files after the demo story, are in `examples/desk/` (`index.html`, and a page pe
    arrived                       60
      first arrivals              27
      replays                     33
+     corrected resends            0
    enquiries by state
      received                     0
      refused                      7
@@ -115,7 +116,7 @@ files after the demo story, are in `examples/desk/` (`index.html`, and a page pe
    ```text
    promise 1: No lead is lost
      ok    every enquiry is in exactly one named state
-     ok    the arrivals add up (60 arrived = 27 enquiries + 33 replays)
+     ok    the arrivals add up, and agree with the trail (60 arrived = 27 enquiries + 33 replays)
      ok    every key in the trail is an enquiry on the desk
      ok    every apply_failed enquiry names its error
    ```
@@ -144,7 +145,7 @@ files after the demo story, are in `examples/desk/` (`index.html`, and a page pe
    <!-- from examples/trail.txt -->
    ```text
    trail of webform:wf-000110 (state now: applied)
-   #28    2026-01-05T09:00:00Z  system                     arrived              reasons=[] state=received via=file
+   #28    2026-01-05T09:00:00Z  system                     arrived              payload_sha256=ad08c481c6a2 reasons=[] state=received via=file
    #29    2026-01-05T09:00:00Z  system                     draft                label=Recorded outcome=used request=925a01ff0688
    #30    2026-01-05T09:00:00Z  system                     assessed             draft=used from=received identity=returning plan=a6c74785415d state=awaiting_approval
    #74    2026-01-05T09:30:00Z  Dana Reviewer (invented)   approved             approval=4 from=awaiting_approval plan=a6c74785415d state=approved

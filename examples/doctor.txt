@@ -1,7 +1,7 @@
 doctor: desk desk.sqlite3; CRM practice-crm.sqlite3; both in --home
 promise 1: No lead is lost
   ok    every enquiry is in exactly one named state
-  ok    the arrivals add up (60 arrived = 27 enquiries + 33 replays)
+  ok    the arrivals add up, and agree with the trail (60 arrived = 27 enquiries + 33 replays)
   ok    every key in the trail is an enquiry on the desk
   ok    every apply_failed enquiry names its error
 promise 2: No duplicate is created

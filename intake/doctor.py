@@ -99,16 +99,23 @@ def _promise_1(desk) -> list:
 
     arrivals = desk.execute("SELECT key, kind FROM arrivals").fetchall()
     first = Counter(key for key, kind in arrivals if kind == "first")
-    replays = sum(1 for _, kind in arrivals if kind == "replay")
-    add_up = Check(1, "the arrivals add up")
+    kinds = Counter(kind for _, kind in arrivals)
+    add_up = Check(1, "the arrivals add up, and agree with the trail")
     for key in sorted(keys):
         if first[key] != 1:
             add_up.problems.append(f"{key} has {first[key]} first arrivals, not 1")
     for key in sorted({k for k, _ in arrivals} - keys):
         add_up.problems.append(f"an arrival names {key}, which is not on the desk")
-    add_up.note = f"{len(arrivals)} arrived = {len(keys)} enquiries + {replays} replays"
-    if len(arrivals) != len(keys) + replays:
-        add_up.problems.append(f"{len(arrivals)} arrived, but {len(keys)} enquiries + {replays} replays")
+    resends = f" + {kinds['resend']} corrected resends" if kinds["resend"] else ""
+    add_up.note = f"{len(arrivals)} arrived = {len(keys)} enquiries + {kinds['replay']} replays{resends}"
+    if len(arrivals) != len(keys) + kinds["replay"] + kinds["resend"]:
+        add_up.problems.append(f"{len(arrivals)} arrived, but {len(keys)} enquiries + {kinds['replay']} replays{resends}")
+    events = Counter(event for (event,) in desk.execute(
+        "SELECT event FROM audit WHERE event IN ('arrived', 'replay', 'resent')"))
+    for event, held, what in (("arrived", len(keys), "enquiries on the desk"), ("replay", kinds["replay"], "replays"),
+                              ("resent", kinds["resend"], "corrected resends")):
+        if events[event] != held:
+            add_up.problems.append(f"the trail records {events[event]} '{event}' events, but there are {held} {what}")
 
     trail = Check(1, "every key in the trail is an enquiry on the desk")
     for (key,) in desk.execute("SELECT DISTINCT key FROM audit ORDER BY key"):

@@ -140,7 +140,7 @@ def cmd_init(args, say, home, choice, clock, environ, out) -> int:
 
 def cmd_ingest(args, say, home, choice, clock, environ, out) -> int:
     raw = _read_file(args.file)
-    new = replays = not_taken = 0
+    new = replays = resent = not_taken = 0
     with open_desk(home, choice, environ, clock, make_backend(args.draft, environ)) as desk:
         for number, obj, problem in read_lines(raw):
             if problem:
@@ -153,11 +153,16 @@ def cmd_ingest(args, say, home, choice, clock, environ, out) -> int:
                 changed = f"; replayed with different content: {', '.join(answer.differs)}" if answer.differs else ""
                 say(f"line {number}: {answer.key} -> replay of the enquiry first arrived at "
                     f"{answer.first_arrived_at} (state now: {answer.state}); nothing new is queued{changed}")
+            elif answer.resent:
+                resent += 1
+                say(f"line {number}: {answer.key} -> {answer.state} (a corrected copy: the copy sent first was refused; "
+                    "the trail keeps why)")
             else:
                 new += 1
                 why = f": {reports.refusal_text(answer.reasons)}" if answer.state == "refused" else ""
                 say(f"line {number}: {answer.key} -> {answer.state}{why}")
-    say(f"ingest: {new} new enquiries, {replays} replays, {not_taken} lines not taken")
+    corrected = f", {resent} corrected resend{'' if resent == 1 else 's'}" if resent else ""
+    say(f"ingest: {new} new enquiries, {replays} replays{corrected}, {not_taken} lines not taken")
     return 1 if not_taken else 0
 
 

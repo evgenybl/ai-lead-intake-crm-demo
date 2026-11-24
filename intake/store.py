@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 from . import audit, states
-from .canonical import canonical_json
+from .canonical import canonical_json, sha256_hex
 
 APPROVAL_STATES = ("approved", "used", "withdrawn", "rejected")
 
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS arrivals (
     key TEXT NOT NULL REFERENCES enquiries (key),
     at TEXT NOT NULL,
     via TEXT NOT NULL CHECK (via IN ('http', 'file')),
-    kind TEXT NOT NULL CHECK (kind IN ('first', 'replay'))
+    kind TEXT NOT NULL CHECK (kind IN ('first', 'replay', 'resend'))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS one_first_arrival ON arrivals (key) WHERE kind = 'first';
 CREATE TABLE IF NOT EXISTS approvals (
@@ -207,7 +207,21 @@ class DeskStore:
             self.conn.execute(
                 "INSERT INTO arrivals (key, at, via, kind) VALUES (?, ?, ?, 'first')", (key, now, via)
             )
-            audit.append(self.conn, now, key, "arrived", {**detail, "via": via, "state": state}, "system")
+            audit.append(self.conn, now, key, "arrived",
+                         {**detail, "via": via, "state": state, "payload_sha256": sha256_hex(payload)}, "system")
+
+    def resend(self, key: str, via: str, payload: dict, detail: dict) -> None:
+        """A corrected copy of a refused enquiry: it becomes the enquiry's content, and the enquiry moves from
+        refused to received. The arrival is counted as a resend; the trail keeps the earlier reasons."""
+        with self.transaction():
+            now = self.clock.now()
+            self.conn.execute("UPDATE enquiries SET payload = ?, reasons = '[]' WHERE key = ?",
+                              (canonical_json(payload), key))
+            self.conn.execute(
+                "INSERT INTO arrivals (key, at, via, kind) VALUES (?, ?, ?, 'resend')", (key, now, via)
+            )
+            self.move(key, "resent", "received", "system",
+                      {**detail, "via": via, "payload_sha256": sha256_hex(payload)})
 
     def add_replay(self, key: str, via: str, detail: dict) -> None:
         with self.transaction():
@@ -249,7 +263,7 @@ class DeskStore:
             self.conn.execute(f"UPDATE enquiries SET {assignments} WHERE key = ?", (*encoded.values(), key))
 
     def arrival_counts(self) -> dict:
-        counts = {"first": 0, "replay": 0}
+        counts = {"first": 0, "replay": 0, "resend": 0}
         for kind, n in self.conn.execute("SELECT kind, count(*) FROM arrivals GROUP BY kind"):
             counts[kind] = n
         return counts

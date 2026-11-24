@@ -10,18 +10,20 @@ from .doctor import PROMISES
 def report_lines(store) -> list:
     counts = store.state_counts()
     arrivals = store.arrival_counts()
-    arrived = arrivals["first"] + arrivals["replay"]
+    arrived = arrivals["first"] + arrivals["replay"] + arrivals["resend"]
     enquiries = sum(counts.values())
     lines = [
         f"arrived                     {arrived:>4}",
         f"  first arrivals            {arrivals['first']:>4}",
         f"  replays                   {arrivals['replay']:>4}",
+        f"  corrected resends         {arrivals['resend']:>4}",
         "enquiries by state",
     ]
     lines += [f"  {name:<26}{n:>4}" for name, n in counts.items()]
     lines.append(f"  {'total':<26}{enquiries:>4}")
     if enquiries == arrivals["first"]:  # every first arrival is one enquiry in one state; the rest are replays
-        lines.append(f"the states add up: yes: {enquiries} enquiries + {arrivals['replay']} replays = {arrived} arrived")
+        lines.append(f"the states add up: yes: {enquiries} enquiries + {arrivals['replay']} replays"
+                     f"{resends_text(arrivals['resend'])} = {arrived} arrived")
     else:
         lines.append(f"the states add up: NO: {enquiries} enquiries in their states, "
                      f"but {arrivals['first']} first arrivals (run desk.py doctor)")
@@ -40,6 +42,11 @@ def report_lines(store) -> list:
     else:
         lines.append("replayed with different content: none")
     return lines
+
+
+def resends_text(n: int) -> str:
+    """The corrected resends in the sentence that adds the arrivals up; nothing when there are none."""
+    return f" + {n} corrected resend{'' if n == 1 else 's'}" if n else ""
 
 
 def different_replays(store, key: str | None = None) -> list:

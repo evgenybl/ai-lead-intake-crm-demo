@@ -11,7 +11,7 @@ from __future__ import annotations
 import html
 import json
 
-from . import audit, validate
+from . import audit, reports, validate
 from .reports import different_replays
 
 STATE_WORDS = {
@@ -118,14 +118,14 @@ def counts_section(store) -> list:
     counts = store.state_counts()
     arrivals = store.arrival_counts()
     enquiries = sum(counts.values())
-    arrived = arrivals["first"] + arrivals["replay"]
+    arrived = arrivals["first"] + arrivals["replay"] + arrivals["resend"]
     rows = [f'<tr><td>{esc(STATE_WORDS[s])}</td><td class="n">{counts[s]}</td></tr>' for s in STATE_ORDER]
     out = ["<h2>The counts</h2>", "<table><tr><th>State</th><th>Enquiries</th></tr>", *rows,
            f'<tr><th>Total</th><td class="n">{enquiries}</td></tr></table>']
     if enquiries == arrivals["first"]:
-        out.append(f'<p class="ok">The counts add up: {enquiries} enquiries + {arrivals["replay"]} replays '
-                   f"= {arrived} arrived. A replay is the same enquiry sent again; it is counted and recorded, "
-                   "and it creates nothing.</p>")
+        out.append(f'<p class="ok">The counts add up: {enquiries} enquiries + {arrivals["replay"]} replays'
+                   f'{esc(reports.resends_text(arrivals["resend"]))} = {arrived} arrived. A replay is the same '
+                   "enquiry sent again; it is counted and recorded, and it creates nothing.</p>")
     else:
         out.append(f'<p class="bad">The counts do not add up: {enquiries} enquiries, but {arrivals["first"]} '
                    "first arrivals. Run <code>python -I desk.py doctor</code>.</p>")

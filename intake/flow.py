@@ -34,11 +34,14 @@ class Answer:
     reasons: tuple = ()
     same_content: bool | None = None
     differs: tuple = ()  # for a replay with different content: the fields that differ
+    resent: bool = False  # a copy that passes, under the key of an enquiry that was refused
 
     def as_dict(self) -> dict:
         answer = {"key": self.key, "state": self.state, "replay": self.replay}
         if self.replay:
             answer["original"] = {"arrived_at": self.first_arrived_at, "via": self.via}
+        if self.resent:
+            answer["earlier_copy_refused"] = True
         return answer
 
 
@@ -77,14 +80,28 @@ class Desk:
     # -- arrive -----------------------------------------------------------------------------------
 
     def receive(self, obj: dict, via: str) -> Answer:
-        """One JSON object from HTTP or a file. A known key is a replay: counted, recorded, nothing queued."""
+        """One JSON object from HTTP or a file. A known key is a replay: counted, recorded, nothing queued.
+
+        One exception: a copy that passes validation, under the key of an enquiry that was refused, is a
+        corrected resend. It becomes the enquiry, and the trail keeps why the earlier copy was refused."""
         extracted = validate.extract(obj, arrived_at=self.clock.now())
         fields = extracted.fields
         key = idempotency_key(fields)
-        payload = canonical_json(fields)
+        reasons = validate.reasons(extracted)
+        detail = {"reasons": reasons}
+        if extracted.ignored:
+            detail["ignored_fields"] = list(extracted.ignored)
+        if extracted.received_at_filled:
+            detail["received_at_filled"] = True
         with self.store.transaction():
             existing = self.store.get_enquiry(key)
-            if existing is not None:
+            if existing is not None and existing.state == "refused" and not reasons:
+                detail.update({"earlier_copy_refused": existing.reasons,
+                               "fields_changed": sorted(replay_differences(existing.payload, fields)),
+                               "received_at": fields["received_at"]})
+                self.store.resend(key, via, fields, detail)
+                state, resent = "received", True
+            elif existing is not None:
                 differs = replay_differences(existing.payload, fields)
                 detail = {"same_content": not differs, "state_now": existing.state,
                           "received_at": fields["received_at"]}
@@ -93,18 +110,13 @@ class Desk:
                 self.store.add_replay(key, via, detail)
                 return Answer(key, existing.state, True, existing.first_arrived_at, existing.via,
                               tuple(existing.reasons), not differs, tuple(differs))
-            reasons = validate.reasons(extracted)
-            state = "refused" if reasons else "received"
-            detail = {"reasons": reasons}
-            if extracted.ignored:
-                detail["ignored_fields"] = list(extracted.ignored)
-            if extracted.received_at_filled:
-                detail["received_at_filled"] = True
-            self.store.insert_enquiry(key, via, fields, state, reasons, detail)
+            else:
+                state, resent = ("refused" if reasons else "received"), False
+                self.store.insert_enquiry(key, via, fields, state, reasons, detail)
             first = self.store.get_enquiry(key).first_arrived_at
         if state == "received":
             state = self.assess(key)
-        return Answer(key, state, False, first, via, tuple(reasons))
+        return Answer(key, state, False, first, via, tuple(reasons), resent=resent)
 
     def assess(self, key: str) -> str:
         """Identity, draft and plan for an enquiry in `received`. A CRM that cannot be read leaves it there."""

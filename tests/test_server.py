@@ -107,7 +107,7 @@ class IntakeTests(IntakeEndpointCase):
         self.assertEqual(answer["original"], {"arrived_at": FIXED, "via": "http"})
         self.assertTrue(answer["replay"])
         with self.desk() as desk:
-            self.assertEqual(desk.store.arrival_counts(), {"first": 1, "replay": 1})
+            self.assertEqual(desk.store.arrival_counts(), {"first": 1, "replay": 1, "resend": 0})
 
     def test_a_refused_enquiry_is_kept_and_answered_by_its_state_only(self):
         status, answer = self.post(enquiry(consent=False, website="bot"))
