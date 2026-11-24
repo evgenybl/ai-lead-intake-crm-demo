@@ -225,11 +225,19 @@ class SecretTests(DeskCase):
     def test_a_secret_with_a_letter_outside_ascii_stops_the_server_at_start_with_the_reason(self):
         self.init()
         secret = "s" + "\u00e9" + "cret-" + secrets.token_hex(12)
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("INTAKE_", "ANTHROPIC_"))}
+        env.update({"INTAKE_SECRET": secret, "PYTHONIOENCODING": "utf-8"})
         for command in ("listen", "serve"):
             with self.subTest(command=command):
-                out = self.cli(command, "--port", "0", env={"INTAKE_SECRET": secret}, expect=2)
-                self.assertIn("not printable ASCII", out)
-                self.assertNotIn(secret, out)
+                try:  # a real process: had it started, it would serve until stopped
+                    done = subprocess.run([sys.executable, "-I", os.path.join(ROOT, "desk.py"), command, "--port", "0",
+                                           "--home", self.home], capture_output=True, text=True, encoding="utf-8",
+                                          env=env, timeout=20)
+                except subprocess.TimeoutExpired:
+                    self.fail(f"{command} started with the secret instead of refusing it")
+                self.assertEqual(done.returncode, 2, done.stdout + done.stderr)
+                self.assertIn("not printable ASCII", done.stdout)
+                self.assertNotIn(secret, done.stdout)
         self.assertIn("intake endpoint  POST /intake, 127.0.0.1 only: error (INTAKE_SECRET holds a character",
                       self.cli("status", env={"INTAKE_SECRET": secret}))
         with self.assertRaises(SecretError):
