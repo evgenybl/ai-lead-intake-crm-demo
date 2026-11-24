@@ -485,6 +485,15 @@ class AfterAFailedApplyTests(DeskCase):
         self.assertTrue(said.endswith(f"{key} (rejected): the step add_task began and its end is not recorded, so the "
                                       "desk does not know whether it reached the CRM"), said)
 
+    def test_a_crm_id_in_what_was_written_is_printed_on_one_line_that_cannot_move_the_cursor(self):
+        key = "webform:wf-000103"
+        self.failed_at(key, "add_note")
+        self.desk_db().execute("UPDATE ledger SET crm_ref = '11\x1b[2J', contact = '11\x1b[2J' WHERE key = ?", (key,))
+        self.cli("withdraw", key, "--by", PERSON)
+        for out in (self.cli("plan", "--key", key), self.cli("reject", key, "--by", PERSON, "--reason", "not for us")):
+            self.assertNotIn("\x1b", out)
+            self.assertIn("contact 11\\x1b[2J created", out)
+
     def apply_one(self, key):
         with self.desk() as desk:
             (result,) = desk.apply(key=key)

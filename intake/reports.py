@@ -162,11 +162,11 @@ def enquiry_lines(store, enquiry, crm_note: str = "", full: bool = False) -> lis
                          f"the enquiry says {diff['enquiry']!r}{extra}")
         for entry in plan.get("already_written", []):
             lines.append("    already in the CRM, written by an apply that did not complete, not written again: "
-                         + describe_write(entry.get("op"), entry.get("ref"), entry.get("contact")))
+                         + printable(describe_write(entry.get("op"), entry.get("ref"), entry.get("contact"))))
         listed = {entry.get("op") for entry in plan.get("already_written", [])}
         so_far = writes_text(store.ledger_rows(enquiry.key), leave_out=listed)
         if so_far:
-            lines.append(f"  written so far for this enquiry: {so_far}")
+            lines.append(f"  written so far for this enquiry: {printable(so_far)}")
         if enquiry.state == "awaiting_approval":
             lines.append(f"  to approve: desk.py approve {enquiry.key} --by <name> --plan {enquiry.plan_sha[:12]}")
             if rests_on_the_phone_alone(found):

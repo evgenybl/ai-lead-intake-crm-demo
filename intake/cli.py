@@ -299,7 +299,7 @@ def cmd_reject(args, say, home, choice, clock, environ, out) -> int:
         found = desk.reject(args.key, args.by, args.reason)
         _say_settled(say, found)
         earlier = reports.written_before(desk.store, desk.store.get_enquiry(args.key))
-    say(f"rejected: {args.key} {earlier}; nothing more will be written" if earlier
+    say(f"rejected: {args.key} {reports.printable(earlier)}; nothing more will be written" if earlier
         else f"rejected: {args.key}; nothing will be written")
     return 0
 
@@ -315,8 +315,8 @@ def cmd_withdraw(args, say, home, choice, clock, environ, out) -> int:
 def _say_settled(say, found: list) -> None:
     """What the desk found in the CRM for each step an apply began and did not record."""
     for row, there in found:
-        what = (f"found in the CRM: {reports.describe_write(row.op, there[0], there[2])}" if there is not None
-                else "not in the CRM: not written")
+        what = (f"found in the CRM: {reports.printable(reports.describe_write(row.op, there[0], there[2]))}"
+                if there is not None else "not in the CRM: not written")
         say(f"the step {row.op}, begun by an apply that did not finish, is {what}; the desk records it")
 
 
