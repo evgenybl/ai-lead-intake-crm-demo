@@ -227,7 +227,7 @@ class AnthropicBackend:
         return _result(self.name, self.label, "used", request_sha=req.sha256, values=obj, model=model)
 
     def check(self) -> tuple:
-        return "connected", f"configured: {self.model} at {self.host}; status makes no call, which would be billed"
+        return "configured", f"{self.model} at {self.host}; status makes no call, which would be billed, so it is not known to answer"
 
 
 class _CallError(Exception):

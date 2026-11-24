@@ -84,7 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("key")
     sub.add_parser("report", parents=[common], help="the counts by state, and whether they add up")
     sub.add_parser("doctor", parents=[common], help="run the invariants of the four promises on both files")
-    sub.add_parser("status", parents=[common], help="each adapter and capability: connected, not configured or error")
+    sub.add_parser("status", parents=[common], help="each adapter and capability: connected, configured (not called), not configured or error")
     return parser
 
 

@@ -310,6 +310,13 @@ class CommandTests(DeskCase):
         self.assertIn("draft template   stand-in, no model: connected", out)
         configured = self.cli("status", env={"INTAKE_SECRET": secrets.token_urlsafe(24)})
         self.assertIn("intake endpoint  POST /intake, 127.0.0.1 only: configured", configured)
+        # The live path, with a key and an address no server answers: status makes no call, so it never says connected.
+        live = self.cli("status", env={"ANTHROPIC_API_KEY": secrets.token_urlsafe(24),
+                                       "ANTHROPIC_BASE_URL": "http://127.0.0.1:9"})
+        (line,) = [line for line in live.splitlines() if line.startswith("draft anthropic")]
+        self.assertEqual(line, "draft anthropic  Live path (custom endpoint: 127.0.0.1:9): configured (claude-opus-5-5 "
+                               "at 127.0.0.1:9; status makes no call, which would be billed, so it is not known to "
+                               "answer)")
 
     def test_the_trail_shows_one_enquirys_life_in_order(self):
         self.cli("ingest", DATA_FILE)
