@@ -24,12 +24,20 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <p>From: Elena Ruiz (invented) · Ruiz Architects (invented) · elena.r.studio@example.com · 000-000-0213. Received 2026-01-05T10:56:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>We opened a second studio and need a quote for it.</blockquote>
 <p><b>Who it is:</b> Contact 5 has the same name and company, but not this e-mail or phone. It might be the same person. A person decides; the desk never merges contacts.</p>
-<p><b>Model step:</b> <span class="label">Constructed answer, not from a model</span></p>
+<p><b>Model step:</b> <span class="label">Recorded</span></p>
 <table>
-<tr><th>Summary</th><td>We opened a second studio and need a quote for it.</td></tr>
+<tr><th>Summary</th><td>A business that opened a second studio asks for a quote for the new location.</td></tr>
 <tr><th>Intent</th><td>quote_request</td></tr>
 <tr><th>Urgency</th><td>normal</td></tr>
-<tr><th>Reply draft</th><td><pre>Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet.</pre></td></tr>
+<tr><th>Reply draft</th><td><pre>Hello {{name}},
+
+Thank you for getting in touch about your second studio, and congratulations on the expansion.
+
+We would be glad to prepare a quote for it. To make sure the figures are accurate, could you tell us a little more about what the studio needs? For example, the services you would like us to cover, the size or number of rooms, the timing you have in mind, and any requirements specific to the new location.
+
+Once we have those details, we will send you a clear, itemised quote.
+
+Kind regards</pre></td></tr>
 </table>
 <p class="note">A reply draft is only a draft: the desk never sends anything to a person who enquired.</p>
 <p><b>To resolve:</b></p>
@@ -40,7 +48,7 @@ python -I desk.py resolve webform:wf-000113 --as contact:&lt;id&gt; --by "Your n
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>37</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>reasons: []; state: received; via: file</td></tr>
-<tr><td>38</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Constructed answer, not from a model; outcome: used; request: 304521acd4628c0997688db1284947f1734aaebc251b9e1f1a72e1004eb29da1</td></tr>
+<tr><td>38</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: 304521acd4628c0997688db1284947f1734aaebc251b9e1f1a72e1004eb29da1</td></tr>
 <tr><td>39</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: possible_duplicate; plan: null; state: held_possible_duplicate</td></tr>
 <tr><td>105</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T10:56:00Z; same_content: true; state_now: held_possible_duplicate; via: file</td></tr>
 </table>

@@ -2,19 +2,22 @@
 model is escaped; Approve and Reject take two locks and work only with --allow-decisions."""
 import http.client
 import io
+import json
 import os
 import re
 import secrets
+import shutil
 import threading
 import unittest
 import urllib.parse
 
 from intake import pages
 from intake.clock import Clock
+from intake.draft import RECORDED_DIR, RecordedBackend
 from intake.home import open_desk
 from intake.server import IntakeServer
 
-from tests.helpers import DATA_FILE, FIXED, PERSON, DeskCase, enquiry
+from tests.helpers import DATA_FILE, FIXED, PERSON, DeskCase, enquiry, made_up
 
 MARKUP = '<script>alert("x")</script><img src=x onerror=alert(1)>'
 
@@ -47,6 +50,15 @@ class RenderTests(DeskCase):
             self.assertNotIn("<script", page, name)
             self.assertNotIn("<form", page, name)  # a file cannot take a decision
 
+    def test_every_page_is_self_contained_and_loads_nothing_from_a_network(self):
+        loaders = re.compile(r"<script|<link|<img|<iframe|<object|<embed|\bsrc=|@import|url\(|https?://", re.I)
+        names = ["index.html"] + [os.path.join("enquiry", n) for n in os.listdir(os.path.join(self.out, "enquiry"))]
+        for name in names:
+            page = self.read(name)
+            self.assertIsNone(loaders.search(page), name)
+            for href in re.findall(r'href="([^"]+)"', page):
+                self.assertTrue(href.endswith(".html") and ":" not in href, (name, href))
+
     def test_markup_in_a_message_is_shown_as_text(self):
         page = self.read("enquiry", "webform~wf-000125.html")
         self.assertIn("Hello &lt;script&gt;alert(1)&lt;/script&gt; please quote", page)
@@ -61,10 +73,27 @@ class RenderTests(DeskCase):
             self.assertIn(words, index)
 
     def test_each_enquiry_names_the_label_of_its_model_step(self):
+        """Every invented enquiry that reaches the model has a recorded answer; four of them were refused whole."""
         index = self.read("index.html")
-        self.assertEqual(index.count('<p><b>Model step:</b> <span class="label">'), 20)
+        self.assertEqual(index.count('<p><b>Model step:</b> <span class="label">Recorded</span></p>'), 20)
         self.assertEqual(index.count("<p><b>Model step:</b> skipped. A refused enquiry never reaches"), 7)
-        self.assertIn("Constructed answer, not from a model", index)
+        self.assertEqual(index.count("AI draft refused: the answer has keys beyond the four"), 4)
+        self.assertNotIn("Constructed answer, not from a model", index)
+
+    def test_where_no_recording_exists_a_constructed_answer_is_labelled_so(self):
+        only_constructed = os.path.join(self._tmp.name, "recorded")
+        for folder in ("requests", "constructed"):
+            shutil.copytree(os.path.join(RECORDED_DIR, folder), os.path.join(only_constructed, folder))
+        self.home = os.path.join(self._tmp.name, "second")
+        self.init()
+        with self.desk() as desk:
+            desk.drafter = RecordedBackend(root=only_constructed)
+            with open(DATA_FILE, encoding="utf-8") as handle:
+                for line in handle:
+                    desk.receive(json.loads(line), via="file")
+            page = pages.desk_page(desk.store, pages.FileLinks(False), pages.Decisions())
+        self.assertEqual(page.count('<span class="label">Constructed answer, not from a model</span>'), 20)
+        self.assertNotIn('<span class="label">Recorded</span>', page)
 
     def test_a_replay_with_different_content_is_shown_on_the_desk(self):
         page = self.read("enquiry", "webform~wf-000101.html")
@@ -195,7 +224,7 @@ class ServeWithDecisionsTests(ServeCase):
     def test_a_form_without_this_desks_token_or_from_elsewhere_is_refused(self):
         key, plan = "webform:wf-000101", self.plan_of("webform:wf-000101")
         fields = {"key": key, "plan": plan, "decision": "approve", "confirm": "yes", "by": PERSON}
-        self.assertEqual(self.decide(token="not-the-token", **fields)[0], 403)
+        self.assertEqual(self.decide(token=made_up(), **fields)[0], 403)
         body = urllib.parse.urlencode({"token": self.token, **fields}).encode("utf-8")
         status, _, _ = self.request("POST", "/desk/decide", body, {"Content-Type": "application/x-www-form-urlencoded",
                                                                     "Origin": "http://attacker.example.com"})

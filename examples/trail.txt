@@ -1,6 +1,6 @@
 trail of webform:wf-000110 (state now: applied)
 #28    2026-01-05T09:00:00Z  system                     arrived              reasons=[] state=received via=file
-#29    2026-01-05T09:00:00Z  system                     draft                label=Constructed answer, not from a model outcome=used request=925a01ff0688
+#29    2026-01-05T09:00:00Z  system                     draft                label=Recorded outcome=used request=925a01ff0688
 #30    2026-01-05T09:00:00Z  system                     assessed             draft=used from=received identity=returning plan=a6c74785415d state=awaiting_approval
 #74    2026-01-05T09:30:00Z  Dana Reviewer (invented)   approved             approval=4 from=awaiting_approval plan=a6c74785415d state=approved
 #86    2026-01-05T09:35:00Z  system                     operation            how=written (filled: company) op=fill_empty_fields ref=3

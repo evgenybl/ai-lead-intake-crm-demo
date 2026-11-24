@@ -24,11 +24,11 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <p>From: Promo Desk (invented) · Promo Desk (invented) · promo.desk@example.com. Received 2026-01-05T09:09:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>Get more followers today! Our package doubles your reach overnight.</blockquote>
 <p><b>Who it is:</b> A new contact: no contact in the CRM has this e-mail or phone.</p>
-<p><b>Model step:</b> <span class="label">Constructed answer, not from a model</span></p>
+<p><b>Model step:</b> <span class="label">Recorded</span></p>
 <table>
-<tr><th>Summary</th><td>Get more followers today!</td></tr>
+<tr><th>Summary</th><td>A vendor promotes a follower-growth package, claiming it will double the business&#x27;s reach overnight. It is an unsolicited sales pitch with no specific request or contact details.</td></tr>
 <tr><th>Intent</th><td>spam</td></tr>
-<tr><th>Urgency</th><td>normal</td></tr>
+<tr><th>Urgency</th><td>low</td></tr>
 <tr><th>Reply draft</th><td>none</td></tr>
 </table>
 <p class="note">A reply draft is only a draft: the desk never sends anything to a person who enquired.</p>
@@ -50,7 +50,7 @@ python -I desk.py reject webform:wf-000106 --by "Your name" --reason "why"</pre>
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>16</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>reasons: []; state: received; via: file</td></tr>
-<tr><td>17</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Constructed answer, not from a model; outcome: used; request: 8600046aa896b68e48663cb953186de5632a291681ee312d10fd2374c42f77ad</td></tr>
+<tr><td>17</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: 8600046aa896b68e48663cb953186de5632a291681ee312d10fd2374c42f77ad</td></tr>
 <tr><td>18</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: new; plan: ce7a8b7acac0e14469530684f70258c8f593b1615c394e28cc2c326a6d593b84; state: awaiting_approval</td></tr>
 <tr><td>98</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T09:09:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
 </table>

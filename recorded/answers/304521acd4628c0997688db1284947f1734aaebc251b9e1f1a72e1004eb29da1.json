@@ -1,0 +1,7 @@
+{
+  "request_sha256": "304521acd4628c0997688db1284947f1734aaebc251b9e1f1a72e1004eb29da1",
+  "answer_file": "304521acd4628c0997688db1284947f1734aaebc251b9e1f1a72e1004eb29da1.answer.txt",
+  "answer_sha256": "40b8785911a57ecef3ca2efb75bb95cad5cedd85374954efd7d75b9ee3d01798",
+  "origin": "recorded",
+  "how": "The request text, whole and unchanged, was given as the whole prompt to a Claude Code subagent on 2026-11-24. The subagent's transcript names the model as claude-haiku-5-5. Such a subagent also runs under its harness's own system prompt, so this is not the live path's API call. The answer is kept byte for byte as the transcript holds it."
+}

@@ -24,12 +24,20 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <p>From: Celia Marsh (invented) · Marsh Pottery (invented) · celia.marsh@example.com · 000-000-0103. Received 2026-01-05T09:59:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>My pottery studio now has a shop at the front. Could you clean both rooms?</blockquote>
 <p><b>Who it is:</b> Returning: contact 3 (found by e-mail and phone).</p>
-<p><b>Model step:</b> <span class="label">Constructed answer, not from a model</span></p>
+<p><b>Model step:</b> <span class="label">Recorded</span></p>
 <table>
-<tr><th>Summary</th><td>My pottery studio now has a shop at the front.</td></tr>
+<tr><th>Summary</th><td>The sender&#x27;s pottery studio has added a shop at the front and asks whether the two rooms can be cleaned.</td></tr>
 <tr><th>Intent</th><td>quote_request</td></tr>
 <tr><th>Urgency</th><td>normal</td></tr>
-<tr><th>Reply draft</th><td><pre>Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet.</pre></td></tr>
+<tr><th>Reply draft</th><td><pre>Hello {{name}},
+
+Thank you for getting in touch, and congratulations on the new shop at the front of your pottery studio.
+
+Yes, we can clean both rooms. So that we can prepare an accurate quote, could you tell us the approximate size of each room, how often you would like the cleaning done, and your preferred dates or times? If there is anything specific you would like us to focus on, please mention that too.
+
+Once we have these details, we will send you a quote.
+
+Kind regards</pre></td></tr>
 </table>
 <p class="note">A reply draft is only a draft: the desk never sends anything to a person who enquired.</p>
 <p><b>The plan</b> (plan a6c74785415d): exactly what would be written to the CRM, and nothing else.</p>
@@ -51,7 +59,7 @@ Answer the enquiry from Celia Marsh (invented).</pre></li>
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>28</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>reasons: []; state: received; via: file</td></tr>
-<tr><td>29</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Constructed answer, not from a model; outcome: used; request: 925a01ff068865755acf057cffc704dcf4680301d75134e104260c953e02bd37</td></tr>
+<tr><td>29</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: 925a01ff068865755acf057cffc704dcf4680301d75134e104260c953e02bd37</td></tr>
 <tr><td>30</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: returning; plan: a6c74785415d50247112c6a383911a9e5b7f0d10c894aa9ccc61f5e76193cf65; state: awaiting_approval</td></tr>
 <tr><td>74</td><td>2026-01-05T09:30:00Z</td><td>Dana Reviewer (invented)</td><td>approved</td><td>approval: 4; from: awaiting_approval; plan: a6c74785415d50247112c6a383911a9e5b7f0d10c894aa9ccc61f5e76193cf65; state: approved</td></tr>
 <tr><td>86</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written (filled: company); op: fill_empty_fields; ref: 3</td></tr>

@@ -24,12 +24,20 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <p>From: Rosa Vidal (invented) · Vidal Travel (invented) · rosa.vidal@example.com · 000-000-0219. Received 2026-01-05T12:20:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>We need 3 offices cleaned twice a week, with a budget of 1,200 a month, starting on 2026-02-02.</blockquote>
 <p><b>Who it is:</b> A new contact: no contact in the CRM has this e-mail or phone.</p>
-<p><b>Model step:</b> <span class="label">Constructed answer, not from a model</span></p>
+<p><b>Model step:</b> <span class="label">Recorded</span></p>
 <table>
-<tr><th>Summary</th><td>We need 3 offices cleaned twice a week, with a budget of 1,200 a month, starting on 2026-02-02.</td></tr>
+<tr><th>Summary</th><td>Requests cleaning of 3 offices twice a week, with a budget of 1,200 a month, starting on 2026-02-02.</td></tr>
 <tr><th>Intent</th><td>quote_request</td></tr>
 <tr><th>Urgency</th><td>normal</td></tr>
-<tr><th>Reply draft</th><td><pre>Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet.</pre></td></tr>
+<tr><th>Reply draft</th><td><pre>Hello {{name}},
+
+Thank you for getting in touch about cleaning 3 offices twice a week, within a budget of 1,200 a month, starting on 2026-02-02.
+
+To prepare an accurate quote, could you let us know the approximate size of each office, the number of staff, and whether cleaning supplies should be included? Please also confirm the start date, as 2026-02-02 appears to be in the past.
+
+Once we have these details, we will send you a proposal.
+
+Kind regards</pre></td></tr>
 </table>
 <p class="note">A reply draft is only a draft: the desk never sends anything to a person who enquired.</p>
 <p><b>The plan</b> (plan cfe7d0e9b0ed): exactly what would be written to the CRM, and nothing else.</p>
@@ -50,7 +58,7 @@ python -I desk.py reject webform:wf-000119 --by "Your name" --reason "why"</pre>
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>47</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>reasons: []; state: received; via: file</td></tr>
-<tr><td>48</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Constructed answer, not from a model; outcome: used; request: b781ac80d4af83b01f44848b1d1ad346522fa55aadc2147528666253032e38a5</td></tr>
+<tr><td>48</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: b781ac80d4af83b01f44848b1d1ad346522fa55aadc2147528666253032e38a5</td></tr>
 <tr><td>49</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: new; plan: cfe7d0e9b0edd48a0a1034a8e60c6634658e911b3e6288040524a340a7021215; state: awaiting_approval</td></tr>
 <tr><td>111</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T12:20:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
 </table>

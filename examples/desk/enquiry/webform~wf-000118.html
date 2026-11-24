@@ -24,12 +24,16 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <p>From: Quinn Hart (invented) · Hart Dental Lab (invented) · quinn.hart@example.com · 000-000-0218. Received 2026-01-05T12:01:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>Please call me on 000-000-0218 after 5pm about a quote for the lab.</blockquote>
 <p><b>Who it is:</b> A new contact: no contact in the CRM has this e-mail or phone.</p>
-<p><b>Model step:</b> <span class="label">Constructed answer, not from a model</span></p>
+<p><b>Model step:</b> <span class="label">Recorded</span></p>
 <table>
-<tr><th>Summary</th><td>Please call me on [phone] after 5pm about a quote for the lab.</td></tr>
+<tr><th>Summary</th><td>The sender asks for a phone call after 5pm to discuss a quote for the lab.</td></tr>
 <tr><th>Intent</th><td>quote_request</td></tr>
 <tr><th>Urgency</th><td>normal</td></tr>
-<tr><th>Reply draft</th><td><pre>Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet.</pre></td></tr>
+<tr><th>Reply draft</th><td><pre>Hello {{name}},
+
+Thank you for getting in touch about a quote for the lab. We would be glad to help. We will call you after 5pm as you asked. If there is anything specific you would like the quote to cover, please let us know before the call so we can prepare.
+
+Kind regards</pre></td></tr>
 </table>
 <p class="note">A reply draft is only a draft: the desk never sends anything to a person who enquired.</p>
 <p><b>The plan</b> (plan f4ce6c46956e): exactly what would be written to the CRM, and nothing else.</p>
@@ -50,7 +54,7 @@ python -I desk.py reject webform:wf-000118 --by "Your name" --reason "why"</pre>
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>44</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>reasons: []; state: received; via: file</td></tr>
-<tr><td>45</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Constructed answer, not from a model; outcome: used; request: dd8847f26402f067152334af1c3bf3ed733e9bec680ce0b54273661d81412a12</td></tr>
+<tr><td>45</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: dd8847f26402f067152334af1c3bf3ed733e9bec680ce0b54273661d81412a12</td></tr>
 <tr><td>46</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: new; plan: f4ce6c46956edb272da057f8c15f06c79243a0e4536e7d13c48e1bbf4b5f64b4; state: awaiting_approval</td></tr>
 <tr><td>110</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T12:01:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
 </table>

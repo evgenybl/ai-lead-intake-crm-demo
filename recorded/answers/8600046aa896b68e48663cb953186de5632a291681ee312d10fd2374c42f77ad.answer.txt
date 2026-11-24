@@ -1,0 +1,1 @@
+{"summary":"A vendor promotes a follower-growth package, claiming it will double the business's reach overnight. It is an unsolicited sales pitch with no specific request or contact details.","intent":"spam","urgency":"low","reply_draft":null}
