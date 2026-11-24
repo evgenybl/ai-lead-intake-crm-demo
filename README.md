@@ -187,7 +187,9 @@ One enquiry's page from that folder, after its plan was approved and written:
 
 *A capture of `examples/desk/enquiry/webform~wf-000109-ad3b9127.html` at 1280 by 1200 in a headless browser with no
 network, taken on 24 November 2026. The page is written by `desk.py render`; CI does not make the picture again, so if
-the two ever differ, the page is right.*
+the two ever differ, the page is right. They differ today in one way: the example story's clock was moved six hours
+later after the picture was taken, so each time of the desk's own steps on the page, from the arrival at 15:00 on, is
+six hours later than in the picture. Nothing else on the page changed.*
 
 **The tests:** `python -I run_tests.py` runs every test. `docs/TESTS.md` lists them.
 

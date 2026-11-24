@@ -55,7 +55,13 @@ class DocumentTests(unittest.TestCase):
             readme = handle.read()
         self.assertIn("](docs/img/enquiry-page.png)", readme)
         self.assertIn("*A capture of `examples/desk/enquiry/webform~wf-000109-ad3b9127.html`", readme)
-        self.assertTrue(os.path.exists(os.path.join(ROOT, "examples", "desk", "enquiry", "webform~wf-000109-ad3b9127.html")))
+        page = os.path.join(ROOT, "examples", "desk", "enquiry", "webform~wf-000109-ad3b9127.html")
+        self.assertTrue(os.path.exists(page))
+        # The picture is older than the story's present clock, and the caption says so, with the hour the page shows.
+        self.assertIn("each time of the desk's own steps on the page, from the arrival at 15:00 on, is\nsix hours later "
+                      "than in the picture", readme)
+        with open(page, encoding="utf-8") as handle:
+            self.assertIn("(arrived 2026-01-05T15:00:00Z, by file)", handle.read())
 
     def test_every_image_a_markdown_file_embeds_exists(self):
         seen = 0
