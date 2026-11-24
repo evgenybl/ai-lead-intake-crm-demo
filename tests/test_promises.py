@@ -133,6 +133,7 @@ class FormulaLikeContactFieldsTests(DeskCase):
     def test_none_of_the_four_contact_fields_reaches_the_crm_starting_like_a_formula(self):
         self.init()
         cases = {"formula-phone": {"phone": "=1+1+cmd|' /C calc'!A0 5550142", "email": ""},
+                 "plus-formula-phone": {"phone": "+1+1+cmd|' /C calc'!A0 5550142", "email": ""},
                  "formula-email": {"email": "=1+1@example.com", "phone": ""},
                  "escape-email": {"email": "esc\x1b[31m@example.com", "phone": ""}}
         with self.desk() as desk:

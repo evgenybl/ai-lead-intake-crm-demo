@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-339 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+341 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -222,6 +222,8 @@ Withdrawing or rejecting after an apply that did not finish leaves the ledger tr
 Two appliers forced to interleave between the look-up and the write: the second is refused.
 
 - `test_a_second_apply_while_one_is_between_its_look_up_and_its_write_is_refused`
+- `test_a_withdrawal_while_an_apply_runs_is_refused_and_the_apply_writes_on_a_live_approval`
+- `test_a_withdrawal_that_finds_its_approval_used_by_an_apply_that_just_ended_says_so`
 
 ### LockedCRMFileTests
 

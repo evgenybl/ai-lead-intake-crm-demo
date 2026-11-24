@@ -82,14 +82,18 @@ class ValidateTests(unittest.TestCase):
         cases = [("phone", "=1+1+cmd|' /C calc'!A0 5550142"), ("email", "=1+1@example.com"), ("phone", "+x 000-000-0101"),
                  ("phone", "+ 44 000 000 0101"), ("phone", "-000-000-0101"), ("phone", "@000 000 0101"),
                  ("phone", " =000 000 0101"), ("email", "+tag@example.com"), ("email", "-dash@example.com"),
-                 ("email", " =spaced@example.com")]
+                 ("email", " =spaced@example.com"), ("phone", "+1+1+cmd|' /C calc'!A0 5550142"),
+                 ("phone", '+0000000101=HYPERLINK("x")'), ("phone", "+1 000 000 0101 ext 12"),
+                 ("phone", " +1 000 000 0101;x")]
         for field, value in cases:
             with self.subTest(field=field, value=value):
                 self.assertIn(f"formula_start:{field}", reasons_of(enquiry(**{field: value})))
-        for phone in ("+1 000-000-0101", "+44 (0)20 0000 0101", "(000) 000-0106", "000.000.0106", " +1 000 000 0101"):
+        for phone in ("+1 000-000-0101", "+44 (0)20 0000 0101", "(000) 000-0106", "000.000.0106", " +1 000 000 0101",
+                      "+1/000/000/0101", "000 000 0101 ext 12"):
             with self.subTest(phone=phone):
                 self.assertEqual(reasons_of(enquiry(phone=phone)), [])
-        self.assertIn("a phone may start with + and a digit", validate.describe("formula_start:phone"))
+        self.assertIn("a phone may start with + and a digit, and then holds only digits, spaces and ( ) - . /",
+                      validate.describe("formula_start:phone"))
 
     def test_an_email_or_a_phone_with_control_characters_is_refused(self):
         self.assertEqual(reasons_of(enquiry(email="esc\x1b[31m@example.com")), ["control_characters:email"])

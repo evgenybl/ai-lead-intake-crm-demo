@@ -280,7 +280,13 @@ class Desk:
         live = self.store.live_approval(key)
         if enquiry.state not in ("approved", "apply_failed") or live is None:
             raise DeskError(f"{key} has no approval to withdraw; it is {enquiry.state}")
-        with self._settled(key) as found:
+        with self._settled(key, alone=True) as found:
+            # No apply runs now, and none starts before this ends. One that ran a moment ago may have used the
+            # approval, so the state is read again.
+            enquiry = self._get(key)
+            live = self.store.live_approval(key)
+            if enquiry.state not in ("approved", "apply_failed") or live is None:
+                raise DeskError(f"{key} has no approval to withdraw; it is {enquiry.state}")
             with self.store.transaction():
                 self._record_settled(key, found)
                 self.store.close_approval(live.id, "withdrawn", who, why)
@@ -288,18 +294,21 @@ class Desk:
         return found
 
     @contextmanager
-    def _settled(self, key: str):
-        """What the CRM holds for each step of this enquiry left `started`, looked up while no apply runs."""
+    def _settled(self, key: str, alone: bool = False):
+        """What the CRM holds for each step of this enquiry left `started`, looked up while no apply runs.
+
+        With `alone`, the apply lock is held even when no step is left started: a withdrawal takes an approval
+        back, and an apply that runs meanwhile would write on it after it was withdrawn."""
         from .gate import WriteGate
 
-        if not any(row.status == "started" for row in self.store.ledger_rows(key)):
+        if not alone and not any(row.status == "started" for row in self.store.ledger_rows(key)):
             yield []
             return
         try:
             with self.store.apply_lock():
                 rows = [row for row in self.store.ledger_rows(key) if row.status == "started"]
                 try:
-                    found = WriteGate(self).settle(key, rows)
+                    found = WriteGate(self).settle(key, rows) if rows else []
                 except CRMError as error:
                     raise DeskError(f"an apply of {key} began a step it did not record, and the CRM could not be "
                                     f"read to see whether it was written ({error}); nothing was changed. Try again "

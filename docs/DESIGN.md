@@ -78,9 +78,9 @@ number (7 to 15 digits); consent that is not the JSON value `true`; the honeypot
 5,000 characters after trimming; a `received_at` that is not a date and time; a text field sent as another JSON
 type; a name, company, e-mail or phone that starts like a spreadsheet formula (`=`, `+`, `-`, `@`, a tab or a
 carriage return, as sent or after trimming; a phone may start with a `+` that a digit follows, as a country code
-does); a name, company, e-mail or phone that holds a control character, or a character that reorders or hides
-text (a bidi control, a zero-width space). These four are the fields the desk writes to the CRM. A phone may
-otherwise hold any character: only its ASCII digits are compared, and it must have 7 to 15 of them, or none (a
+does, and then holds only digits, spaces and `( ) - . /`, so `+1 000 000 0101 ext 12` is refused); a name, company, e-mail or phone that holds a control character, or a character that reorders or hides
+text (a bidi control, a zero-width space). These four are the fields the desk writes to the CRM. A phone that
+does not start with a `+` may otherwise hold any character: only its ASCII digits are compared, and it must have 7 to 15 of them, or none (a
 phone with no digit, such as "call me", counts as no phone). Every reason that applies is kept, in a fixed
 order.
 
@@ -170,7 +170,7 @@ A plan is also computed from the desk's ledger: what an apply of an earlier plan
 before it stopped. A note or a task the ledger records on another contact than the new plan would use is not
 planned again (a second one would break promise 2); a contact created, or fields filled, that the new plan does
 not stand for, are named too. Each goes under a fifth key, `"already_written"`, which `plan` and the page show as
-"already in the CRM, not written again". A plan with nothing already written has no such key, so its sha256 is
+"already in the CRM, written by an apply that did not complete, not written again". A plan with nothing already written has no such key, so its sha256 is
 what it always was.
 
 The plan is computed from the CRM as it is now, so its sha256 changes when the CRM changes in a way that
@@ -242,8 +242,10 @@ same plan under the same approval, and finds the write (below).
 transaction on a file of its own beside the desk file (`desk.sqlite3-apply-lock`). A second `apply` started
 meanwhile finds it taken and stops before it reads anything, with a message, and writes nothing. The operating
 system releases the lock when the process ends, so a killed apply never leaves it held. A test forces two
-appliers to interleave between a look-up and a write: the second is refused, and one note is written. The lock
-does not stop another program, or a second desk with files of its own, from writing the same CRM.
+appliers to interleave between a look-up and a write: the second is refused, and one note is written. A
+withdrawal takes the same lock before it takes the approval back: while an apply runs it is refused with one line
+and changes nothing, so no apply writes on an approval withdrawn under it; a second test forces that order. The
+lock does not stop another program, or a second desk with files of its own, from writing the same CRM.
 
 **A lost ledger writes nothing twice**, and asks a person again when it matters: with no ledger, nothing
 on the desk shows that a step started, so the gate treats the apply as a first attempt and re-plans. If

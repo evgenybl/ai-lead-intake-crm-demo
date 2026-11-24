@@ -575,6 +575,85 @@ class OneApplyAtATimeTests(DeskCase):
         self.assertEqual(self.problems(), [])
         self.assertEqual(self.cli("apply"), "apply: nothing is approved\n")  # the lock was released
 
+    def test_a_withdrawal_while_an_apply_runs_is_refused_and_the_apply_writes_on_a_live_approval(self):
+        import threading
+
+        self.init()
+        with self.desk() as desk:
+            desk.receive(enquiry(email="ada.fenwick@example.com", phone="000-000-0101", name="Ada Fenwick (invented)",
+                                 company="Fenwick Dental (invented)"), via="file")
+            approve_in(desk, KEY)
+        looked, release = threading.Event(), threading.Event()
+
+        class PausedAtItsFirstRead:
+            def __init__(self, inner):
+                self._inner = inner
+
+            def __getattr__(self, name):
+                attribute = getattr(self._inner, name)
+                if name != "find_by_email":
+                    return attribute
+
+                def read_then_wait(*args):
+                    found = attribute(*args)  # the gate checks the plan against the CRM before its first step
+                    looked.set()
+                    release.wait(10)
+                    return found
+
+                return read_then_wait
+
+        first = []
+
+        def first_apply():
+            with self.desk() as desk:
+                desk.crm = PausedAtItsFirstRead(desk.crm)
+                first.extend(desk.apply(key=KEY))
+
+        thread = threading.Thread(target=first_apply)
+        thread.start()
+        try:
+            self.assertTrue(looked.wait(10))
+            with self.desk() as desk:  # the apply has read the approval and begun no step yet
+                self.assertEqual([row.status for row in desk.store.ledger_rows(KEY)], [])
+                with self.assertRaises(DeskError) as refused:
+                    desk.withdraw(KEY, PERSON)
+                self.assertEqual(desk.store.get_enquiry(KEY).state, "approved")
+                self.assertIsNotNone(desk.store.live_approval(KEY))
+            self.assertIn("another `desk.py apply` is running on this desk; nothing was changed", str(refused.exception))
+        finally:
+            release.set()
+            thread.join(10)
+        self.assertEqual([r.outcome for r in first], ["applied"])
+        self.assertNotIn(" withdrawn ", self.cli("trail", KEY))
+        self.assertEqual(self.problems(), [])
+        refused = self.cli("withdraw", KEY, "--by", PERSON, expect=1)  # afterwards: the approval was used
+        self.assertIn(f"{KEY} has no approval to withdraw; it is applied", refused)
+
+    def test_a_withdrawal_that_finds_its_approval_used_by_an_apply_that_just_ended_says_so(self):
+        from contextlib import contextmanager
+
+        self.init()
+        with self.desk() as desk:
+            desk.receive(enquiry(email="ada.fenwick@example.com", phone="000-000-0101", name="Ada Fenwick (invented)",
+                                 company="Fenwick Dental (invented)"), via="file")
+            approve_in(desk, KEY)
+        with self.desk() as desk:
+            take_the_lock = desk.store.apply_lock
+
+            @contextmanager
+            def after_an_apply_that_ran_to_its_end():  # between the withdrawal's first look and its lock
+                with self.desk() as other:
+                    self.assertEqual([r.outcome for r in other.apply(key=KEY)], ["applied"])
+                with take_the_lock():
+                    yield
+
+            desk.store.apply_lock = after_an_apply_that_ran_to_its_end
+            with self.assertRaises(DeskError) as refused:
+                desk.withdraw(KEY, PERSON)
+        self.assertEqual(str(refused.exception), f"{KEY} has no approval to withdraw; it is applied")
+        self.assertNotIn(" withdrawn ", self.cli("trail", KEY))
+        self.assertEqual(self.problems(), [])
+
 
 class LockedCRMFileTests(DeskCase):
     def test_a_practice_crm_file_locked_by_another_program_is_apply_failed_not_a_crash(self):

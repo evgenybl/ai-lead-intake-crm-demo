@@ -17,8 +17,9 @@ TEXT_FIELDS = ("source", "source_id", "received_at", "name", "email", "phone", "
 MAX_MESSAGE_CHARS = 5000
 # A value that starts so could be read as a formula by a spreadsheet that opens an export of the CRM or the trail.
 FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
-# The four contact fields the desk writes to the CRM. A phone may start with a + that a digit follows (+44 ...);
-# any other character may stand in a phone, except a control character: only its digits are compared.
+# The four contact fields the desk writes to the CRM. A phone may start with a + that a digit follows (+44 ...),
+# and then holds only what a number is written with; a phone that starts otherwise may hold any character except
+# a control character: only its digits are compared.
 SPREADSHEET_FIELDS = ("name", "company", "email", "phone")
 
 REASONS = {
@@ -33,7 +34,7 @@ REASONS = {
     "received_at_invalid": "received_at is not a date and time",
     "not_text": "a field that must be text is not text",
     "formula_start": "a field that starts like a spreadsheet formula (=, +, -, @, a tab or a carriage return; a phone "
-                     "may start with + and a digit)",
+                     "may start with + and a digit, and then holds only digits, spaces and ( ) - . /)",
     "control_characters": "a field that holds control characters",
 }
 
@@ -111,10 +112,16 @@ def starts_like_formula(value: str) -> bool:
     return bool(value) and (value[:1] in FORMULA_STARTS or value.strip()[:1] in FORMULA_STARTS)
 
 
+_PHONE_AFTER_PLUS = re.compile(r"\+[0-9][0-9 ()./-]*")
+
+
 def phone_starts_like_formula(value: str) -> bool:
-    """As starts_like_formula, but a + that a digit follows is how a phone number with a country code starts."""
+    """As starts_like_formula, but a + that a digit follows is how a phone number with a country code starts.
+
+    Such a phone then holds only what a number is written with: digits, spaces and ( ) - . /. Anything else after
+    the + (a letter, a quote, another sign) is how a formula goes on, and is refused."""
     for text in (value, value.strip()):
-        if text[:1] == "+" and text[1:2] in tuple("0123456789"):
+        if _PHONE_AFTER_PLUS.fullmatch(text):
             continue
         if text[:1] in FORMULA_STARTS:
             return True

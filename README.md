@@ -543,10 +543,11 @@ was written stays in the CRM: the new plan does not write it twice, and names it
   file and recompute the chain (see promise 4).
 - No reply is ever sent. The HTTP CRM is a shape defined here. This project writes no CSV file. Even so, an
   enquiry whose name, company, e-mail or phone starts with `=`, `+`, `-`, `@`, a tab or a carriage return is
-  refused (a phone may start with a `+` followed by a digit, as `+44` does), and so is one whose name, company,
+  refused (a phone may start with a `+` followed by a digit, as `+44` does, and then holds only digits, spaces
+  and `( ) - . /`), and so is one whose name, company,
   e-mail or phone holds a control character, and so is such a name given with `--by`, so none of them can become
-  a formula in a spreadsheet that opens an export. A phone may otherwise hold any characters: only its digits are
-  compared, and it must have 7 to 15 of them, or none.
+  a formula in a spreadsheet that opens an export. A phone that does not start with a `+` may otherwise hold any
+  characters: only its digits are compared, and it must have 7 to 15 of them, or none.
 
 ## How this was built
 
