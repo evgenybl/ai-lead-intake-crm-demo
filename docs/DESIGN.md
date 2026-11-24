@@ -59,6 +59,7 @@ happens is an audit row that records the state it comes from and the state it en
 | `received` | `assessed` | `awaiting_approval`, or a held state | system |
 | a held state | `resolved` | `awaiting_approval`, or a held state if the resolution no longer applies | a person |
 | `awaiting_approval` | `replanned` | `awaiting_approval`, or a held state | system (`desk.py plan`, when the CRM changed) |
+| `awaiting_approval` | `resolved` | `awaiting_approval`, or a held state | a person (`resolve --as new`, for a match by the phone alone) |
 | `awaiting_approval` | `approved` | `approved` | a person |
 | `awaiting_approval` | `rejected` | `rejected` | a person, with a reason |
 | `approved` | `withdrawn` | `awaiting_approval` | a person |
@@ -133,7 +134,9 @@ The contacts found by the e-mail and by the phone form one set.
   is returning only if neither the enquiry nor the contact has an e-mail. If the enquiry gives an e-mail the
   contact does not have, or the contact has an e-mail the enquiry does not give, the enquiry is **held: phone
   only** (state `held_possible_duplicate`): a colleague on a shared office line must not be attached to someone
-  else's contact, and the plan must not write a new person's e-mail into it.
+  else's contact, and the plan must not write a new person's e-mail into it. Found by the phone alone with no
+  e-mail on either side, it is returning and waits for approval; as the phone may still be shared, a person may
+  resolve it as new instead (see "How a hold is resolved").
 - Two or more: **held: two contacts**. This includes a phone that alone belongs to two contacts (phones
   are not unique in a CRM).
 - None: a contact with the same normalised name **and** the same normalised company is a **possible
@@ -149,6 +152,9 @@ The contacts found by the e-mail and by the phone form one set.
 - `new` is refused while the enquiry's e-mail belongs to a contact: a second contact with that e-mail
   would break promise 2. For a two-contacts hold that is found by its e-mail, a person therefore chooses
   between the contacts found. A possible duplicate, and a phone-only hold, can be resolved either way.
+- An enquiry waiting for approval whose contact was found by the phone alone (no e-mail on either side, no
+  person's resolution yet) can be resolved as `new`, and only as new: it is planned again as a new contact, and
+  waits for approval of that plan. `plan` and the page show the command.
 - The resolution is an audit row with the person's name, and the enquiry gets its plan at once.
 - A resolution applies only while it still makes sense: `new` stops applying if the e-mail later
   belongs to a contact; `contact:<id>` stops applying if the contact is gone. The plan then follows the
@@ -509,7 +515,8 @@ for good (see "Limits").
 - **The hashed key** treats letter case, a dropped full stop or another Unicode form of the same letter in the
   message as a new enquiry, and the same message sent either side of midnight (UTC) as two.
 - **A match by phone alone is held** whenever the e-mails do not agree, so a person confirms every such case,
-  even a customer calling from their known number without giving an e-mail.
+  even a customer calling from their known number without giving an e-mail. With no e-mail on either side it is
+  returning, and a person may resolve it as new.
 - **The checks cannot catch an answer that is well formed and wrong.** The real answers show four kinds, each
   passing every check: an assumed date (the figures enquiry: "2026-02-02 appears to be in the past", though
   the model was given no date and the enquiry arrives in January 2026); an invented service ("Yes, we do clean

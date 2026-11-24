@@ -11,7 +11,7 @@ from . import normalise, planner, validate
 from .canonical import canonical_json
 from .crm.base import CRMError
 from .draft import RecordedBackend
-from .identity import idempotency_key
+from .identity import idempotency_key, rests_on_the_phone_alone
 from .store import ApplyBusy
 
 SYSTEM = "system"
@@ -183,11 +183,16 @@ class Desk:
     # -- a person's decisions -------------------------------------------------------------------------
 
     def resolve(self, key: str, as_: str, by: str) -> str:
-        """Resolve a hold: `new`, or `contact:<id>` for one of the contacts identity found."""
+        """Resolve a hold: `new`, or `contact:<id>` for one of the contacts identity found. An enquiry waiting for
+        approval whose contact was found by the phone alone may be resolved as `new` too: the phone may be shared."""
         who = person(by)
         enquiry = self._get(key)
-        if enquiry.state not in ("held_two_contacts", "held_possible_duplicate"):
+        phone_alone = enquiry.state == "awaiting_approval" and rests_on_the_phone_alone(enquiry.identity)
+        if enquiry.state not in ("held_two_contacts", "held_possible_duplicate") and not phone_alone:
             raise DeskError(f"{key} is not held; it is {enquiry.state}")
+        if phone_alone and as_ != "new":
+            raise DeskError(f"{key} was matched to contact {enquiry.identity.get('contact')} by its phone alone; it "
+                            "can be resolved as new, or approved as it is")
         found = enquiry.identity or {}
         candidates = sorted(set(found.get("by_email", []) + found.get("by_phone", []) + found.get("by_name_and_company", [])))
         if as_ == "new":

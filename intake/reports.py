@@ -9,6 +9,7 @@ import unicodedata
 
 from . import audit, validate
 from .doctor import PROMISES
+from .identity import rests_on_the_phone_alone
 
 
 _HIDDEN = ("Cc", "Cf", "Co", "Cs", "Zl", "Zp")
@@ -167,6 +168,9 @@ def enquiry_lines(store, enquiry, crm_note: str = "", full: bool = False) -> lis
             lines.append(f"  written so far for this enquiry: {so_far}")
         if enquiry.state == "awaiting_approval":
             lines.append(f"  to approve: desk.py approve {enquiry.key} --by <name> --plan {enquiry.plan_sha[:12]}")
+            if rests_on_the_phone_alone(found):
+                lines.append(f"  found by the phone alone; if it is someone else on that phone: desk.py resolve "
+                             f"{enquiry.key} --as new --by <name>")
     if enquiry.state == "apply_failed":
         lines.append(f"  apply_failed: {printable(enquiry.error)}")
         lines.append(f"  to retry: desk.py apply --key {enquiry.key} (it completes what is missing, writes nothing twice)")

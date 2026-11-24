@@ -13,6 +13,7 @@ import html
 import json
 
 from . import audit, reports, validate
+from .identity import rests_on_the_phone_alone
 from .reports import different_replays
 
 STATE_WORDS = {
@@ -282,30 +283,43 @@ def _short(value, limit: int = 160) -> str:
 
 def _actions(enquiry, decisions: Decisions) -> list:
     key = enquiry.key
-    if enquiry.state == "awaiting_approval":
-        if decisions.active:
-            hidden = (f'<input type="hidden" name="token" value="{esc(decisions.token)}">'
-                      f'<input type="hidden" name="key" value="{esc(key)}">'
-                      f'<input type="hidden" name="plan" value="{esc(enquiry.plan_sha)}">')
-            return [
-                '<form method="post" action="/desk/decide">', hidden,
-                '<input type="hidden" name="decision" value="approve">',
-                '<label><input type="checkbox" name="confirm" value="yes"> I have read this plan and want exactly '
-                "this written to the CRM.</label><br>",
-                '<label>Your name <input name="by" maxlength="80" required></label> ',
-                "<button>Approve</button></form>",
-                '<form method="post" action="/desk/decide">', hidden,
-                '<input type="hidden" name="decision" value="reject">',
-                '<label><input type="checkbox" name="confirm" value="yes"> I want nothing written for this '
-                "enquiry.</label><br>",
-                '<label>Your name <input name="by" maxlength="80" required></label> ',
-                '<label>Reason <input name="reason" maxlength="500" required></label> ',
-                "<button>Reject</button></form>",
-            ]
-        return ["<p><b>To decide</b> (the page takes no decisions unless the server was started with "
-                "<code>--allow-decisions</code>):</p>",
-                f'<pre>python -I desk.py approve {esc(key)} --by "Your name" --plan {esc(enquiry.plan_sha[:12])}\n'
-                f'python -I desk.py reject {esc(key)} --by "Your name" --reason "why"</pre>']
+    if enquiry.state == "awaiting_approval" and rests_on_the_phone_alone(enquiry.identity):
+        return [*_actions_awaiting(enquiry, decisions),
+                "<p><b>Found by the phone alone.</b> If it is someone else on that phone, resolve it as new; it is then "
+                "planned again as a new contact:</p>",
+                f'<pre>python -I desk.py resolve {esc(key)} --as new --by "Your name"</pre>']
+    return _actions_awaiting(enquiry, decisions) if enquiry.state == "awaiting_approval" else _actions_other(enquiry)
+
+
+def _actions_awaiting(enquiry, decisions: Decisions) -> list:
+    key = enquiry.key
+    if decisions.active:
+        hidden = (f'<input type="hidden" name="token" value="{esc(decisions.token)}">'
+                  f'<input type="hidden" name="key" value="{esc(key)}">'
+                  f'<input type="hidden" name="plan" value="{esc(enquiry.plan_sha)}">')
+        return [
+            '<form method="post" action="/desk/decide">', hidden,
+            '<input type="hidden" name="decision" value="approve">',
+            '<label><input type="checkbox" name="confirm" value="yes"> I have read this plan and want exactly '
+            "this written to the CRM.</label><br>",
+            '<label>Your name <input name="by" maxlength="80" required></label> ',
+            "<button>Approve</button></form>",
+            '<form method="post" action="/desk/decide">', hidden,
+            '<input type="hidden" name="decision" value="reject">',
+            '<label><input type="checkbox" name="confirm" value="yes"> I want nothing written for this '
+            "enquiry.</label><br>",
+            '<label>Your name <input name="by" maxlength="80" required></label> ',
+            '<label>Reason <input name="reason" maxlength="500" required></label> ',
+            "<button>Reject</button></form>",
+        ]
+    return ["<p><b>To decide</b> (the page takes no decisions unless the server was started with "
+            "<code>--allow-decisions</code>):</p>",
+            f'<pre>python -I desk.py approve {esc(key)} --by "Your name" --plan {esc(enquiry.plan_sha[:12])}\n'
+            f'python -I desk.py reject {esc(key)} --by "Your name" --reason "why"</pre>']
+
+
+def _actions_other(enquiry) -> list:
+    key = enquiry.key
     if enquiry.state in ("held_two_contacts", "held_possible_duplicate"):
         return ["<p><b>To resolve:</b></p>",
                 f'<pre>python -I desk.py resolve {esc(key)} --as new --by "Your name"\n'

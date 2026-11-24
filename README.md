@@ -501,7 +501,9 @@ was written stays in the CRM: the new plan does not write it twice, and names it
 - Matching is by exact e-mail or phone, so one person with two addresses is two contacts until a person says
   otherwise. The phone is compared as its digits, with no knowledge of country codes. A match by phone alone is
   held whenever the e-mails do not agree, so a person confirms every such case, even the common one of a customer
-  calling from their known number without giving an e-mail.
+  calling from their known number without giving an e-mail. When neither has an e-mail, the phone alone makes it
+  returning; `plan` and the page then offer `desk.py resolve <key> --as new` for someone else on the same phone,
+  and the enquiry is planned again as a new contact.
 - A message with no form id is recognised by its e-mail, phone, message and the UTC date it was sent. The same
   message sent just before and just after midnight (UTC) is therefore two enquiries; so is a copy whose message
   differs only in letter case, by a dropped full stop, or by another Unicode form of the same letter.

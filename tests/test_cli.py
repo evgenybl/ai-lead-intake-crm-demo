@@ -272,6 +272,35 @@ class CommandTests(DeskCase):
         self.assertEqual(self.crm_db().execute("SELECT email FROM contacts WHERE id = 5").fetchone()[0],
                          "elena.ruiz@example.com")  # the differing e-mail is shown, never overwritten
 
+    def test_a_match_by_the_phone_alone_can_be_resolved_as_new_and_is_then_planned_as_a_new_contact(self):
+        from intake import pages
+        from intake.crm.practice import PracticeCRM
+        from intake.home import crm_path
+        from tests.helpers import enquiry
+
+        crm = PracticeCRM(crm_path(self.home))
+        crm.create_contact({"name": "Ed Roe (invented)", "phone": "000-000-0177"}, "")  # a contact with no e-mail
+        crm.close()
+        key = "webform:phone-only1"
+        with self.desk() as desk:
+            desk.receive(enquiry(source_id="phone-only1", email="", phone="000-000-0177", name="Someone Else (invented)",
+                                 company=""), via="file")
+        plan = self.cli("plan", "--key", key)
+        self.assertIn("identity: returning: contact 11, found by phone", plan)
+        self.assertIn(f"found by the phone alone; if it is someone else on that phone: desk.py resolve {key} --as new "
+                      "--by <name>", plan)
+        with self.desk() as desk:
+            page = pages.enquiry_page(desk.store, key, pages.FileLinks(True), pages.Decisions())
+        self.assertIn(f'python -I desk.py resolve {key} --as new --by "Your name"', page)
+        self.assertIn("can be resolved as new", self.cli("resolve", key, "--as", "contact:11", "--by", PERSON, expect=1))
+        self.assertIn(f"resolved: {key} as new; now awaiting_approval", self.cli("resolve", key, "--as", "new", "--by", PERSON))
+        self.assertIn("create_contact", self.cli("plan", "--key", key))
+        self.assertIn("is not held", self.cli("resolve", key, "--as", "new", "--by", PERSON, expect=1))  # a person decided
+        self.approve_cli(key)
+        self.cli("apply")
+        self.assertEqual(self.crm_counts(), {"contacts": 12, "notes": 1, "tasks": 1})
+        self.assertRegex(self.cli("doctor"), r"doctor: (\d+) of \1 checks passed")
+
     def test_status_names_each_adapter(self):
         out = self.cli("status")
         self.assertIn("intake endpoint  POST /intake, 127.0.0.1 only: not configured", out)

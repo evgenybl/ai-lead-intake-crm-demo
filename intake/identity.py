@@ -12,6 +12,8 @@ Matching
                                  phone alone and the e-mails do not agree: the enquiry gives an e-mail the
                                  contact does not have, or the contact has an e-mail the enquiry does not
                                  give. A shared office line must not attach a new person to someone else.
+                                 Found by the phone alone with no e-mail on either side, it is returning,
+                                 and a person may still resolve it as new.
         two or more ............ held: two contacts (a person decides)
         none ................... a contact with the same normalised name AND company (both not empty)
                                  makes it held: possible duplicate; otherwise it is new.
@@ -78,6 +80,14 @@ class Match:
         if self.notes:
             found["notes"] = list(self.notes)
         return found
+
+
+def rests_on_the_phone_alone(found: dict | None) -> bool:
+    """Whether what identity found is a returning contact found by the phone alone, with no person's resolution:
+    the phone may be shared, so a person may still say the enquiry is someone new."""
+    found = found or {}
+    return (found.get("kind") == "returning" and bool(found.get("by_phone")) and not found.get("by_email")
+            and not found.get("resolution"))
 
 
 def match_contact(fields: dict, crm) -> Match:

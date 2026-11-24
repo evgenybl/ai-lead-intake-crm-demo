@@ -31,6 +31,7 @@ TRANSITIONS = {
     ("held_two_contacts", "resolved"): _PLANNED,
     ("held_possible_duplicate", "resolved"): _PLANNED,
     ("awaiting_approval", "replanned"): _PLANNED,
+    ("awaiting_approval", "resolved"): _PLANNED,  # a match by the phone alone, resolved as new by a person
     ("awaiting_approval", "approved"): frozenset({"approved"}),
     ("awaiting_approval", "rejected"): frozenset({"rejected"}),
     ("approved", "withdrawn"): frozenset({"awaiting_approval"}),
