@@ -41,6 +41,15 @@ def read(*path):
 
 
 class DocumentTests(unittest.TestCase):
+    def test_the_flow_comes_first_after_the_opening_paragraph_and_before_any_terminal_block(self):
+        readme = read("README.md")
+        invented = readme.index("**A demonstration on invented data:**")
+        flow = readme.index("```mermaid")
+        self.assertEqual(readme.count("```mermaid"), 1)
+        self.assertLess(invented, flow)
+        self.assertLess(flow, readme.index("```text"))
+        self.assertEqual(readme[invented:flow].count("\n\n"), 1)  # directly after that paragraph
+
     def test_the_enquiry_page_picture_is_captioned_with_how_it_was_made(self):
         with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as handle:
             readme = handle.read()

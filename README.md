@@ -10,6 +10,20 @@ approves that exact plan.
 **A demonstration on invented data:** it has never been used with real enquiries, and it is not connected to any
 real CRM product.
 
+```mermaid
+flowchart LR
+  A["Arrive: a web form over HTTP, or a file"] --> V{"Validate"}
+  V -- "fails a check" --> K["Kept and counted, with its reasons"]
+  V --> I{"Identity: exact e-mail or phone"}
+  I -- "two contacts, a shared phone, or a possible duplicate" --> H["Held until a person resolves it"]
+  I --> D["Draft: the model step, optional"]
+  H --> D
+  D --> P["Plan: the dry run"]
+  P --> AP{"A person approves this exact plan"}
+  AP --> G["The one write gate"]
+  G --> C[("CRM")]
+```
+
 Here is one enquiry as a person sees it before deciding (`python -I desk.py plan --key webform:wf-000109 --full`):
 a returning customer whose phone number has changed. The plan adds this note and this task to the existing contact;
 the new number is shown to the person and is not written over the old one.
@@ -257,20 +271,6 @@ the two ever differ, the page is right.*
    ```
 
 ## How it works
-
-```mermaid
-flowchart LR
-  A["Arrive: a web form over HTTP, or a file"] --> V{"Validate"}
-  V -- "fails a check" --> K["Kept and counted, with its reasons"]
-  V --> I{"Identity: exact e-mail or phone"}
-  I -- "two contacts, a shared phone, or a possible duplicate" --> H["Held until a person resolves it"]
-  I --> D["Draft: the model step, optional"]
-  H --> D
-  D --> P["Plan: the dry run"]
-  P --> AP{"A person approves this exact plan"}
-  AP --> G["The one write gate"]
-  G --> C[("CRM")]
-```
 
 1. **Arrive.** An enquiry is one JSON object, from `POST /intake` or a line of a file. Its idempotency key is the
    form's own id when it has one, otherwise a fingerprint of its e-mail, phone, message and date.
