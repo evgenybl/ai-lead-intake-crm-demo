@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-322 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+323 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -263,6 +263,7 @@ The request and its guard, the strict answer, the three backends, and the hidden
 - `test_the_senders_name_is_found_whatever_its_case_folding_or_unicode_form`
 - `test_a_name_in_a_script_written_without_spaces_is_found_inside_a_longer_run`
 - `test_an_address_with_an_apostrophe_or_other_legal_punctuation_is_replaced_whole`
+- `test_dates_and_times_in_the_message_are_taken_out_or_kept_as_the_readme_says`
 - `test_a_digit_group_is_kept_as_a_date_only_when_it_is_a_real_date`
 - `test_what_the_scrub_does_not_recognise_reaches_the_model`
 - `test_the_guard_refuses_a_request_that_still_holds_personal_data`

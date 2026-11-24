@@ -146,6 +146,18 @@ class RequestTests(unittest.TestCase):
         left_in = request.PROMPT + request.MESSAGE_OPEN + "pat.o'brien@example.com" + request.MESSAGE_CLOSE
         self.assertIn("an e-mail address", request.guard(left_in, FIELDS))
 
+    def test_dates_and_times_in_the_message_are_taken_out_or_kept_as_the_readme_says(self):
+        cases = {"From 02/02/2026.": "From [phone].", "From 2.2.2026 10:30.": "From [phone].",
+                 "From 02/02/2026 10:30.": "From [phone].", "From 2.2.2026.": "From 2.2.2026.",
+                 "From 2026-02-02 10:30.": "From 2026-02-02 10:30.", "From 2026-02-02.": "From 2026-02-02."}
+        for message, scrubbed in cases.items():
+            with self.subTest(message=message):
+                self.assertEqual(request.build(dict(FIELDS, message=message)).message, scrubbed)
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as handle:
+            said = " ".join(handle.read().split())
+        for example in ("`02/02/2026`", "`2.2.2026 10:30`", "`2026-02-02 10:30`"):
+            self.assertIn(example, said)
+
     def test_a_digit_group_is_kept_as_a_date_only_when_it_is_a_real_date(self):
         fields = dict(FIELDS, message="Ref 5550-14-23, ref 2026-02-30, from 2026-02-02 or 2028-02-29.")
         self.assertEqual(request.build(fields).message, "Ref [phone], ref [phone], from 2026-02-02 or 2028-02-29.")

@@ -522,9 +522,11 @@ was written stays in the CRM: the new plan does not write it twice, and names it
 - When a CRM's search lags behind its writes, a note written on a contact other than the one the plan names is
   not found by the search, and could be written again. The desk looks on the plan's own contact first, where it
   writes.
-- In the message sent to a model, any run of 7 or more digits is taken out as a possible phone number, so a large
-  figure is taken out too, and so are a date and a time written together. What the scrub does not recognise is
-  listed in "The model step".
+- In the message sent to a model, any run of 7 or more digits is taken out as a possible phone number. A run is
+  digits with nothing but non-letters between them, so a large figure is taken out too, and so is a date of 7 or
+  more digits written any way but `2026-02-02` (`02/02/2026`), and a date written that other way together with a
+  time (`2.2.2026 10:30`). A real date written `2026-02-02` is never part of a run: it stays, and so does a time
+  beside it (`2026-02-02 10:30`). What the scrub does not recognise is listed in "The model step".
 - The checks cannot catch a reply that is well formed and wrong: an assumed date, an invented service, a promise
   nobody made, a mistaken intent (see "What the checks cannot catch").
 - A refused enquiry is still kept, which a real deployment must weigh against its privacy duties. The trail is
