@@ -236,7 +236,7 @@ class AnthropicBackendTests(unittest.TestCase):
     """The live path, against a local mock only."""
 
     def setUp(self):
-        self.key = "test-" + secrets.token_hex(12)
+        self.key = secrets.token_urlsafe(24)
         self.fake = FakeAnthropic(self.key)
         self.url = self.fake.start()
         self.addCleanup(self.fake.stop)

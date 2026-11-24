@@ -1,6 +1,7 @@
 """End-to-end tests that drive `desk.py` through main(argv), on new files in a temporary folder."""
 import os
 import re
+import secrets
 import unittest
 
 from tests.helpers import DATA_FILE, FIXED, PERSON, DeskCase
@@ -152,7 +153,7 @@ class CommandTests(DeskCase):
         self.assertIn("crm http", out)
         self.assertIn("not configured (set INTAKE_CRM_URL and INTAKE_CRM_TOKEN)", out)
         self.assertIn("draft template   stand-in, no model: connected", out)
-        configured = self.cli("status", env={"INTAKE_SECRET": "s" * 8 + "-" + "t" * 8})
+        configured = self.cli("status", env={"INTAKE_SECRET": secrets.token_urlsafe(24)})
         self.assertIn("intake endpoint  POST /intake, 127.0.0.1 only: configured", configured)
 
     def test_the_trail_shows_one_enquirys_life_in_order(self):

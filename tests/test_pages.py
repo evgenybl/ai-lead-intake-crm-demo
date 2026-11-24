@@ -196,7 +196,7 @@ class ServeWithoutDecisionsTests(ServeCase):
 
 class ServeWithDecisionsTests(ServeCase):
     allow_decisions = True
-    secret = "s" * 8 + "-" + secrets.token_hex(8)
+    secret = secrets.token_urlsafe(24)
 
     def plan_of(self, key):
         with self.desk() as desk:
