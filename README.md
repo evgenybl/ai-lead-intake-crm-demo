@@ -290,7 +290,8 @@ flowchart LR
    empty fields, add a note, add a task.
 6. **Approve.** A person approves the plan by naming its fingerprint (`--plan`), or rejects it with a reason.
 7. **Apply.** One write gate sends approved plans to the CRM. It refuses an operation outside the four, a plan
-   with no approval, and an approval for a plan that is no longer the plan (the CRM changed since). Before each
+   with no approval, an approval for a plan that is no longer the plan (the CRM changed since), and a plan that
+   states a note or a task the desk already wrote on another contact. Before each
    write it records that the step has begun, and it looks first for what it would write, so nothing is written
    twice, even after a failure or a process stopped between a write and its record.
 
@@ -484,7 +485,9 @@ Every row is a case of the demo: `python -I demo.py --case <name>`.
 **An `apply_failed` that a retry cannot finish.** If the CRM changed so that the approved plan can no longer be
 written (say, the e-mail now belongs to a contact someone else created), every retry fails the same way. `plan`
 and the enquiry's page then say what clears it: `desk.py withdraw <key> --by <name>`, then `desk.py plan`. The
-enquiry is planned again against the CRM as it is now, and waits for a new approval.
+enquiry is planned again against the CRM as it is now, and waits for a new approval. Before it withdraws,
+`withdraw` looks in the CRM for any step the failed apply had begun, and records whether it was written. What
+was written stays in the CRM: the new plan does not write it twice, and names it; a rejection names it too.
 
 ## Limits
 

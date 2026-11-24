@@ -15,7 +15,8 @@ STATES = {
                                "agree, or no key matches but the name and company do; waits for a person",
     "awaiting_approval": "a plan is ready and waits for a person's approval",
     "approved": "a person approved exactly this plan; not applied yet",
-    "rejected": "a person rejected the plan, with a reason; nothing is written",
+    "rejected": "a person rejected the plan, with a reason; nothing more is written for it (what an apply that "
+                "did not finish wrote before is named)",
     "applied": "every operation of the approved plan is in the CRM",
     "apply_failed": "a CRM call failed; the error is named; a retry completes what is missing",
 }

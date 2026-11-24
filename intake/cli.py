@@ -263,7 +263,8 @@ def cmd_plan(args, say, home, choice, clock, environ, out) -> int:
 
 def _freshness(desk, enquiry) -> str:
     try:
-        current = planner.assess(enquiry.key, enquiry.payload, enquiry.resolution, desk.crm)
+        current = planner.assess(enquiry.key, enquiry.payload, enquiry.resolution, desk.crm,
+                                 desk.store.written(enquiry.key))
     except CRMError as error:
         return f"the CRM could not be read to check this plan: {error}"
     if current.sha == enquiry.plan_sha:
@@ -280,16 +281,28 @@ def cmd_approve(args, say, home, choice, clock, environ, out) -> int:
 
 def cmd_reject(args, say, home, choice, clock, environ, out) -> int:
     with open_desk(home, choice, environ, clock) as desk:
-        desk.reject(args.key, args.by, args.reason)
-    say(f"rejected: {args.key}; nothing will be written")
+        found = desk.reject(args.key, args.by, args.reason)
+        _say_settled(say, found)
+        earlier = reports.written_before(desk.store, desk.store.get_enquiry(args.key))
+    say(f"rejected: {args.key} {earlier}; nothing more will be written" if earlier
+        else f"rejected: {args.key}; nothing will be written")
     return 0
 
 
 def cmd_withdraw(args, say, home, choice, clock, environ, out) -> int:
     with open_desk(home, choice, environ, clock) as desk:
-        desk.withdraw(args.key, args.by, args.reason)
+        found = desk.withdraw(args.key, args.by, args.reason)
+        _say_settled(say, found)
     say(f"withdrawn: the approval of {args.key}; its plan waits again")
     return 0
+
+
+def _say_settled(say, found: list) -> None:
+    """What the desk found in the CRM for each step an apply began and did not record."""
+    for row, there in found:
+        what = (f"found in the CRM: {reports.describe_write(row.op, there[0], there[2])}" if there is not None
+                else "not in the CRM: not written")
+        say(f"the step {row.op}, begun by an apply that did not finish, is {what}; the desk records it")
 
 
 def cmd_resolve(args, say, home, choice, clock, environ, out) -> int:

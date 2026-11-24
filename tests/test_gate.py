@@ -1,14 +1,17 @@
 """Integration tests: the one write gate on real desk and practice CRM files."""
 import json
 import unittest
+from unittest import mock
 
 from intake.canonical import canonical_json, sha256_hex
+from intake import pages
 from intake.crm.practice import PracticeCRM
 from intake.flow import DeskError
 from intake.gate import GateRefusal, WriteGate
 from intake.home import crm_path
+from intake.store import DeskStore
 
-from tests.helpers import DeskCase, FlakyCRM, PERSON, approve_in, enquiry
+from tests.helpers import DATA_FILE, DeskCase, FlakyCRM, PERSON, approve_in, enquiry
 
 KEY = "webform:test-000001"
 
@@ -323,8 +326,13 @@ class KilledBetweenWriteAndRecordTests(DeskCase):
                         self.assertEqual(desk.store.get_enquiry(KEY).state, "approved")
                         started = [e for _, _, _, e, *_ in desk.store.trail(KEY)][-1]
                     self.assertEqual(started, "operation_started")
-                    self.assertTrue(any(f"the step {method} began and its end is not recorded" in p
-                                        for p in self.problems()), self.problems())
+                    said = [p for p in self.problems() if f"the step {method} began and its end is not recorded" in p]
+                    self.assertEqual(len(said), 1, self.problems())
+                    # It says what the desk knows, and a command that works in this state; never a cause it guesses.
+                    self.assertIn(f"{KEY} (approved): the step {method} began and its end is not recorded, so the desk "
+                                  f"does not know whether it reached the CRM; `desk.py apply --key {KEY}` continues "
+                                  "the plan under the same approval", said[0])
+                    self.assertNotIn("process stopped", said[0])
                     out = self.cli("apply")  # the same approval: no new decision is asked for
                     self.assertIn(f"{KEY}: applied", out)
                     self.assertIn("apply: 1 applied", out)
@@ -338,6 +346,161 @@ class KilledBetweenWriteAndRecordTests(DeskCase):
     def new_home(self, name):
         import os
         return os.path.join(self._tmp.name, name.replace(" ", "-"))
+
+
+class AfterAFailedApplyTests(DeskCase):
+    """Withdrawing or rejecting after an apply that did not finish leaves the ledger true: each step it began is
+    looked for in the CRM and recorded as written (with where) or not written. Nothing then says "nothing written"
+    of an enquiry part of whose plan is in the CRM, and the gate never applies a plan that would not do what it
+    says."""
+
+    def setUp(self):
+        super().setUp()
+        self.init()
+        self.cli("ingest", DATA_FILE)
+
+    def failed_at(self, key, method, mode="before"):
+        self.approve_cli(key)
+        with self.desk() as desk:
+            desk.crm = FlakyCRM(desk.crm, method, mode)
+            (result,) = desk.apply(key=key)
+        self.assertEqual(result.outcome, "apply_failed")
+        return result
+
+    def page(self, key):
+        with self.desk() as desk:
+            return pages.enquiry_page(desk.store, key, pages.FileLinks(True), pages.Decisions())
+
+    def test_withdraw_then_reject_after_a_failure_at_the_first_step_leaves_the_doctor_green(self):
+        key = "webform:wf-000102"
+        self.failed_at(key, "create_contact")  # the CRM refused the first write: nothing reached it
+        self.assertEqual(self.problems(), [])
+        out = self.cli("withdraw", key, "--by", PERSON)
+        self.assertIn("the step create_contact, begun by an apply that did not finish, is not in the CRM: not "
+                      "written; the desk records it", out)
+        self.assertEqual(self.problems(), [])
+        self.assertIn(f"rejected: {key}; nothing will be written",
+                      self.cli("reject", key, "--by", PERSON, "--reason", "not for us"))
+        self.assertEqual(self.cli("apply"), "apply: nothing is approved\n")
+        self.assertEqual(self.problems(), [])
+        self.assertRegex(self.cli("doctor"), r"doctor: (\d+) of \1 checks passed")
+        self.assertIn(" operation_not_written ", self.cli("trail", key))
+        self.assertEqual(self.crm_counts(), {"contacts": 10, "notes": 0, "tasks": 0})
+
+    def test_a_write_the_apply_made_and_did_not_record_is_found_and_recorded_when_withdrawn(self):
+        key = "webform:wf-000102"
+        self.failed_at(key, "create_contact", "after")  # the contact was written; its answer was lost
+        out = self.cli("withdraw", key, "--by", PERSON)
+        self.assertIn("the step create_contact, begun by an apply that did not finish, is found in the CRM: "
+                      "contact 11 created; the desk records it", out)
+        with self.desk() as desk:
+            (row,) = desk.store.ledger_rows(key)
+        self.assertEqual((row.op, row.status, row.crm_ref, row.contact), ("create_contact", "done", "11", "11"))
+        self.assertEqual(self.problems(), [])
+
+    def test_rejected_after_part_of_the_plan_was_written_says_what_was_written_and_where(self):
+        key = "webform:wf-000103"
+        failed = self.failed_at(key, "add_note")  # the contact is created, the note is not
+        self.assertIn("step 2 add_note", failed.message)
+        self.cli("withdraw", key, "--by", PERSON)
+        out = self.cli("reject", key, "--by", PERSON, "--reason", "not for us")
+        self.assertIn(f"rejected: {key} after 1 of 3 steps had been written: contact 11 created; nothing more will "
+                      "be written", out)
+        self.assertNotIn("nothing will be written", out)
+        page = self.page(key)
+        self.assertIn("Rejected by a person after 1 of 3 steps had been written: contact 11 created; nothing more "
+                      "is written", page)
+        self.assertNotIn("nothing written", page)
+        refused = self.cli("apply", "--key", key, expect=1)
+        self.assertIn("nothing written by this apply (written before: contact 11 created)", refused)
+        self.assertEqual(self.crm_db().execute("SELECT origin_key FROM contacts WHERE id = 11").fetchone()[0], key)
+        self.assertEqual(self.problems(), [])
+
+    def contact_2_s_note_then_its_e_mail_changed(self, key):
+        self.failed_at(key, "add_task")  # the note is on contact 2; the task is not written
+        conn = self.crm_db()
+        conn.execute("UPDATE contacts SET email = 'b.calloway@example.com', email_norm = 'b.calloway@example.com' "
+                     "WHERE id = 2")
+        conn.commit()
+        self.cli("withdraw", key, "--by", PERSON)
+        self.assertIn(f"{key}: planned again: the CRM changed", self.cli("plan"))
+        with self.desk() as desk:
+            self.assertEqual(desk.store.get_enquiry(key).state, "held_possible_duplicate")
+
+    def test_a_note_already_on_another_contact_is_named_in_the_new_plan_and_not_planned_again(self):
+        key = "webform:wf-000109"
+        self.contact_2_s_note_then_its_e_mail_changed(key)
+        self.cli("resolve", key, "--as", "new", "--by", PERSON)
+        plan = self.cli("plan", "--key", key)
+        self.assertIn("already in the CRM, written by an apply that did not complete, not written again: note 1 on "
+                      "contact 2", plan)
+        self.assertNotIn("add_note on contact created", plan)
+        self.assertIn("add_task on contact created", plan)
+        self.assertIn("Already in the CRM, written by an apply that did not complete, and not written again:",
+                      self.page(key))
+        self.approve_cli(key)
+        out = self.cli("apply")
+        self.assertIn(f"{key}: applied: create_contact written (11), add_task written (1)", out)
+        conn = self.crm_db()
+        self.assertEqual(conn.execute("SELECT contact_id FROM notes").fetchall(), [(2,)])
+        self.assertEqual(conn.execute("SELECT contact_id FROM tasks").fetchall(), [(11,)])
+        self.assertEqual(self.problems(), [])
+
+    def test_the_gate_refuses_a_plan_that_states_a_step_the_ledger_records_on_another_contact(self):
+        key = "webform:wf-000109"
+        self.contact_2_s_note_then_its_e_mail_changed(key)
+        # A plan made without the ledger's knowledge: it states the note on the contact it would create.
+        with mock.patch.object(DeskStore, "written", lambda store, k: {}):
+            self.cli("resolve", key, "--as", "new", "--by", PERSON)
+            self.assertIn("add_note on contact created", self.cli("plan", "--key", key))
+            self.approve_cli(key)
+        before = self.crm_counts()
+        result = self.apply_one(key)
+        self.assertEqual(result.outcome, "replanned")
+        self.assertIn("the plan states add_note on the new contact, but the ledger records it written on contact 2",
+                      result.message)
+        self.assertEqual(self.crm_counts(), before)
+        with self.desk() as desk:
+            now = desk.store.get_enquiry(key)
+            self.assertEqual(now.state, "awaiting_approval")
+            self.assertEqual([a.state for a in desk.store.approvals(key)][-1], "withdrawn")
+            plan = json.loads(desk.store.plan_body(now.plan_sha))
+        self.assertEqual([op["op"] for op in plan["operations"]], ["create_contact", "add_task"])
+        self.assertEqual(plan["already_written"], [{"op": "add_note", "contact": "2", "ref": "1"}])
+        self.approve_cli(key)
+        self.assertEqual(self.apply_one(key).outcome, "applied")
+        self.assertEqual(self.notes_with_key(key), 1)
+        self.assertEqual(self.problems(), [])
+
+    def test_the_doctor_offers_no_command_for_a_started_step_in_a_state_where_none_would_work(self):
+        key = "webform:wf-000103"
+        self.failed_at(key, "add_note")
+        self.cli("withdraw", key, "--by", PERSON)
+        self.cli("reject", key, "--by", PERSON, "--reason", "not for us")
+        self.assertEqual(self.problems(), [])
+        with self.desk() as desk:  # a step left started on a rejected enquiry, as no command now leaves one
+            sha = desk.store.get_enquiry(key).plan_sha
+            desk.store.ledger_start(key, "add_task", sha)
+        (said,) = self.problems()
+        self.assertTrue(said.endswith(f"{key} (rejected): the step add_task began and its end is not recorded, so the "
+                                      "desk does not know whether it reached the CRM"), said)
+
+    def apply_one(self, key):
+        with self.desk() as desk:
+            (result,) = desk.apply(key=key)
+        return result
+
+    def test_withdraw_waits_for_a_crm_that_cannot_be_read_and_changes_nothing(self):
+        key = "webform:wf-000102"
+        self.failed_at(key, "create_contact")
+        with self.desk() as desk:
+            desk.crm = FlakyCRM(desk.crm, "find_by_origin_key", "before")
+            with self.assertRaises(DeskError) as refused:
+                desk.withdraw(key, PERSON)
+        self.assertIn("the CRM could not be read", str(refused.exception))
+        with self.desk() as desk:
+            self.assertEqual(desk.store.get_enquiry(key).state, "apply_failed")
+            self.assertEqual([r.status for r in desk.store.ledger_rows(key)], ["started"])
 
 
 class OneApplyAtATimeTests(DeskCase):

@@ -313,6 +313,22 @@ class ServeWithDecisionsTests(ServeCase):
         self.assertEqual(self.decide(**base, reason="advertising, not an enquiry")[0], 200)
         self.assertEqual(self.state(key), "rejected")
 
+    def test_a_rejection_on_the_page_after_part_of_a_plan_was_written_says_what_was_written(self):
+        from tests.helpers import FlakyCRM
+
+        key = "webform:wf-000103"
+        with self.desk() as desk:
+            desk.approve(key, PERSON, self.plan_of(key))
+            desk.crm = FlakyCRM(desk.crm, "add_note", "before")
+            desk.apply(key=key)  # the contact is written, the note is not
+            desk.withdraw(key, PERSON)
+        status, _, body = self.decide(token=self.token, key=key, plan=self.plan_of(key), decision="reject",
+                                      confirm="yes", by=PERSON, reason="not for us")
+        self.assertEqual(status, 200)
+        self.assertIn(f"Rejected: {key}, by {PERSON}, after 1 of 3 steps had been written: contact 11 created. "
+                      "Nothing more will be written.", body)
+        self.assertNotIn("Nothing will be written", body)
+
     def test_the_intake_endpoint_still_works_beside_the_desk(self):
         status, _, _ = self.request("POST", "/intake", b'{"name": "x"}', {"X-Intake-Secret": self.secret,
                                                                          "Content-Type": "application/json"})

@@ -6,12 +6,16 @@ Before anything leaves, the gate refuses:
   3. an approval for another plan's sha256. On a first attempt the plan is computed again from the CRM as
      it is now; if the CRM changed since the approval, the plan is no longer the one the person saw: the
      approval is withdrawn by the system, the enquiry is planned again and waits again;
-  4. any write when the run is a dry run.
+  4. a plan that states a note or a task on one contact while the ledger records it written on another (by an
+     apply of an earlier plan that did not complete): the plan would not do what it says, so it is refused and
+     planned again, and the new plan names what is already written;
+  5. any write when the run is a dry run.
 
 Before each CRM write, the gate records its intent: the ledger row `started` and the audit row
 `operation_started`, in one transaction. If the process is killed between the write and its record, the
 desk still shows that the step began; `desk.py doctor` names the ledger row left at `started`, and the
-next apply continues the same plan under the same approval.
+next apply continues the same plan under the same approval. After each write the ledger records the CRM's id
+and the contact the write is on.
 
 Writes are idempotent at the CRM too. Before each write the gate looks, in this order: in the local
 ledger; then in the contact's own notes (or tasks) by their first line, which is the enquiry's key; then,
@@ -20,7 +24,9 @@ again by its origin key. A step that was written but not recorded is therefore f
 
 A failed CRM call leaves the enquiry in `apply_failed` with the error. A retry completes the approved
 plan step by step and skips what is already there. It does not plan again once a step of the plan has
-started: the CRM now holds this plan's own first writes, which are not a change by anyone else.
+started: the CRM now holds this plan's own first writes, which are not a change by anyone else. When a person
+withdraws or rejects instead, `settle` looks in the CRM, as a retry would, for each step left `started`, and the
+desk records what it found: written (with where), or not written.
 
 One apply runs at a time on a desk: `Desk.apply` holds the desk's apply lock for the whole run, and a
 second apply started meanwhile is refused before it reads anything (see `DeskStore.apply_lock`).
@@ -30,7 +36,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
-from . import planner
+from . import planner, reports
 from .canonical import sha256_hex
 from .crm.base import CRMError
 from .ops import ALLOWED_OPS, operations_outside, repeated_operations
@@ -100,24 +106,33 @@ class WriteGate:
         except GateRefusal as refusal:
             return self._refuse(enquiry, str(refusal))
 
+        written = self.store.written(key)
+        wrong = planner.misplaced(plan["operations"], written)
+        if wrong:  # the plan states a step the ledger records written on another contact: it would not do what it says
+            op, done = wrong[0]
+            why = (f"the plan states {op['op']} on {_target(op.get('contact'))}, but the ledger records it written on "
+                   f"contact {done['contact']}")
+            return self._plan_again(enquiry, why, written)
+
         started = [row for row in self.store.ledger_rows(key) if row.plan_sha == enquiry.plan_sha]
         if not started:  # a first attempt at this plan: check it is still the plan the person approved
             try:
-                current = planner.assess(key, enquiry.payload, enquiry.resolution, self.crm)
+                current = planner.assess(key, enquiry.payload, enquiry.resolution, self.crm, written)
             except CRMError as error:
                 if self.dry_run:
-                    return GateResult(key, "dry_run", f"dry run: the CRM could not be read ({error}); nothing written")
+                    return GateResult(key, "dry_run", f"dry run: the CRM could not be read ({error}); "
+                                                      f"{self._nothing(key)}")
                 return self._fail(enquiry, "checking the plan against the CRM", error, [])
             if approval is not None and current.sha != approval.plan_sha:
                 why = "the approval is for another plan: the CRM changed since the approval"
                 if self.dry_run:
-                    return GateResult(key, "dry_run", f"dry run: refused, {why}; nothing written")
+                    return GateResult(key, "dry_run", f"dry run: refused, {why}; {self._nothing(key)}")
                 self.store.audit(key, "apply_refused", {"reason": why}, SYSTEM)
                 self.desk.record_assessment(key, current, "replanned", SYSTEM, {"why": why})
                 return GateResult(key, "replanned", f"refused, {why}; planned again, it waits for a new approval")
 
         if self.dry_run:
-            return GateResult(key, "dry_run", "dry run: nothing written", [_describe(op) for op in plan["operations"]])
+            return GateResult(key, "dry_run", f"dry run: {self._nothing(key)}", [_describe(op) for op in plan["operations"]])
 
         refs: dict = {}
         steps = []
@@ -146,47 +161,100 @@ class WriteGate:
         with self.store.transaction():  # the intent, on the record before the CRM is called
             self.store.ledger_start(key, name, plan_sha)
             self.store.audit(key, "operation_started", {"op": name, "plan": plan_sha}, SYSTEM)
-        ref, how = handler(key, op, refs)
+        ref, how, contact = handler(key, op, refs)
         with self.store.transaction():
-            self.store.ledger_done(key, name, ref, how)
+            self.store.ledger_done(key, name, ref, how, contact)
             self.store.audit(key, "operation", {"op": name, "ref": ref, "how": how}, SYSTEM)
         return ref, how
 
     # -- the four operations ---------------------------------------------------------------------------
 
+    # Each returns (the CRM's id, how, the contact the write is on).
+
     def _do_create_contact(self, key: str, op: dict, refs: dict) -> tuple:
         found = self.crm.find_by_origin_key(key)
         if found:
-            return found[0].id, "found by its origin key"
-        return self._write(self.crm.create_contact, op["fields"], key).id, "written"
+            return found[0].id, "found by its origin key", found[0].id
+        created = self._write(self.crm.create_contact, op["fields"], key)
+        return created.id, "written", created.id
 
     def _do_fill_empty_fields(self, key: str, op: dict, refs: dict) -> tuple:
         contact_id = self._contact(key, op, refs)
         result = self._write(self.crm.fill_empty_fields, contact_id, op["fields"])
-        return contact_id, f"written (filled: {', '.join(result['filled']) or 'none'})"
+        return contact_id, f"written (filled: {', '.join(result['filled']) or 'none'})", contact_id
 
     def _do_add_note(self, key: str, op: dict, refs: dict) -> tuple:
         contact_id = self._contact(key, op, refs)
         note = self._find_note(contact_id, key)
         if note is not None:
-            return note.id, "found"
-        return self._write(self.crm.add_note, contact_id, op["body"]).id, "written"
+            return note.id, "found", note.contact_id
+        return self._write(self.crm.add_note, contact_id, op["body"]).id, "written", contact_id
 
     def _do_add_task(self, key: str, op: dict, refs: dict) -> tuple:
         contact_id = self._contact(key, op, refs)
-        for task in self.crm.list_tasks(contact_id):
-            if task.first_line == key:
-                return task.id, "found"
-        return self._write(self.crm.add_task, contact_id, op["body"]).id, "written"
+        task = self._find_task(contact_id, key)
+        if task is not None:
+            return task.id, "found", contact_id
+        return self._write(self.crm.add_task, contact_id, op["body"]).id, "written", contact_id
 
-    def _find_note(self, contact_id: str, key: str):
+    def _find_note(self, contact_id: str | None, key: str):
         """The contact's own notes first (they do not lag), then a search, each confirmed by the first line."""
-        for note in self.crm.list_notes(contact_id):
+        for note in self.crm.list_notes(contact_id) if contact_id else ():
             if note.first_line == key:
                 return note
         for note in self.crm.search_notes(key):
             if note.first_line == key:
                 return note
+        return None
+
+    def _find_task(self, contact_id: str, key: str):
+        for task in self.crm.list_tasks(contact_id):
+            if task.first_line == key:
+                return task
+        return None
+
+    # -- a step left started, when a person withdraws or rejects instead of retrying -----------------------
+
+    def settle(self, key: str, rows: list) -> list:
+        """(ledger row, (the CRM's id, how, contact) or None) for each step left `started`, in the plan's order.
+
+        It looks in the CRM for each write by the enquiry's key, as a retry does: a contact by its origin key, a
+        note or a task by its first line, filled fields by their values. It reads the CRM and writes nothing, to
+        the CRM or to the desk; the desk records what it found. A CRM that cannot be read raises CRMError."""
+        order = {name: number for number, name in enumerate(ALLOWED_OPS)}
+        written = self.store.written(key)
+        found = []
+        for row in sorted(rows, key=lambda r: order.get(r.op, len(order))):
+            plan = json.loads(self.store.plan_body(row.plan_sha))
+            op = next((o for o in plan["operations"] if o.get("op") == row.op), None)
+            there = self._look(key, op, written) if op is not None else None
+            if there is not None:
+                written[row.op] = {"ref": there[0], "contact": there[2]}
+            found.append((row, there))
+        return found
+
+    def _look(self, key: str, op: dict, written: dict):
+        name = op["op"]
+        if name == "create_contact":
+            contacts = self.crm.find_by_origin_key(key)
+            return (contacts[0].id, "found by its origin key", contacts[0].id) if contacts else None
+        contact_id = planner.where(op.get("contact"), written)
+        if contact_id is None:  # the plan's new contact: made, though the ledger may not say so
+            contacts = self.crm.find_by_origin_key(key)
+            contact_id = contacts[0].id if contacts else None
+        if name == "add_note":
+            note = self._find_note(contact_id, key)
+            return (note.id, "found", note.contact_id) if note is not None else None
+        if contact_id is None:
+            return None
+        if name == "add_task":
+            task = self._find_task(contact_id, key)
+            return (task.id, "found", contact_id) if task is not None else None
+        if name == "fill_empty_fields":
+            contact = self.crm.get_contact(contact_id)
+            filled = contact is not None and all(planner.same_value(field, getattr(contact, field, ""), value)
+                                                 for field, value in op["fields"].items())
+            return (contact_id, f"found (filled: {', '.join(sorted(op['fields']))})", contact_id) if filled else None
         return None
 
     def _contact(self, key: str, op: dict, refs: dict) -> str:
@@ -205,7 +273,24 @@ class WriteGate:
     def _refuse(self, enquiry, reason: str) -> GateResult:
         if not self.dry_run:
             self.store.audit(enquiry.key, "apply_refused", {"reason": reason}, SYSTEM)
-        return GateResult(enquiry.key, "refused", f"refused: {reason}; nothing written")
+        return GateResult(enquiry.key, "refused", f"refused: {reason}; {self._nothing(enquiry.key)}")
+
+    def _nothing(self, key: str) -> str:
+        """That this apply wrote nothing; and, when an earlier apply wrote part of a plan, what it wrote."""
+        earlier = reports.writes_text(self.store.ledger_rows(key))
+        return f"nothing written by this apply (written before: {earlier})" if earlier else "nothing written"
+
+    def _plan_again(self, enquiry, why: str, written: dict) -> GateResult:
+        key = enquiry.key
+        if self.dry_run:
+            return GateResult(key, "dry_run", f"dry run: refused, {why}; {self._nothing(key)}")
+        try:
+            current = planner.assess(key, enquiry.payload, enquiry.resolution, self.crm, written)
+        except CRMError as error:
+            return self._fail(enquiry, "planning again against the CRM", error, [])
+        self.store.audit(key, "apply_refused", {"reason": why}, SYSTEM)
+        self.desk.record_assessment(key, current, "replanned", SYSTEM, {"why": why})
+        return GateResult(key, "replanned", f"refused, {why}; planned again, it waits for a new approval")
 
     def _fail(self, enquiry, where: str, error: Exception, steps: list) -> GateResult:
         message = f"{where}: {error}"
@@ -218,3 +303,7 @@ class WriteGate:
 def _describe(op: dict) -> str:
     target = op.get("contact")
     return f"would {op.get('op')}" + (f" on contact {target}" if target else "")
+
+
+def _target(contact) -> str:
+    return "the new contact" if contact == planner.CREATED else f"contact {contact}"

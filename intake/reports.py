@@ -158,6 +158,13 @@ def enquiry_lines(store, enquiry, crm_note: str = "", full: bool = False) -> lis
             extra = f" ({diff['not_filled']})" if "not_filled" in diff else ", not overwritten"
             lines.append(f"    shown for a person: {diff['field']}: the CRM has {diff['crm']!r}, "
                          f"the enquiry says {diff['enquiry']!r}{extra}")
+        for entry in plan.get("already_written", []):
+            lines.append("    already in the CRM, written by an apply that did not complete, not written again: "
+                         + describe_write(entry.get("op"), entry.get("ref"), entry.get("contact")))
+        listed = {entry.get("op") for entry in plan.get("already_written", [])}
+        so_far = writes_text(store.ledger_rows(enquiry.key), leave_out=listed)
+        if so_far:
+            lines.append(f"  written so far for this enquiry: {so_far}")
         if enquiry.state == "awaiting_approval":
             lines.append(f"  to approve: desk.py approve {enquiry.key} --by <name> --plan {enquiry.plan_sha[:12]}")
     if enquiry.state == "apply_failed":
@@ -181,6 +188,39 @@ def _operation(op: dict) -> str:
     first, _, rest = op["body"].partition("\n")
     more = len(rest.splitlines())
     return f"{name} on contact {op['contact']}: first line {first!r}, then {more} more line{'' if more == 1 else 's'}"
+
+
+WRITE_ORDER = ("create_contact", "fill_empty_fields", "add_note", "add_task")
+
+
+def describe_write(op: str, ref, contact) -> str:
+    """One write the desk made, and where: "contact 11 created", "note 5 on contact 11"."""
+    if op == "create_contact":
+        return f"contact {contact or ref} created"
+    if op == "fill_empty_fields":
+        return f"empty fields of contact {contact or ref} filled"
+    noun = {"add_note": "note", "add_task": "task"}.get(op, op)
+    return f"{noun} {ref}" + (f" on contact {contact}" if contact else "")
+
+
+def writes_text(ledger_rows, leave_out=()) -> str:
+    """Every write the ledger records as done, in the plan's order; empty when there is none."""
+    done = [row for row in ledger_rows if row.status == "done" and row.op not in leave_out]
+    done.sort(key=lambda row: WRITE_ORDER.index(row.op) if row.op in WRITE_ORDER else len(WRITE_ORDER))
+    return "; ".join(describe_write(row.op, row.crm_ref, row.contact) for row in done)
+
+
+def written_before(store, enquiry) -> str:
+    """For an enquiry that was not applied: what an apply that did not complete wrote, as part of a sentence
+    ("after 1 of 3 steps had been written: contact 11 created"); empty when it wrote nothing."""
+    rows = [row for row in store.ledger_rows(enquiry.key) if row.status == "done"]
+    if not rows:
+        return ""
+    what = writes_text(rows)
+    if enquiry.plan_sha and all(row.plan_sha == enquiry.plan_sha for row in rows):
+        total = len(json.loads(store.plan_body(enquiry.plan_sha)).get("operations", []))
+        return f"after {len(rows)} of {total} steps had been written: {what}"
+    return f"after an apply of an earlier plan had written: {what}"
 
 
 def refusal_text(reasons) -> str:

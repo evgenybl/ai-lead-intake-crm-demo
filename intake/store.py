@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS ledger (
     crm_ref TEXT,
     how TEXT,
     at TEXT NOT NULL,
+    contact TEXT,
     PRIMARY KEY (key, op)
 );
 """ + audit.SCHEMA
@@ -122,6 +123,7 @@ class LedgerRow:
     crm_ref: str | None
     how: str | None
     at: str
+    contact: str | None  # the contact the write is on: for a note or a task, its contact; else the contact itself
 
 
 BUSY_SECONDS = 5.0  # how long a command waits for a desk file another program holds, before it gives up
@@ -352,31 +354,42 @@ class DeskStore:
 
     def ledger_get(self, key: str, op: str) -> LedgerRow | None:
         row = self.conn.execute(
-            "SELECT key, op, plan_sha, status, crm_ref, how, at FROM ledger WHERE key = ? AND op = ?", (key, op)
+            "SELECT key, op, plan_sha, status, crm_ref, how, at, contact FROM ledger WHERE key = ? AND op = ?", (key, op)
         ).fetchone()
         return LedgerRow(*row) if row else None
 
     def ledger_rows(self, key: str | None = None) -> list:
-        sql = "SELECT key, op, plan_sha, status, crm_ref, how, at FROM ledger"
+        sql = "SELECT key, op, plan_sha, status, crm_ref, how, at, contact FROM ledger"
         if key is None:
             return [LedgerRow(*r) for r in self.conn.execute(sql + " ORDER BY key, op")]
         return [LedgerRow(*r) for r in self.conn.execute(sql + " WHERE key = ? ORDER BY op", (key,))]
+
+    def written(self, key: str) -> dict:
+        """What the ledger records as written for an enquiry: {op: {"ref": the CRM's id, "contact": where}}."""
+        return {row.op: {"ref": row.crm_ref, "contact": row.contact}
+                for row in self.ledger_rows(key) if row.status == "done"}
 
     def ledger_start(self, key: str, op: str, plan_sha: str) -> None:
         with self.transaction():
             self.conn.execute(
                 "INSERT INTO ledger (key, op, plan_sha, status, at) VALUES (?, ?, ?, 'started', ?) "
                 "ON CONFLICT (key, op) DO UPDATE SET plan_sha = excluded.plan_sha, status = 'started', "
-                "crm_ref = NULL, how = NULL, at = excluded.at",
+                "crm_ref = NULL, how = NULL, contact = NULL, at = excluded.at",
                 (key, op, plan_sha, self.clock.now()),
             )
 
-    def ledger_done(self, key: str, op: str, crm_ref: str, how: str) -> None:
+    def ledger_done(self, key: str, op: str, crm_ref: str, how: str, contact: str | None) -> None:
         with self.transaction():
             self.conn.execute(
-                "UPDATE ledger SET status = 'done', crm_ref = ?, how = ?, at = ? WHERE key = ? AND op = ?",
-                (crm_ref, how, self.clock.now(), key, op),
+                "UPDATE ledger SET status = 'done', crm_ref = ?, how = ?, contact = ?, at = ? WHERE key = ? AND op = ?",
+                (crm_ref, how, contact, self.clock.now(), key, op),
             )
+
+    def ledger_drop(self, key: str, op: str) -> None:
+        """A step that began and was looked for in the CRM and not found: it was not written, so the ledger, which
+        records writes, no longer holds it. The trail keeps that it began and that it was not written."""
+        with self.transaction():
+            self.conn.execute("DELETE FROM ledger WHERE key = ? AND op = ? AND status = 'started'", (key, op))
 
 
 def _enquiry(row) -> Enquiry:

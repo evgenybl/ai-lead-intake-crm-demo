@@ -34,7 +34,7 @@ import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from . import pages
+from . import pages, reports
 from .arrive import parse_object
 from .flow import DeskError
 from .states import TransitionError
@@ -261,7 +261,10 @@ class IntakeHandler(BaseHTTPRequestHandler):
                     done = f"Approved: {key}, by {field.get('by', '').strip()}. It is written when someone runs apply."
                 elif decision == "reject":
                     desk.reject(key, field.get("by", ""), field.get("reason", ""))
-                    done = f"Rejected: {key}, by {field.get('by', '').strip()}. Nothing will be written."
+                    earlier = reports.written_before(desk.store, desk.store.get_enquiry(key))
+                    done = (f"Rejected: {key}, by {field.get('by', '').strip()}, {earlier}. Nothing more will be "
+                            "written." if earlier else
+                            f"Rejected: {key}, by {field.get('by', '').strip()}. Nothing will be written.")
                 else:
                     return self._html(400, pages.message_page("Not done", "No decision was given.", links))
         except (DeskError, TransitionError) as error:

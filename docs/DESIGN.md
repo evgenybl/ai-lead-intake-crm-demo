@@ -45,7 +45,7 @@ counted and recorded, and it changes no state.
 | `held_possible_duplicate` | A contact might be the same person: only the phone matches and the e-mails do not agree, or no key matches but the name and company do; waits for a person |
 | `awaiting_approval` | A plan is ready and waits for a person's approval |
 | `approved` | A person approved exactly this plan; not applied yet |
-| `rejected` | A person rejected the plan, with a reason; nothing is written |
+| `rejected` | A person rejected the plan, with a reason; nothing more is written for it. If an apply of it began and did not finish, what that apply wrote stays in the CRM, and the page and the command name it |
 | `applied` | Every operation of the approved plan is in the CRM |
 | `apply_failed` | A CRM call failed; the error is named; a retry completes what is missing |
 
@@ -156,6 +156,13 @@ A plan is `{"enquiry", "identity", "operations", "shown"}`: what identity found,
 values, and the differences shown to a person and not written. Its sha256 is over canonical JSON (sorted
 keys, `,` and `:` separators, UTF-8, no NaN).
 
+A plan is also computed from the desk's ledger: what an apply of an earlier plan of the same enquiry wrote
+before it stopped. A note or a task the ledger records on another contact than the new plan would use is not
+planned again (a second one would break promise 2); a contact created, or fields filled, that the new plan does
+not stand for, are named too. Each goes under a fifth key, `"already_written"`, which `plan` and the page show as
+"already in the CRM, not written again". A plan with nothing already written has no such key, so its sha256 is
+what it always was.
+
 The plan is computed from the CRM as it is now, so its sha256 changes when the CRM changes in a way that
 matters: the contact now exists, a field was filled meanwhile, a contact's differing value changed. A
 note or task on the contact does not change it. The note and the task begin with the enquiry's key.
@@ -191,9 +198,12 @@ withdrawal and the system's are told apart by `closed_by`.
 1. the stored plan matches its sha256;
 2. every operation is on the allow-list, and none appears twice;
 3. there is an approval in the state `approved`, for exactly the stored plan;
-4. on a first attempt at this plan, the plan is computed again from the CRM as it is now; if its sha256
+4. no note or task of the plan is one the ledger records as written on another contact than the plan states:
+   such a plan would not do what it says, so it is refused, planned again (the new plan names that write under
+   "already written") and waits again;
+5. on a first attempt at this plan, the plan is computed again from the CRM as it is now; if its sha256
    is not the approved one, the approval is for another plan: refused, re-planned, it waits again;
-5. a dry run stops here and writes nothing; the gate's one write method also refuses in a dry run.
+6. a dry run stops here and writes nothing; the gate's one write method also refuses in a dry run.
 
 **A first attempt** is one where no step of this plan has started (no ledger row for its sha256), whatever the
 enquiry's state. Once a step has started, the gate does not re-plan: the CRM may now hold this plan's own first
@@ -201,7 +211,8 @@ writes, which are not a change by anyone else. It completes the approved plan st
 
 **The intent is recorded before each write.** For each operation, the ledger row `started` and the audit row
 `operation_started` are written in one transaction before the CRM is called; after the call, the ledger row
-`done`, with the CRM's id, and the audit row `operation`. A process killed between a write and its record
+`done`, with the CRM's id and the contact the write is on (for a note found on another contact, that contact),
+and the audit row `operation`. A process killed between a write and its record
 leaves the enquiry `approved` with a step `started`: `doctor` names that step, and the next `apply` continues the
 same plan under the same approval, and finds the write (below).
 
@@ -236,6 +247,16 @@ written (the e-mail now belongs to a contact someone else made), each retry fail
 continues the plan it started. `plan` and the enquiry page say what clears it: `withdraw`, then `plan`, which
 plans the enquiry again against the CRM as it is now, for a new approval.
 
+**Withdrawing or rejecting after an apply that did not finish.** A step the apply began and did not record is
+left `started` in the ledger. `withdraw`, and `reject` if one is still left, first look in the CRM for each such
+write by the enquiry's key, as a retry does (a contact by its origin key, a note or a task by its first line,
+filled fields by their values), while holding the apply lock, and record what they found: the ledger row `done`
+with where the write is and the audit row `operation`, or the ledger row removed and the audit row
+`operation_not_written`. The command prints each finding. If the CRM cannot be read, the command changes nothing
+and says so. So no step is left `started` once a person has taken the plan back, and `doctor` stays green. A
+rejection of a plan part of which is in the CRM says what is there ("rejected after 1 of 3 steps had been
+written: contact 11 created"); the desk never removes what it wrote.
+
 A practice CRM file that another program holds locked is a CRM that did not answer: the SQLite error becomes a
 CRM error, and the enquiry is `apply_failed` with it named (or stays `received`, when it arrived meanwhile).
 
@@ -261,7 +282,9 @@ to would keep a copy of the chain's last hash somewhere that person cannot write
 each state move against the one before it in the trail, and against the state table; each approval row against
 the person's decision in the trail (who, which plan); each enquiry's state, stored content and plan against the
 last ones its trail records; every operation in the trail against its ledger row; no step of a current plan left
-`started` outside `apply_failed`; and the arrival counts against the trail's arrival events.
+`started` outside `apply_failed` (it names such a step as one the desk does not know reached the CRM, and only for
+an `approved` enquiry, where it works, offers `desk.py apply --key`); and the arrival counts against the trail's
+arrival events.
 
 The review of this project changed the desk file by hand in these ways. What `doctor` reports now (each is a
 test in `tests/test_promises.py`, `DoctorFindsTheReviewedManipulationsTests`, or was run with the review's own

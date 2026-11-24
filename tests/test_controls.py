@@ -108,7 +108,7 @@ class ControlTests(DeskCase):
                 self.assertIn("outside the allow-list: merge_contacts", refused.message)
                 # The control: the allow-list widened, and a way to perform the operation added.
                 gate = WriteGate(desk, allowed_ops=ALLOWED_OPS + ("merge_contacts",))
-                gate._do_merge_contacts = lambda key, op, refs: ("1", "written")
+                gate._do_merge_contacts = lambda key, op, refs: ("1", "written", "1")
                 (applied,) = desk.apply(key="webform:test-000003", gate=gate)
         self.assertEqual(applied.outcome, "applied")
         found = self.problems()

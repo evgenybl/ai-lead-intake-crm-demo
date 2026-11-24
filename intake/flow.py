@@ -4,6 +4,7 @@ Writes to the CRM are not here: they happen in intake/gate.py, and only there.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 from . import normalise, planner, validate
@@ -125,7 +126,7 @@ class Desk:
         if enquiry.state != "received":
             return enquiry.state
         try:
-            assessment = planner.assess(key, enquiry.payload, enquiry.resolution, self.crm)
+            assessment = planner.assess(key, enquiry.payload, enquiry.resolution, self.crm, self.store.written(key))
         except CRMError as error:
             with self.store.transaction():
                 self.store.set_fields(key, error=f"identity: {error}")
@@ -160,7 +161,7 @@ class Desk:
         enquiry = self._get(key)
         if enquiry.state != "awaiting_approval":
             return False
-        assessment = planner.assess(key, enquiry.payload, enquiry.resolution, self.crm)
+        assessment = planner.assess(key, enquiry.payload, enquiry.resolution, self.crm, self.store.written(key))
         if assessment.sha == enquiry.plan_sha:
             return False
         self.record_assessment(key, assessment, "replanned", SYSTEM, {"why": "the CRM changed since the plan was made"})
@@ -205,7 +206,7 @@ class Desk:
                 raise DeskError(f"contact {contact_id} is not in the CRM")
         else:
             raise DeskError("resolve --as takes `new` or `contact:<id>`")
-        assessment = planner.assess(key, enquiry.payload, as_, self.crm)
+        assessment = planner.assess(key, enquiry.payload, as_, self.crm, self.store.written(key))
         with self.store.transaction():
             self.store.set_fields(key, resolution=as_)
             self.store.audit(key, "resolution", {"as": as_, "candidates": candidates}, who)
@@ -233,7 +234,7 @@ class Desk:
             self.store.move(key, "approved", "approved", who, {"approval": approval, "plan": enquiry.plan_sha})
         return enquiry.plan_sha
 
-    def reject(self, key: str, by: str, reason: str) -> None:
+    def reject(self, key: str, by: str, reason: str) -> list:
         who = person(by)
         why = " ".join((reason or "").split())
         if not why:
@@ -243,20 +244,62 @@ class Desk:
         enquiry = self._get(key)
         if enquiry.state != "awaiting_approval" or not enquiry.plan_sha:
             raise DeskError(f"{key} has no plan waiting for a decision; it is {enquiry.state}")
-        with self.store.transaction():
-            approval = self.store.add_approval(key, enquiry.plan_sha, who, "rejected", why)
-            self.store.move(key, "rejected", "rejected", who, {"approval": approval, "reason": why})
+        with self._settled(key) as found:
+            with self.store.transaction():
+                self._record_settled(key, found)
+                approval = self.store.add_approval(key, enquiry.plan_sha, who, "rejected", why)
+                self.store.move(key, "rejected", "rejected", who, {"approval": approval, "reason": why})
+        return found
 
-    def withdraw(self, key: str, by: str, reason: str = "") -> None:
+    def withdraw(self, key: str, by: str, reason: str = "") -> list:
+        """Withdraw an approval not used yet. A step that an apply began and did not record (it failed, or the
+        process stopped) is looked for in the CRM first, and the desk records whether it was written.
+
+        Returns (ledger row, what the CRM holds or None) for each such step."""
         who = person(by)
         why = " ".join((reason or "").split())[:MAX_REASON_CHARS]
         enquiry = self._get(key)
         live = self.store.live_approval(key)
         if enquiry.state not in ("approved", "apply_failed") or live is None:
             raise DeskError(f"{key} has no approval to withdraw; it is {enquiry.state}")
-        with self.store.transaction():
-            self.store.close_approval(live.id, "withdrawn", who, why)
-            self.store.move(key, "withdrawn", "awaiting_approval", who, {"approval": live.id, "reason": why})
+        with self._settled(key) as found:
+            with self.store.transaction():
+                self._record_settled(key, found)
+                self.store.close_approval(live.id, "withdrawn", who, why)
+                self.store.move(key, "withdrawn", "awaiting_approval", who, {"approval": live.id, "reason": why})
+        return found
+
+    @contextmanager
+    def _settled(self, key: str):
+        """What the CRM holds for each step of this enquiry left `started`, looked up while no apply runs."""
+        from .gate import WriteGate
+
+        if not any(row.status == "started" for row in self.store.ledger_rows(key)):
+            yield []
+            return
+        try:
+            with self.store.apply_lock():
+                rows = [row for row in self.store.ledger_rows(key) if row.status == "started"]
+                try:
+                    found = WriteGate(self).settle(key, rows)
+                except CRMError as error:
+                    raise DeskError(f"an apply of {key} began a step it did not record, and the CRM could not be "
+                                    f"read to see whether it was written ({error}); nothing was changed. Try again "
+                                    "when the CRM answers") from None
+                yield found
+        except ApplyBusy:
+            raise DeskError("another `desk.py apply` is running on this desk; nothing was changed. Try again when "
+                            "that one has finished") from None
+
+    def _record_settled(self, key: str, found: list) -> None:
+        for row, there in found:
+            if there is None:
+                self.store.ledger_drop(key, row.op)
+                self.store.audit(key, "operation_not_written", {"op": row.op}, SYSTEM)
+            else:
+                ref, how, contact = there
+                self.store.ledger_done(key, row.op, ref, how, contact)
+                self.store.audit(key, "operation", {"op": row.op, "ref": ref, "how": how}, SYSTEM)
 
     # -- apply --------------------------------------------------------------------------------------
 

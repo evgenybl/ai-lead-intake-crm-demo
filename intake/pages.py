@@ -23,7 +23,7 @@ STATE_WORDS = {
     "approved": "Approved; not written to the CRM yet",
     "received": "Received; not checked against the CRM yet, because the CRM could not be read",
     "applied": "Written to the CRM",
-    "rejected": "Rejected by a person; nothing written",
+    "rejected": "Rejected by a person",
     "refused": "Not taken: it did not pass the checks at the door",
 }
 STATE_ORDER = tuple(STATE_WORDS)
@@ -227,11 +227,20 @@ def _plan(store, enquiry) -> list:
     if not enquiry.plan_sha:
         return []
     plan = json.loads(store.plan_body(enquiry.plan_sha))
-    said = ("exactly what was written to the CRM" if enquiry.state == "applied"
-            else "exactly what would be written to the CRM")
-    out = [f"<p><b>The plan</b> (plan {esc(enquiry.plan_sha[:12])}): {said}, and nothing else.</p>", "<ol>"]
+    said = {"applied": "exactly what was written to the CRM, and nothing else",
+            "rejected": "what a person rejected"}.get(enquiry.state, "exactly what would be written to the CRM, "
+                                                                    "and nothing else")
+    out = [f"<p><b>The plan</b> (plan {esc(enquiry.plan_sha[:12])}): {said}.</p>", "<ol>"]
     out += [f"<li>{_operation(op)}</li>" for op in plan.get("operations", [])]
     out.append("</ol>")
+    for entry in plan.get("already_written", []):
+        out.append(f"<p><b>Already in the CRM, written by an apply that did not complete, and not written again:"
+                   f"</b> {esc(reports.describe_write(entry.get('op'), entry.get('ref'), entry.get('contact')))}.</p>")
+    if enquiry.state not in ("applied", "rejected"):
+        listed = {entry.get("op") for entry in plan.get("already_written", [])}
+        so_far = reports.writes_text(store.ledger_rows(enquiry.key), leave_out=listed)
+        if so_far:
+            out.append(f"<p><b>Written so far</b> for this enquiry: {esc(so_far)}.</p>")
     for diff in plan.get("shown", []):
         why = diff.get("not_filled") or "it is not overwritten"
         field = dict(FIELD_WORDS).get(diff["field"], diff["field"])
@@ -314,12 +323,21 @@ def _actions(enquiry, decisions: Decisions) -> list:
     return []
 
 
+def state_words(store, enquiry) -> str:
+    """The enquiry's state in plain words. A rejected enquiry says what an earlier apply wrote, if anything."""
+    if enquiry.state == "rejected":
+        earlier = reports.written_before(store, enquiry)
+        return (f"Rejected by a person {earlier}; nothing more is written" if earlier
+                else "Rejected by a person; nothing written")
+    return STATE_WORDS[enquiry.state]
+
+
 def card(store, enquiry, links, decisions: Decisions, heading: str = "h4") -> list:
     p = enquiry.payload
     who = " · ".join(esc(v) for v in (p.get("name"), p.get("company"), p.get("email"), p.get("phone")) if v)
     out = [f'<section class="card" id="{esc(slug(enquiry.key))}">',
            f'<{heading}><a href="{esc(links.enquiry(enquiry.key))}">{esc(enquiry.key)}</a></{heading}>',
-           f'<p class="state {_state_class(enquiry.state)}">{esc(STATE_WORDS[enquiry.state])}</p>',
+           f'<p class="state {_state_class(enquiry.state)}">{esc(state_words(store, enquiry))}</p>',
            f"<p>From: {who or 'no name given'}. Received {esc(p.get('received_at'))} "
            f"(arrived {esc(enquiry.first_arrived_at)}, by {esc(enquiry.via)}).</p>",
            f"<blockquote>{esc(p.get('message'))}</blockquote>"]

@@ -317,9 +317,11 @@ def _promise_4(desk) -> list:
     for key, op, status, plan in sorted(ledger_rows):
         # A step of the enquiry's current plan that began, while the enquiry is not apply_failed (which names
         # its error). A step of an earlier plan is history: the plan was made again from the CRM as it was.
+        # A withdrawal or a rejection looks such a step up in the CRM and records it, so none is left there.
         state, current_plan = current.get(key, (None, None))
         if status == "started" and plan == current_plan and state != "apply_failed":
-            steps.problems.append(f"{key}: the step {op} began and its end is not recorded (the process stopped "
-                                  "between the CRM call and its record); `desk.py apply` completes the plan and "
-                                  "finds what is already written")
+            advice = {"approved": f"; `desk.py apply --key {key}` continues the plan under the same approval and "
+                                  "finds what is already written"}.get(state, "")
+            steps.problems.append(f"{key} ({state}): the step {op} began and its end is not recorded, so the desk "
+                                  f"does not know whether it reached the CRM{advice}")
     return [triggers, chain, moves, last, steps]

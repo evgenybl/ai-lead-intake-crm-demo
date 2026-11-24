@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-284 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+292 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -186,6 +186,18 @@ The intent is on the record before each CRM write; a retry continues the same pl
 
 - `test_killed_right_after_each_write_the_doctor_names_the_step_and_a_retry_completes_once`
 
+### AfterAFailedApplyTests
+
+Withdrawing or rejecting after an apply that did not finish leaves the ledger true: each step it began is looked for in the CRM and recorded as written (with where) or not written. Nothing then says "nothing written" of an enquiry part of whose plan is in the CRM, and the gate never applies a plan that would not do what it says.
+
+- `test_withdraw_then_reject_after_a_failure_at_the_first_step_leaves_the_doctor_green`
+- `test_a_write_the_apply_made_and_did_not_record_is_found_and_recorded_when_withdrawn`
+- `test_rejected_after_part_of_the_plan_was_written_says_what_was_written_and_where`
+- `test_a_note_already_on_another_contact_is_named_in_the_new_plan_and_not_planned_again`
+- `test_the_gate_refuses_a_plan_that_states_a_step_the_ledger_records_on_another_contact`
+- `test_the_doctor_offers_no_command_for_a_started_step_in_a_state_where_none_would_work`
+- `test_withdraw_waits_for_a_crm_that_cannot_be_read_and_changes_nothing`
+
 ### OneApplyAtATimeTests
 
 Two appliers forced to interleave between the look-up and the write: the second is refused.
@@ -346,6 +358,7 @@ The desk pages, `render` and `serve`. No script on any page; everything from an 
 - `test_a_form_without_this_desks_token_or_from_elsewhere_is_refused`
 - `test_an_approval_names_the_plan_the_person_saw`
 - `test_reject_needs_a_reason`
+- `test_a_rejection_on_the_page_after_part_of_a_plan_was_written_says_what_was_written`
 - `test_the_intake_endpoint_still_works_beside_the_desk`
 
 ## tests/test_planner.py
