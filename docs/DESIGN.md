@@ -283,8 +283,17 @@ each state move against the one before it in the trail, and against the state ta
 the person's decision in the trail (who, which plan); each enquiry's state, stored content and plan against the
 last ones its trail records; every operation in the trail against its ledger row; no step of a current plan left
 `started` outside `apply_failed` (it names such a step as one the desk does not know reached the CRM, and only for
-an `approved` enquiry, where it works, offers `desk.py apply --key`); and the arrival counts against the trail's
-arrival events.
+an `approved` enquiry, where it works, offers `desk.py apply --key`); the arrival counts against the trail's
+arrival events; and, in the practice CRM, every write the ledger records as done: the contact a plan created
+(still there, still carrying the enquiry's key as its origin), the contact whose fields it filled (still there),
+and each note and task (still there, on the contact the ledger names, still beginning with the enquiry's key).
+
+**What `doctor` does not notice.** It compares what the two files hold with each other, so an edit that leaves
+them agreeing is not found. Each of these leaves it green, as the tests of `DoctorComparesTheLedgerWithTheCRMTests`
+show: a note the desk wrote, rewritten below its first line; a contact's fields changed in the CRM by someone else,
+including a contact the desk created; and, on the desk file, a column that no trail row records, edited by hand:
+the model's draft kept for an enquiry, a refused enquiry's reasons, a held enquiry's resolution, what identity
+found. With an HTTP CRM it does not look in the CRM at all.
 
 The review of this project changed the desk file by hand in these ways. What `doctor` reports now (each is a
 test in `tests/test_promises.py`, `DoctorFindsTheReviewedManipulationsTests`, or was run with the review's own

@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-292 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+298 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -428,6 +428,17 @@ Beyond the five controls: the doctor names a break of each promise, made directl
 - `test_promise_3_a_write_that_bypassed_the_gate_is_found`
 - `test_promise_4_a_state_changed_off_the_record_is_found`
 - `test_the_doctor_command_fails_when_a_check_fails`
+
+### DoctorComparesTheLedgerWithTheCRMTests
+
+Each write the ledger records is looked for in the practice CRM, where the ledger says it is; and what the doctor does not notice, because it touches nothing the doctor compares.
+
+- `test_a_note_or_a_task_the_desk_wrote_deleted_is_found`
+- `test_a_note_moved_to_another_contact_is_found`
+- `test_a_ledger_row_pointed_at_another_record_is_found`
+- `test_a_created_contact_deleted_or_stripped_of_its_origin_key_is_found`
+- `test_what_it_does_not_notice_a_note_rewritten_below_its_first_line_and_a_contact_s_fields_changed`
+- `test_what_it_does_not_notice_a_desk_column_no_trail_row_records_edited_by_hand`
 
 ### DoctorFindsTheReviewedManipulationsTests
 

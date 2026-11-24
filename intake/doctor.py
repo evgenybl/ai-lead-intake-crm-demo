@@ -15,11 +15,16 @@ It reads both files and changes nothing. Each check belongs to one promise:
   4 Every step is on the record .... the audit triggers are in place as written; the hash chain is unbroken;
                                      every state move follows the one before it; each enquiry's state, stored
                                      content and plan are the ones its trail last records; every operation in
-                                     the trail has its ledger row, and no step is left half recorded
+                                     the trail has its ledger row, and no step is left half recorded; every
+                                     write the ledger records is in the CRM, where the ledger says
 
-What it can and cannot find: the trail guards against mistakes, bugs and plain edits of the files. A person
-who can open the desk file can drop the triggers, change rows, recompute every hash and put the triggers
-back; such a rewrite, done consistently, is not found. docs/DESIGN.md lists the cases.
+What it can and cannot find: the trail guards against mistakes, bugs and plain edits of the trail itself (the
+database refuses them, and the hash chain shows them). The doctor does not see every edit of the two files: it
+compares what the files hold with each other, so an edit that leaves them agreeing is not found. A person who
+can open the desk file can drop the triggers, change rows, recompute every hash and put the triggers back; and
+some plain edits, of the desk file (the model's draft kept for an enquiry) or of the CRM (a note rewritten with
+its first line kept, a contact's fields changed), touch nothing the doctor compares. docs/DESIGN.md lists what it
+finds and what it does not.
 """
 from __future__ import annotations
 
@@ -72,7 +77,7 @@ def examine(desk_path: str, crm_path: str | None) -> list:
             _promise_1(desk)
             + _promise_2(crm)
             + _promise_3(desk, crm)
-            + _promise_4(desk)
+            + _promise_4(desk, crm)
         )
     finally:
         desk.close()
@@ -258,7 +263,7 @@ def _promise_3(desk, crm) -> list:
 
 # -- promise 4 ----------------------------------------------------------------------------------------
 
-def _promise_4(desk) -> list:
+def _promise_4(desk, crm) -> list:
     triggers = Check(4, "the audit triggers are in place, as written")
     triggers.problems.extend(audit.trigger_problems(desk))
 
@@ -324,4 +329,39 @@ def _promise_4(desk) -> list:
                                   "finds what is already written"}.get(state, "")
             steps.problems.append(f"{key} ({state}): the step {op} began and its end is not recorded, so the desk "
                                   f"does not know whether it reached the CRM{advice}")
-    return [triggers, chain, moves, last, steps]
+    return [triggers, chain, moves, last, steps, _ledger_in_crm(desk, crm)]
+
+
+def _ledger_in_crm(desk, crm) -> Check:
+    """Each write the ledger records as done, looked for in the CRM: the contact a plan created (and that it
+    still carries the enquiry's key as its origin), the contact whose fields it filled, and each note and task
+    (that it is there, on the contact the ledger names, and still begins with the enquiry's key)."""
+    check = Check(4, "every write the ledger records is in the CRM, where the ledger says")
+    if crm is None:
+        check.note = "not checked: no practice CRM file (the doctor cannot list an HTTP CRM)"
+        return check
+    contacts = {str(cid): origin for cid, _, origin in crm["contacts"]}
+    held = {"add_note": ("note", {str(i): (str(c), _first_line(b)) for i, c, b in crm["notes"]}),
+            "add_task": ("task", {str(i): (str(c), _first_line(b)) for i, c, b in crm["tasks"]})}
+    for key, op, ref, contact in desk.execute(
+            "SELECT key, op, crm_ref, contact FROM ledger WHERE status = 'done' ORDER BY key, op"):
+        ref = str(ref)
+        if op in ("create_contact", "fill_empty_fields"):
+            what = "created" if op == "create_contact" else "with its empty fields filled"
+            if ref not in contacts:
+                check.problems.append(f"{key}: the ledger records contact {ref} {what}, but the CRM has no contact {ref}")
+            elif op == "create_contact" and contacts[ref] != key:
+                check.problems.append(f"{key}: the ledger records contact {ref} created by this enquiry, but the "
+                                      "contact no longer carries its key")
+        elif op in held:
+            noun, records = held[op]
+            where = f" on contact {contact}" if contact else ""
+            if ref not in records:
+                check.problems.append(f"{key}: the ledger records {noun} {ref}{where}, but the CRM has no {noun} {ref}")
+            elif records[ref][1] != key:
+                check.problems.append(f"{key}: the ledger records {noun} {ref}{where}, but its first line is no "
+                                      "longer the enquiry's key")
+            elif contact and records[ref][0] != str(contact):
+                check.problems.append(f"{key}: the ledger records {noun} {ref}{where}, but it is on contact "
+                                      f"{records[ref][0]}")
+    return check

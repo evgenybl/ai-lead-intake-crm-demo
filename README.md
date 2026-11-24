@@ -95,7 +95,7 @@ $ python -I desk.py doctor --home try-it
 doctor: desk desk.sqlite3; CRM practice-crm.sqlite3; both in --home
 promise 1: No lead is lost
 ...
-doctor: 19 of 19 checks passed
+doctor: 20 of 20 checks passed
 ```
 
 A line `...` stands for lines left out here. The tests run these commands in this order and compare every line

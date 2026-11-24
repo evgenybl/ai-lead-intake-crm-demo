@@ -22,4 +22,5 @@ promise 4: Every step is on the record
   ok    every state move follows the one before it
   ok    each enquiry's state, content and plan are the ones its trail last records
   ok    every operation in the trail has its ledger row; no step is left half recorded
-doctor: 19 of 19 checks passed
+  ok    every write the ledger records is in the CRM, where the ledger says
+doctor: 20 of 20 checks passed

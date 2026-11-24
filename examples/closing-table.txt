@@ -8,7 +8,7 @@ PASS  story 6 apply                 5 written: 1 new contact; 4 returning contac
 PASS  story 7 ingest it again       0 new, 30 replays; nothing new written
 PASS  story 8 apply again           nothing approved; nothing written
 PASS  story 9 report again          the states add up: 27 enquiries + 33 replays = 60 arrived
-PASS  story 10 doctor               the doctor: 19 of 19 checks passed
+PASS  story 10 doctor               the doctor: 20 of 20 checks passed
 PASS  replay-three-times            one contact, one note; the edited copy shown
 PASS  returning-contact             no second contact; empty field filled; phone shown, kept
 PASS  two-contacts-held             held, no plan; resolved as contact 7, then as 8

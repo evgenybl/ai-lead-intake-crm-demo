@@ -8,7 +8,7 @@ the whole story, on new files, with the invented data and a fixed clock
 [story 7 ingest it again] expected: 30 replays; nothing new written | happened: 0 new enquiries, 30 replays, 0 lines not taken; CRM 11 contacts, 5 notes, 5 tasks | as expected
 [story 8 apply again] expected: nothing is approved; nothing written | happened: nothing is approved; CRM 11 contacts, 5 notes, 5 tasks | as expected
 [story 9 report again] expected: the states add up, with 33 replays | happened: yes: 27 enquiries + 33 replays = 60 arrived | as expected
-[story 10 doctor] expected: every check of the four promises passes | happened: 19 of 19 checks passed | as expected
+[story 10 doctor] expected: every check of the four promises passes | happened: 20 of 20 checks passed | as expected
 
 every case of the gallery, each on new files
 [replay-three-times] expected: one contact, one note | happened: 1 new contact, 1 note; edited copy named | as expected
@@ -35,7 +35,7 @@ PASS  story 6 apply                 5 written: 1 new contact; 4 returning contac
 PASS  story 7 ingest it again       0 new, 30 replays; nothing new written
 PASS  story 8 apply again           nothing approved; nothing written
 PASS  story 9 report again          the states add up: 27 enquiries + 33 replays = 60 arrived
-PASS  story 10 doctor               the doctor: 19 of 19 checks passed
+PASS  story 10 doctor               the doctor: 20 of 20 checks passed
 PASS  replay-three-times            one contact, one note; the edited copy shown
 PASS  returning-contact             no second contact; empty field filled; phone shown, kept
 PASS  two-contacts-held             held, no plan; resolved as contact 7, then as 8

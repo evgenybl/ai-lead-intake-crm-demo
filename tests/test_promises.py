@@ -178,6 +178,76 @@ class DoctorFindsEachBrokenPromiseTests(DeskCase):
         self.assertIn("checks FAILED", out)
 
 
+class DoctorComparesTheLedgerWithTheCRMTests(DeskCase):
+    """Each write the ledger records is looked for in the practice CRM, where the ledger says it is; and what the
+    doctor does not notice, because it touches nothing the doctor compares."""
+
+    def setUp(self):
+        super().setUp()
+        self.init()
+        self.cli("ingest", DATA_FILE)
+        for key in ("webform:wf-000101", "webform:wf-000109"):  # contact 11 created; contact 2 returning
+            self.approve_cli(key)
+        self.cli("apply")
+        self.assertEqual(self.problems(), [])
+        self.crm = self.crm_db()
+
+    def edit(self, sql, *args):
+        self.crm.execute(sql, args)
+        self.crm.commit()
+        return self.problems()
+
+    def id_of(self, table, key):
+        return self.crm.execute(f"SELECT id FROM {table} WHERE body LIKE ?", (key + "%",)).fetchone()[0]
+
+    def test_a_note_or_a_task_the_desk_wrote_deleted_is_found(self):
+        note, task = self.id_of("notes", "webform:wf-000109"), self.id_of("tasks", "webform:wf-000109")
+        found = self.edit("DELETE FROM notes WHERE id = ?", note)
+        self.assertIn(f"every write the ledger records is in the CRM, where the ledger says: webform:wf-000109: the "
+                      f"ledger records note {note} on contact 2, but the CRM has no note {note}", found)
+        found = self.edit("DELETE FROM tasks WHERE id = ?", task)
+        self.assertTrue(any(f"the ledger records task {task} on contact 2, but the CRM has no task {task}" in p
+                            for p in found), found)
+
+    def test_a_note_moved_to_another_contact_is_found(self):
+        note = self.id_of("notes", "webform:wf-000109")
+        self.assertIn(f"every write the ledger records is in the CRM, where the ledger says: webform:wf-000109: the "
+                      f"ledger records note {note} on contact 2, but it is on contact 3",
+                      self.edit("UPDATE notes SET contact_id = 3 WHERE id = ?", note))
+
+    def test_a_ledger_row_pointed_at_another_record_is_found(self):
+        other = self.id_of("notes", "webform:wf-000101")
+        self.desk_db().execute("UPDATE ledger SET crm_ref = ? WHERE key = 'webform:wf-000109' AND op = 'add_note'",
+                               (str(other),))
+        self.assertTrue(any(f"webform:wf-000109: the ledger records note {other} on contact 2, but its first line is "
+                            "no longer the enquiry's key" in p for p in self.problems()), self.problems())
+
+    def test_a_created_contact_deleted_or_stripped_of_its_origin_key_is_found(self):
+        self.assertIn("every write the ledger records is in the CRM, where the ledger says: webform:wf-000101: the "
+                      "ledger records contact 11 created by this enquiry, but the contact no longer carries its key",
+                      self.edit("UPDATE contacts SET origin_key = '' WHERE id = 11"))
+        self.assertTrue(any("webform:wf-000101: the ledger records contact 11 created, but the CRM has no contact 11"
+                            in p for p in self.edit("DELETE FROM contacts WHERE id = 11")))
+
+    def test_what_it_does_not_notice_a_note_rewritten_below_its_first_line_and_a_contact_s_fields_changed(self):
+        note = self.id_of("notes", "webform:wf-000109")
+        self.assertEqual(self.edit("UPDATE notes SET body = 'webform:wf-000109' || char(10) || 'rewritten' "
+                                   "WHERE id = ?", note), [])
+        self.assertEqual(self.edit("UPDATE contacts SET name = 'Someone Else (invented)', phone = '000-000-0999', "
+                                   "phone_digits = '0000000999' WHERE id = 2"), [])
+        self.assertEqual(self.edit("UPDATE contacts SET company = 'Changed (invented)' WHERE id = 11"), [])
+
+    def test_what_it_does_not_notice_a_desk_column_no_trail_row_records_edited_by_hand(self):
+        desk = self.desk_db()
+        for sql in ("UPDATE enquiries SET draft = replace(draft, 'quote', 'EDITED') WHERE key = 'webform:wf-000101'",
+                    "UPDATE enquiries SET reasons = '[]' WHERE key = 'webform:wf-000114'",
+                    "UPDATE enquiries SET resolution = 'contact:2' WHERE key = 'webform:wf-000112'",
+                    "UPDATE enquiries SET identity = '{\"kind\": \"new\"}' WHERE key = 'webform:wf-000113'"):
+            with self.subTest(sql=sql):
+                self.assertEqual(desk.execute(sql).rowcount, 1)
+                self.assertEqual(self.problems(), [])
+
+
 class DoctorFindsTheReviewedManipulationsTests(DeskCase):
     """Edits of the desk file that the review made by hand. What the doctor finds, and, in the last test, what it
     cannot: a rewrite of the trail done consistently by a person who can open the file."""
