@@ -267,9 +267,9 @@ class DoctorComparesTheLedgerWithTheCRMTests(DeskCase):
                 self.assertEqual(self.problems(), [])
 
 
-class DoctorFindsTheReviewedManipulationsTests(DeskCase):
-    """Edits of the desk file that the review made by hand. What the doctor finds, and, in the last test, what it
-    cannot: a rewrite of the trail done consistently by a person who can open the file."""
+class DoctorFindsHandEditsOfTheDeskFileTests(DeskCase):
+    """Edits of the desk file made by hand, as a person who can open it might make them: what the doctor finds, and,
+    in the tests that say so, what it cannot. docs/DESIGN.md names each of these tests in its table."""
 
     KEY = "webform:wf-000101"
 
@@ -288,6 +288,39 @@ class DoctorFindsTheReviewedManipulationsTests(DeskCase):
         for sql, args in statements:
             conn.execute(sql, args)
         conn.executescript(audit.SCHEMA)
+
+    def last_row(self):
+        return self.desk_db().execute("SELECT id, key, event FROM audit ORDER BY id DESC LIMIT 1").fetchone()
+
+    def test_the_last_row_removed_is_found_when_it_is_a_state_move(self):
+        # A state move: the enquiry's state is no longer the last its trail records.
+        row_id, key, event = self.last_row()
+        self.assertEqual((key, event), (self.KEY, "applied"))
+        self.with_triggers_off(("DELETE FROM audit WHERE id = ?", (row_id,)))
+        self.assertIn(f"each enquiry's state, content and plan are the ones its trail last records: {self.KEY} is "
+                      "applied, but its trail last records 'approved'", self.problems())
+
+    def test_the_last_row_removed_is_found_when_it_is_a_replay(self):
+        self.cli("ingest", DATA_FILE, at="2026-01-05T10:00:00Z")
+        row_id, _, event = self.last_row()
+        self.assertEqual(event, "replay")
+        self.with_triggers_off(("DELETE FROM audit WHERE id = ?", (row_id,)))
+        self.assertIn("the arrivals add up, and agree with the trail: the trail records 32 'replay' events, but there "
+                      "are 33 replays", self.problems())
+
+    def test_what_it_cannot_find_the_last_row_removed_when_it_records_no_state_and_no_arrival(self):
+        self.cli("apply", "--key", "webform:wf-000102", expect=1)  # refused for want of an approval
+        row_id, key, event = self.last_row()
+        self.assertEqual((key, event), ("webform:wf-000102", "apply_refused"))
+        self.with_triggers_off(("DELETE FROM audit WHERE id = ?", (row_id,)))
+        self.assertEqual(self.problems(), [])
+
+    def test_what_it_cannot_find_a_whole_enquiry_that_arrived_last_removed_with_its_rows(self):
+        with self.desk() as desk:
+            last = desk.receive(enquiry(source_id="arrived-last"), via="file").key
+        self.with_triggers_off(("DELETE FROM audit WHERE key = ?", (last,)), ("DELETE FROM arrivals WHERE key = ?", (last,)),
+                               ("DELETE FROM enquiries WHERE key = ?", (last,)))
+        self.assertEqual(self.problems(), [])
 
     def test_a_trigger_replaced_by_one_of_the_same_name_that_does_nothing_is_found(self):
         conn = self.desk_db()

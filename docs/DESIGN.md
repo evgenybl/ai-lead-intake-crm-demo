@@ -305,21 +305,21 @@ including a contact the desk created; and, on the desk file, a column that no tr
 the model's draft kept for an enquiry, a refused enquiry's reasons, a held enquiry's resolution, what identity
 found. With an HTTP CRM it does not look in the CRM at all.
 
-The review of this project changed the desk file by hand in these ways. What `doctor` reports now (each is a
-test in `tests/test_promises.py`, `DoctorFindsTheReviewedManipulationsTests`, or was run with the review's own
-script):
+The desk file changed by hand, as a person who can open it might change it, and what `doctor` reports. Each row
+names its test in `tests/test_promises.py` (class `DoctorFindsHandEditsOfTheDeskFileTests` unless another is named),
+or says it is not tested:
 
-| The manipulation | What `doctor` reports |
-|---|---|
-| 1. With the triggers in place: `UPDATE`, `DELETE`, `INSERT OR REPLACE` on the trail | Each is refused by the database itself. `DROP TRIGGER` is not; a missing trigger is reported |
-| 2. Triggers dropped, rows removed, triggers put back: the last row only | Reported: the enquiry's state is not the last state its trail records |
-| 2. The same, a row in the middle (a replay) | Reported: the chain is broken, and the replay count no longer agrees with the trail |
-| 2. The same, a whole enquiry that arrived last, with its trail rows, arrivals and enquiry row | **Not reported**: nothing left on the desk names it |
-| 3. Triggers dropped, a row changed (the approver's name), every later hash recomputed, the approval row changed to match, triggers put back | **Not reported**: every part of the file agrees with every other |
-| 4. A trigger replaced by one of the same name that does nothing | Reported: the trigger is not as written |
-| 5. Outside the trail: the stored content of an enquiry edited; the name on an approval edited; the ledger emptied | Reported: the content does not match its recorded sha256; the approval does not match the decision in the trail; operations of the trail have no ledger row |
-| Also: an approval row inserted with SQL, and the enquiry set to `approved` | Reported: the approval has no decision in the trail, and the next move does not follow the one before it |
-| Also: a plan rewritten, with its sha256 changed everywhere on the desk | Reported: the enquiry's plan is not the plan its trail records |
+| The manipulation | What `doctor` reports | Test |
+|---|---|---|
+| 1. With the triggers in place: `UPDATE`, `DELETE`, `INSERT OR REPLACE` on the trail | Each is refused by the database itself. `DROP TRIGGER` is not; a missing trigger is reported | `tests/test_audit_and_store.py`: `test_the_database_refuses_to_change_an_audit_row`, `test_the_database_refuses_to_remove_an_audit_row`, `test_insert_or_replace_cannot_overwrite_a_row`; `tests/test_controls.py`: `test_control_5_the_audit_triggers_dropped_a_changed_row_is_found` |
+| 2. Triggers dropped, the last row removed, triggers put back | Reported when that row records a state move (the enquiry's state is not the last its trail records) or an arrival, a replay or a corrected resend (the counts no longer agree with the trail). **Not reported** when it records anything else, such as an `apply_refused` row (an apply refused for want of an approval) or an `identity_failed` row | `test_the_last_row_removed_is_found_when_it_is_a_state_move`, `test_the_last_row_removed_is_found_when_it_is_a_replay`, `test_what_it_cannot_find_the_last_row_removed_when_it_records_no_state_and_no_arrival` (an `apply_refused` row); the other kinds are not tested |
+| 2. The same, a row in the middle (a replay) | Reported: the chain is broken, and the replay count no longer agrees with the trail | `test_a_replay_row_removed_from_the_middle_of_the_trail_is_found` |
+| 2. The same, a whole enquiry that arrived last, with its trail rows, arrivals and enquiry row | **Not reported**: nothing left on the desk names it | `test_what_it_cannot_find_a_whole_enquiry_that_arrived_last_removed_with_its_rows` |
+| 3. Triggers dropped, a row changed (the approver's name), every later hash recomputed, the approval row changed to match, triggers put back | **Not reported**: every part of the file agrees with every other | `test_what_it_cannot_find_a_consistent_rewrite_by_a_person_who_can_open_the_file` |
+| 4. A trigger replaced by one of the same name that does nothing | Reported: the trigger is not as written | `test_a_trigger_replaced_by_one_of_the_same_name_that_does_nothing_is_found` |
+| 5. Outside the trail: the stored content of an enquiry edited; the name on an approval edited; the ledger emptied | Reported: the content does not match its recorded sha256; the approval does not match the decision in the trail; operations of the trail have no ledger row | `test_an_enquiry_s_stored_content_edited_is_found`, `test_the_name_on_an_approval_edited_is_found`, `test_the_ledger_emptied_is_found` |
+| Also: an approval row inserted with SQL, and the enquiry set to `approved` | Reported: the approval has no decision in the trail, and the next move does not follow the one before it | `test_an_approval_inserted_by_sql_with_no_decision_in_the_trail_is_found` |
+| Also: a plan rewritten, with its sha256 changed everywhere on the desk | Reported: the enquiry's plan is not the plan its trail records | `test_a_plan_rewritten_with_its_sha256_changed_everywhere_on_the_desk_is_found` |
 
 ## The intake endpoint
 

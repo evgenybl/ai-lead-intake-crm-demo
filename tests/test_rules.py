@@ -31,6 +31,16 @@ ABSOLUTE_PATH = re.compile(
     + r"|\\\\[A-Za-z0-9._-]+\\"  # a network share
 )
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
+# A pointer to something the reader does not have. Built from pieces, so that this file does not hold what it finds.
+_REVIEW = "rev" + "iew"
+OUTSIDE = re.compile(
+    r"\b(?:section|sections)\s+\d"  # the numbered parts of another document
+    + r"|\bthe\s+" + "specif" + r"ication\b"
+    + r"|\b(?:the|a|this|that|our)\s+" + _REVIEW + r"(?:er|ers)?\b(?!\s+a\b)"  # one, or the person who made it
+    + r"|\b" + _REVIEW + r"(?:er)?'s\b"
+    + r"|(?-i:" + _REVIEW.capitalize() + r"ed)(?=[A-Z])"  # inside a name written in capitalised words
+    + r"|\b" + "pha" + r"se[\s-]*(?:\d|one|two|three)\b",
+    re.IGNORECASE)
 
 
 def repository_files():
@@ -62,11 +72,23 @@ class RepositoryRuleTests(unittest.TestCase):
         self.assertEqual(found, [])
 
     def test_no_file_points_to_a_document_the_reader_does_not_have(self):
-        """Each rule is said where it applies, never as a pointer to an outside document or its numbered parts."""
-        outside = re.compile(r"\b(?:section|sections)\s+\d|\bthe\s+" + "specif" + r"ication\b", re.IGNORECASE)
+        """Each rule is said where it applies, never as a pointer to something the reader does not have: an outside
+        document or its numbered parts, an outside assessment of the project, who made it, its scripts or its
+        phases."""
         found = [f"{relative(p)}: {m.group(0)!r}" for p in repository_files()
-                 for m in outside.finditer(read(p).decode("utf-8"))]
+                 for m in OUTSIDE.finditer(read(p).decode("utf-8"))]
         self.assertEqual(found, [])
+
+    def test_the_pointer_rule_catches_each_kind_it_names(self):
+        for text in ("see sec" + "tion 4", "as the " + "specif" + "ication says", "or was run with the " + "rev" + "iew's own "
+                     "script", "The " + "rev" + "iew of this project changed", "the " + "rev" + "iewer found",
+                     "class DoctorFinds" + "Rev" + "iewedThings", "the " + "pha" + "se-1 notes", "in " + "pha" + "se 2"):
+            with self.subTest(text=text):
+                self.assertIsNotNone(OUTSIDE.search(text))
+        for text in ("Dana Reviewer (invented)", "the checks, agreements and review a real deployment needs",
+                     "They have not been reviewed as a defence"):
+            with self.subTest(text=text):
+                self.assertIsNone(OUTSIDE.search(text))
 
     def test_no_key_shaped_or_token_shaped_literal_in_any_file(self):
         """A sha256 digest (exactly 64 lowercase hex digits) names a file's content; it is not a secret."""

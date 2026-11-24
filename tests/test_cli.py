@@ -157,8 +157,8 @@ class CommandTests(DeskCase):
         self.assertIn("approved: webform:wf-000101", self.cli("approve", "webform:wf-000101", "--by", PERSON, "--plan", sha))
 
     def test_an_approval_without_the_plan_is_refused_so_a_plan_made_again_is_never_approved_unseen(self):
-        # The sequence the review reproduced: the plan is shown, the CRM changes, the desk plans again, and an
-        # approval that did not name the plan approved the new one, which apply then wrote.
+        # The plan is shown, the CRM changes, the desk plans again: an approval that did not name the plan would
+        # approve the new one, unseen, and apply would write it. Naming the plan is required, and the old name fails.
         self.cli("ingest", DATA_FILE)
         key = "webform:wf-000109"
         seen = self.cli("plan").split(f"to approve: desk.py approve {key} --by <name> --plan ")[1].split()[0]
@@ -185,7 +185,7 @@ class CommandTests(DeskCase):
                 desk.approve(key, PERSON, "")
 
     def test_an_apply_failed_that_a_retry_cannot_finish_says_how_to_clear_it_and_that_way_works(self):
-        # The review's loop: the first write failed before it happened, then someone else took the e-mail.
+        # The first write failed before it happened, then someone else took the e-mail: every retry fails the same way.
         from intake.crm.practice import PracticeCRM
         from intake.home import crm_path
         from intake import pages

@@ -108,6 +108,25 @@ class DocumentTests(unittest.TestCase):
         listed = sum(len(tests) for _, _, classes in tool.collect() for _, _, tests in classes)
         self.assertEqual(listed, loader.countTestCases())
 
+    def test_each_row_of_the_design_s_table_of_hand_edits_names_a_test_that_exists_or_says_it_is_not_tested(self):
+        design = read("docs", "DESIGN.md")
+        table = design.split("| The manipulation | What `doctor` reports | Test |")[1].split("\n\n")[0]
+        rows = [line for line in table.strip().splitlines()[1:] if line.startswith("|")]
+        self.assertGreaterEqual(len(rows), 8)
+        named = set()
+        for row in rows:
+            test_cell = row.rstrip(" |").rsplit(" | ", 1)[1]
+            found = re.findall(r"`(test_\w+)`", test_cell)
+            with self.subTest(row=row[:60]):
+                self.assertTrue(found or "not tested" in test_cell)
+            named.update(found)
+        defined = set()
+        for name in os.listdir(os.path.join(ROOT, "tests")):
+            if name.endswith(".py"):
+                defined.update(re.findall(r"def (test_\w+)", read("tests", name)))
+        self.assertEqual(sorted(named - defined), [])
+        self.assertEqual(sorted(set(re.findall(r"`(test_\w+)`", design)) - defined), [])  # anywhere in DESIGN
+
     def test_the_licence_is_mit_with_its_copyright_line(self):
         licence = read("LICENSE")
         self.assertTrue(licence.startswith("MIT License\n\nCopyright (c) 2026 Evgeny Blekhman\n"))

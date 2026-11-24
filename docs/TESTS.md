@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-312 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+318 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -100,6 +100,7 @@ The documents say only what a run printed; the demo and the examples are what th
 - `test_every_quoted_model_sentence_is_a_real_slice_of_its_recorded_answer`
 - `test_the_status_output_on_the_readme_is_what_the_command_prints`
 - `test_the_test_list_is_generated_from_the_tests`
+- `test_each_row_of_the_design_s_table_of_hand_edits_names_a_test_that_exists_or_says_it_is_not_tested`
 - `test_the_licence_is_mit_with_its_copyright_line`
 - `test_ci_pins_its_actions_by_commit_and_runs_both_systems_and_pythons`
 - `test_the_readme_never_says_live_for_a_path_that_was_run`
@@ -455,10 +456,14 @@ Each write the ledger records is looked for in the practice CRM, where the ledge
 - `test_what_it_does_not_notice_a_note_rewritten_below_its_first_line_and_a_contact_s_fields_changed`
 - `test_what_it_does_not_notice_a_desk_column_no_trail_row_records_edited_by_hand`
 
-### DoctorFindsTheReviewedManipulationsTests
+### DoctorFindsHandEditsOfTheDeskFileTests
 
-Edits of the desk file that the review made by hand. What the doctor finds, and, in the last test, what it cannot: a rewrite of the trail done consistently by a person who can open the file.
+Edits of the desk file made by hand, as a person who can open it might make them: what the doctor finds, and, in the tests that say so, what it cannot. docs/DESIGN.md names each of these tests in its table.
 
+- `test_the_last_row_removed_is_found_when_it_is_a_state_move`
+- `test_the_last_row_removed_is_found_when_it_is_a_replay`
+- `test_what_it_cannot_find_the_last_row_removed_when_it_records_no_state_and_no_arrival`
+- `test_what_it_cannot_find_a_whole_enquiry_that_arrived_last_removed_with_its_rows`
 - `test_a_trigger_replaced_by_one_of_the_same_name_that_does_nothing_is_found`
 - `test_an_approval_inserted_by_sql_with_no_decision_in_the_trail_is_found`
 - `test_the_name_on_an_approval_edited_is_found`
@@ -488,7 +493,8 @@ Rules of the repository itself, checked on every file, and the one-gate rule on 
 
 - `test_there_are_files_to_check`
 - `test_no_absolute_path_in_any_file`
-- `test_no_file_points_to_a_document_the_reader_does_not_have`: Each rule is said where it applies, never as a pointer to an outside document or its numbered parts.
+- `test_no_file_points_to_a_document_the_reader_does_not_have`: Each rule is said where it applies, never as a pointer to something the reader does not have: an outside document or its numbered parts, an outside assessment of the project, who made it, its scripts or its phases.
+- `test_the_pointer_rule_catches_each_kind_it_names`
 - `test_no_key_shaped_or_token_shaped_literal_in_any_file`: A sha256 digest (exactly 64 lowercase hex digits) names a file's content; it is not a secret.
 - `test_every_email_address_is_at_example_com`
 - `test_every_text_file_has_lf_line_ends`
