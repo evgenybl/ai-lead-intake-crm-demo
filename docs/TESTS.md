@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-282 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+283 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -313,6 +313,7 @@ The desk pages, `render` and `serve`. No script on any page; everything from an 
 ### RenderTests
 
 - `test_render_writes_the_desk_and_a_page_per_enquiry_with_links_that_exist`
+- `test_the_plan_is_worded_by_what_happened_and_the_name_placeholder_is_explained`
 - `test_no_page_holds_a_script_or_a_form`
 - `test_every_page_is_self_contained_and_loads_nothing_from_a_network`
 - `test_markup_in_a_message_is_shown_as_text`

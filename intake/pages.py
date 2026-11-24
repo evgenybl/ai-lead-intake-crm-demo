@@ -187,7 +187,8 @@ def _draft(enquiry) -> list:
         out.append("</table>")
         if outcome == "used":
             out.append('<p class="note">A reply draft is only a draft: the desk never sends anything to a person '
-                       "who enquired.</p>")
+                       "who enquired. Where it says {{name}}, the sender's name goes: the model was not given the "
+                       "name, and the person who writes the real reply puts it in.</p>")
         return out
     if outcome == "refused":
         return [head, f'<p class="bad">AI draft refused: {esc(draft.get("reason"))}. The enquiry goes on with no AI '
@@ -226,8 +227,9 @@ def _plan(store, enquiry) -> list:
     if not enquiry.plan_sha:
         return []
     plan = json.loads(store.plan_body(enquiry.plan_sha))
-    out = [f"<p><b>The plan</b> (plan {esc(enquiry.plan_sha[:12])}): exactly what would be written to the CRM, "
-           "and nothing else.</p>", "<ol>"]
+    said = ("exactly what was written to the CRM" if enquiry.state == "applied"
+            else "exactly what would be written to the CRM")
+    out = [f"<p><b>The plan</b> (plan {esc(enquiry.plan_sha[:12])}): {said}, and nothing else.</p>", "<ol>"]
     out += [f"<li>{_operation(op)}</li>" for op in plan.get("operations", [])]
     out.append("</ol>")
     for diff in plan.get("shown", []):

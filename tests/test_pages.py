@@ -44,6 +44,19 @@ class RenderTests(DeskCase):
         self.assertIn('href="../index.html"', page)
         self.assertIn("<h2>Its trail</h2>", page)
 
+    def test_the_plan_is_worded_by_what_happened_and_the_name_placeholder_is_explained(self):
+        name = pages.slug("webform:wf-000109") + ".html"
+        waiting = self.read("enquiry", name)
+        self.assertIn("exactly what would be written to the CRM", waiting)
+        self.assertIn("Where it says {{name}}, the sender", waiting)
+        # In the example run this enquiry was approved and applied, so its page speaks of what was written.
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "examples", "desk", "enquiry", name), encoding="utf-8") as handle:
+            applied = handle.read()
+        self.assertIn("Written to the CRM", applied)
+        self.assertIn("exactly what was written to the CRM", applied)
+        self.assertNotIn("would be written", applied)
+
     def test_no_page_holds_a_script_or_a_form(self):
         for name in ["index.html"] + [os.path.join("enquiry", n) for n in os.listdir(os.path.join(self.out, "enquiry"))]:
             page = self.read(name).lower()
