@@ -306,15 +306,19 @@ def _promise_4(desk) -> list:
                                  f"{(recorded['plan'] or 'none')[:12]}")
 
     steps = Check(4, "every operation in the trail has its ledger row; no step is left half recorded")
-    ledger = {(key, op): status for key, op, status in desk.execute("SELECT key, op, status FROM ledger")}
-    state_of = dict(desk.execute("SELECT key, state FROM enquiries"))
+    ledger_rows = desk.execute("SELECT key, op, status, plan_sha FROM ledger").fetchall()
+    ledger = {(key, op): status for key, op, status, _ in ledger_rows}
+    current = {key: (state, plan) for key, state, plan in desk.execute("SELECT key, state, plan_sha FROM enquiries")}
     for key, rows in sorted(trail.items()):
         for row_id, event, detail, _ in rows:
             if event == "operation" and (key, detail.get("op")) not in ledger:
                 steps.problems.append(f"{key}: row {row_id} records {detail.get('op')}, but the ledger has no row "
                                       "for it")
-    for (key, op), status in sorted(ledger.items()):
-        if status == "started" and state_of.get(key) != "apply_failed":
+    for key, op, status, plan in sorted(ledger_rows):
+        # A step of the enquiry's current plan that began, while the enquiry is not apply_failed (which names
+        # its error). A step of an earlier plan is history: the plan was made again from the CRM as it was.
+        state, current_plan = current.get(key, (None, None))
+        if status == "started" and plan == current_plan and state != "apply_failed":
             steps.problems.append(f"{key}: the step {op} began and its end is not recorded (the process stopped "
                                   "between the CRM call and its record); `desk.py apply` completes the plan and "
                                   "finds what is already written")

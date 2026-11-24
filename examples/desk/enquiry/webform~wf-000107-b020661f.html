@@ -18,8 +18,8 @@ form{background:#ffffff;border:1px solid #d0d7de;padding:.5rem .8rem;margin:.4re
 code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head><body>
 <p><a href="../index.html">Back to the desk</a></p>
 <h1>Enquiry webform:wf-000107</h1>
-<section class="card" id="webform~wf-000107">
-<h2><a href="webform~wf-000107.html">webform:wf-000107</a></h2>
+<section class="card" id="webform~wf-000107-b020661f">
+<h2><a href="webform~wf-000107-b020661f.html">webform:wf-000107</a></h2>
 <p class="state waiting">Waiting for your approval</p>
 <p>From: Pia Lund (invented) · Lund Bookshop (invented) · pia.lund@example.com · 000-000-0207. Received 2026-01-05T09:20:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>Do you work on public holidays, or only on working days?</blockquote>
@@ -41,7 +41,7 @@ Answer the enquiry from Pia Lund (invented).</pre></li>
 python -I desk.py reject webform:wf-000107 --by "Your name" --reason "why"</pre>
 </section>
 <h2>Its trail</h2>
-<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
+<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row, and each row carries a hash of the one before it. That guards against mistakes, bugs and plain edits of the file; it does not stop a person who can open the database file, take the refusal away and recompute every hash.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>19</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 59ac0d70b23cda4fca5f790d942c102bbcf57165929f00252eef2f9dcd362a86; reasons: []; state: received; via: file</td></tr>
 <tr><td>20</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: refused; reason: the answer has keys beyond the four: &#x27;urgency_note&#x27;; it is refused whole; request: eb8dfd2a8bf448f7c755bcf83b918a6e53d36b7c20df4a41b9bbd141da87d3bb</td></tr>

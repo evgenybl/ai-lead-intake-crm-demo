@@ -40,7 +40,7 @@ class RenderTests(DeskCase):
         index = self.read("index.html")
         for href in re.findall(r'href="([^"]+)"', index):
             self.assertTrue(os.path.exists(os.path.join(self.out, *href.split("/"))), href)
-        page = self.read("enquiry", "webform~wf-000110.html")
+        page = self.read("enquiry", pages.slug("webform:wf-000110") + ".html")
         self.assertIn('href="../index.html"', page)
         self.assertIn("<h2>Its trail</h2>", page)
 
@@ -60,7 +60,7 @@ class RenderTests(DeskCase):
                 self.assertTrue(href.endswith(".html") and ":" not in href, (name, href))
 
     def test_markup_in_a_message_is_shown_as_text(self):
-        page = self.read("enquiry", "webform~wf-000125.html")
+        page = self.read("enquiry", pages.slug("webform:wf-000125") + ".html")
         self.assertIn("Hello &lt;script&gt;alert(1)&lt;/script&gt; please quote", page)
 
     def test_the_counts_come_first_in_plain_words(self):
@@ -96,7 +96,7 @@ class RenderTests(DeskCase):
         self.assertNotIn('<span class="label">Recorded</span>', page)
 
     def test_a_replay_with_different_content_is_shown_on_the_desk(self):
-        page = self.read("enquiry", "webform~wf-000101.html")
+        page = self.read("enquiry", pages.slug("webform:wf-000101") + ".html")
         self.assertIn("<b>Replayed with different content</b>", page)
         self.assertIn("with a small kitchen.", page)
 
@@ -164,16 +164,37 @@ class ServeCase(DeskCase):
             return desk.store.get_enquiry(key).state
 
 
+class FileNameTests(DeskCase):
+    def test_two_keys_that_differ_only_in_letter_case_get_two_pages_on_any_file_system(self):
+        self.init()
+        with self.desk() as desk:
+            desk.receive(enquiry(source_id="Form-AAAA01"), via="file")
+            desk.receive(enquiry(source_id="form-aaaa01", email="other.person@example.com", phone="",
+                                 name="Other Person (invented)", company=""), via="file")
+        out = os.path.join(self._tmp.name, "pages")
+        self.cli("render", "--out", out)
+        names = sorted(os.listdir(os.path.join(out, "enquiry")))
+        self.assertEqual(len(names), 2)
+        self.assertEqual(len({name.casefold() for name in names}), 2)  # distinct even where case is not
+        for key in ("webform:Form-AAAA01", "webform:form-aaaa01"):
+            name = pages.slug(key) + ".html"
+            self.assertIn(name, names)
+            self.assertEqual(pages.unslug(pages.slug(key)), key)
+            with open(os.path.join(out, "enquiry", name), encoding="utf-8") as handle:
+                self.assertIn(f"<h1>Enquiry {key}</h1>", handle.read())
+
+
 class ServeWithoutDecisionsTests(ServeCase):
     def test_the_desk_and_an_enquiry_page_are_served_with_no_script_allowed(self):
         status, headers, body = self.request("GET", "/desk")
         self.assertEqual(status, 200)
         self.assertIn("default-src 'none'", headers["Content-Security-Policy"])
         self.assertIn("<h1>Enquiries desk</h1>", body)
-        status, _, body = self.request("GET", "/desk/enquiry/webform~wf-000110")
+        status, _, body = self.request("GET", "/desk/enquiry/" + pages.slug("webform:wf-000110"))
         self.assertEqual(status, 200)
         self.assertIn("<h2>Its trail</h2>", body)
         self.assertEqual(self.request("GET", "/desk/enquiry/webform~nothing-here")[0], 404)
+        self.assertEqual(self.request("GET", "/desk/enquiry/webform~wf-000110-00000000")[0], 404)  # a wrong hash
         self.assertEqual(self.request("GET", "/")[1]["Location"], "/desk")
 
     def test_without_the_switch_the_page_shows_the_commands_and_takes_no_decision(self):
@@ -203,7 +224,7 @@ class ServeWithDecisionsTests(ServeCase):
             return desk.store.get_enquiry(key).plan_sha
 
     def test_the_forms_appear_with_two_locks_and_a_token(self):
-        body = self.request("GET", "/desk/enquiry/webform~wf-000101")[2]
+        body = self.request("GET", "/desk/enquiry/" + pages.slug("webform:wf-000101"))[2]
         self.assertEqual(body.count("<form"), 2)
         self.assertEqual(body.count('type="checkbox" name="confirm"'), 2)
         self.assertEqual(body.count('name="by"'), 2)

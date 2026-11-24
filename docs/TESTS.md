@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-265 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+267 test methods in 16 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -46,6 +46,7 @@ The whole story of the invented data, command by command.
 - `test_a_bad_fixed_time_is_a_usage_error`
 - `test_approve_checks_the_plan_the_person_saw`
 - `test_an_approval_without_the_plan_is_refused_so_a_plan_made_again_is_never_approved_unseen`
+- `test_an_apply_failed_that_a_retry_cannot_finish_says_how_to_clear_it_and_that_way_works`
 - `test_a_decision_needs_a_person_not_the_system`
 - `test_reject_needs_a_reason_and_then_nothing_is_written`
 - `test_withdraw_puts_the_plan_back_to_wait`
@@ -312,6 +313,10 @@ Section 3.8: the desk pages, `render` and `serve`. No script on any page; everyt
 ### EscapingTests
 
 - `test_everything_from_an_enquiry_or_a_model_is_escaped`
+
+### FileNameTests
+
+- `test_two_keys_that_differ_only_in_letter_case_get_two_pages_on_any_file_system`
 
 ### ServeWithoutDecisionsTests
 

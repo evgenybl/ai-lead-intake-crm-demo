@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Enquiry webform:wf-000121</title><style>:root{color-scheme:light}
+<title>Enquiry webform:wf-000115</title><style>:root{color-scheme:light}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;max-width:62rem;margin:1.5rem auto;padding:0 1rem;
 color:#1f2328;background:#ffffff;line-height:1.45}
 h1{margin-bottom:.2rem}h2{margin-top:2rem;border-bottom:1px solid #d0d7de;padding-bottom:.2rem}
@@ -17,19 +17,19 @@ pre{white-space:pre-wrap;background:#ffffff;border:1px solid #d0d7de;padding:.4r
 form{background:#ffffff;border:1px solid #d0d7de;padding:.5rem .8rem;margin:.4rem 0}
 code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head><body>
 <p><a href="../index.html">Back to the desk</a></p>
-<h1>Enquiry webform:wf-000121</h1>
-<section class="card" id="webform~wf-000121">
-<h2><a href="webform~wf-000121.html">webform:wf-000121</a></h2>
+<h1>Enquiry webform:wf-000115</h1>
+<section class="card" id="webform~wf-000115-25e26f21">
+<h2><a href="webform~wf-000115-25e26f21.html">webform:wf-000115</a></h2>
 <p class="state stop">Not taken: it did not pass the checks at the door</p>
-<p>From: Tara Quinn (invented) · tara.quinn-at-example.com · 000-000-0221. Received 2026-01-05T12:50:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
-<blockquote>Can you clean a small dental practice?</blockquote>
-<p><b>Why it was not taken:</b> an e-mail that is not an address. It is kept and counted.</p>
+<p>From: Rhea Moss (invented) · Moss Cafe (invented) · rhea.moss@example.com · 000-000-0215. Received 2026-01-05T11:08:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
+<blockquote>Do you clean cafes after closing time?</blockquote>
+<p><b>Why it was not taken:</b> consent is not true. It is kept and counted.</p>
 <p><b>Model step:</b> skipped. A refused enquiry never reaches a model or the CRM.</p>
 </section>
 <h2>Its trail</h2>
-<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
+<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row, and each row carries a hash of the one before it. That guards against mistakes, bugs and plain edits of the file; it does not stop a person who can open the database file, take the refusal away and recompute every hash.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
-<tr><td>53</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: c52e7770eba8019840252fdd2250bf59c8cc1f99d356cc57a788eeb261feb1b1; reasons: [&quot;email_invalid&quot;]; state: refused; via: file</td></tr>
-<tr><td>127</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T12:50:00Z; same_content: true; state_now: refused; via: file</td></tr>
+<tr><td>41</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: e968b855fac1620b9e20b0d466b17eadacfe7782e0f2ad93f7fb238e087a6cad; reasons: [&quot;no_consent&quot;]; state: refused; via: file</td></tr>
+<tr><td>121</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T11:08:00Z; same_content: true; state_now: refused; via: file</td></tr>
 </table>
 </body></html>

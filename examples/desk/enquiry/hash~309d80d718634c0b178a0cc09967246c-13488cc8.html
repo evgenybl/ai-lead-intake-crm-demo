@@ -18,8 +18,8 @@ form{background:#ffffff;border:1px solid #d0d7de;padding:.5rem .8rem;margin:.4re
 code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head><body>
 <p><a href="../index.html">Back to the desk</a></p>
 <h1>Enquiry hash:309d80d718634c0b178a0cc09967246c</h1>
-<section class="card" id="hash~309d80d718634c0b178a0cc09967246c">
-<h2><a href="hash~309d80d718634c0b178a0cc09967246c.html">hash:309d80d718634c0b178a0cc09967246c</a></h2>
+<section class="card" id="hash~309d80d718634c0b178a0cc09967246c-13488cc8">
+<h2><a href="hash~309d80d718634c0b178a0cc09967246c-13488cc8.html">hash:309d80d718634c0b178a0cc09967246c</a></h2>
 <p class="state waiting">Waiting for your approval</p>
 <p>From: Victor Moss (invented) · Moss Joinery (invented) · victor.moss@example.com · 000-000-0227. Received 2026-01-05T14:32:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>Do you clean workshops with sawdust?</blockquote>
@@ -51,7 +51,7 @@ Answer the enquiry from Victor Moss (invented).</pre></li>
 python -I desk.py reject hash:309d80d718634c0b178a0cc09967246c --by "Your name" --reason "why"</pre>
 </section>
 <h2>Its trail</h2>
-<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
+<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row, and each row carries a hash of the one before it. That guards against mistakes, bugs and plain edits of the file; it does not stop a person who can open the database file, take the refusal away and recompute every hash.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>65</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 5b8d6796ee5cd9a477a099172459f6af3284883b315dfedaa3db3df0cf65f514; reasons: []; state: received; via: file</td></tr>
 <tr><td>66</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: cae60b28840e8ddb481c6d6e4c1d5f68a779dc839497c417589b2f1396e4019d</td></tr>

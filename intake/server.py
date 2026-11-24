@@ -217,7 +217,7 @@ class IntakeHandler(BaseHTTPRequestHandler):
                     return self._html(200, pages.desk_page(desk.store, links, server.decisions))
                 if path.startswith("/desk/enquiry/"):
                     key = pages.unslug(urllib.parse.unquote(path[len("/desk/enquiry/"):]))
-                    page = pages.enquiry_page(desk.store, key, links, server.decisions)
+                    page = pages.enquiry_page(desk.store, key, links, server.decisions) if key else None
                     if page is not None:
                         return self._html(200, page)
         except sqlite3.OperationalError:

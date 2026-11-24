@@ -18,8 +18,8 @@ form{background:#ffffff;border:1px solid #d0d7de;padding:.5rem .8rem;margin:.4re
 code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head><body>
 <p><a href="../index.html">Back to the desk</a></p>
 <h1>Enquiry webform:wf-000123</h1>
-<section class="card" id="webform~wf-000123">
-<h2><a href="webform~wf-000123.html">webform:wf-000123</a></h2>
+<section class="card" id="webform~wf-000123-814a4a89">
+<h2><a href="webform~wf-000123-814a4a89.html">webform:wf-000123</a></h2>
 <p class="state stop">Not taken: it did not pass the checks at the door</p>
 <p>From: anonymous.visitor@example.com · 000-000-0223. Received 2026-01-05T13:28:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>How much is a one-off clean?</blockquote>
@@ -27,7 +27,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <p><b>Model step:</b> skipped. A refused enquiry never reaches a model or the CRM.</p>
 </section>
 <h2>Its trail</h2>
-<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
+<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row, and each row carries a hash of the one before it. That guards against mistakes, bugs and plain edits of the file; it does not stop a person who can open the database file, take the refusal away and recompute every hash.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>55</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 6ce94c3a473fe91502b84f7e67e5d5ba450fc2ba291503675e2ceb8e3be08647; reasons: [&quot;no_name&quot;]; state: refused; via: file</td></tr>
 <tr><td>129</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T13:28:00Z; same_content: true; state_now: refused; via: file</td></tr>

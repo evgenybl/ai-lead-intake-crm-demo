@@ -18,8 +18,8 @@ form{background:#ffffff;border:1px solid #d0d7de;padding:.5rem .8rem;margin:.4re
 code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head><body>
 <p><a href="../index.html">Back to the desk</a></p>
 <h1>Enquiry webform:wf-000124</h1>
-<section class="card" id="webform~wf-000124">
-<h2><a href="webform~wf-000124.html">webform:wf-000124</a></h2>
+<section class="card" id="webform~wf-000124-65796cb4">
+<h2><a href="webform~wf-000124-65796cb4.html">webform:wf-000124</a></h2>
 <p class="state waiting">Waiting for your approval</p>
 <p>From: Kira Osei (invented) · Osei Accounting (invented) · kira.osei@example.com · 000-000-0201. Received 2026-01-05T13:46:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>Also, do you clean windows on the outside?</blockquote>
@@ -51,7 +51,7 @@ Answer the enquiry from Kira Osei (invented).</pre></li>
 python -I desk.py reject webform:wf-000124 --by "Your name" --reason "why"</pre>
 </section>
 <h2>Its trail</h2>
-<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row of it.</p>
+<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row, and each row carries a hash of the one before it. That guards against mistakes, bugs and plain edits of the file; it does not stop a person who can open the database file, take the refusal away and recompute every hash.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>56</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 46f78682d8a913f6c78b6d0e32ad001415aa5941099b1922da78d3bd29428508; reasons: []; state: received; via: file</td></tr>
 <tr><td>57</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: 8c655d1b8a024257ae146a9678b956a1bb10bc322dfec04b7cce245661cec98f</td></tr>

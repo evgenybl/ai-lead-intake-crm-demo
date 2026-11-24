@@ -8,6 +8,7 @@ between files, and never a form: a file cannot take a decision).
 """
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 
@@ -55,13 +56,23 @@ def esc(value) -> str:
     return html.escape(value, quote=True)
 
 
+SLUG_HASH_DIGITS = 8
+
+
 def slug(key: str) -> str:
-    """A key as a file or path name. Neither a source nor a source_id may hold "~", so it is one to one."""
-    return key.replace(":", "~")
+    """A key as a file or path name: ":" written as "~", then "-" and 8 hex digits of the key's sha256.
+
+    Neither a source nor a source_id may hold "~". The hash keeps two keys that differ only in letter case
+    (a source_id is case-sensitive) apart on a file system that is not, as Windows' and macOS' usually are."""
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:SLUG_HASH_DIGITS]
+    return f"{key.replace(':', '~')}-{digest}"
 
 
-def unslug(name: str) -> str:
-    return name.replace("~", ":")
+def unslug(name: str) -> str | None:
+    """The key a slug names, or None when its hash does not fit it."""
+    base, dash, digest = name.rpartition("-")
+    key = base.replace("~", ":")
+    return key if dash and slug(key) == name else None
 
 
 class ServerLinks:
@@ -288,9 +299,16 @@ def _actions(enquiry, decisions: Decisions) -> list:
         return ["<p><b>To resolve:</b></p>",
                 f'<pre>python -I desk.py resolve {esc(key)} --as new --by "Your name"\n'
                 f'python -I desk.py resolve {esc(key)} --as contact:&lt;id&gt; --by "Your name"</pre>']
-    if enquiry.state in ("approved", "apply_failed"):
-        lead = "To write it" if enquiry.state == "approved" else f"It stopped: {esc(enquiry.error)}. To retry"
-        return [f"<p><b>{lead}:</b></p>", f"<pre>python -I desk.py apply --key {esc(key)}</pre>"]
+    if enquiry.state == "approved":
+        return ["<p><b>To write it:</b></p>", f"<pre>python -I desk.py apply --key {esc(key)}</pre>"]
+    if enquiry.state == "apply_failed":
+        return [f"<p><b>It stopped:</b> {esc(enquiry.error)}. <b>To retry</b>, which completes what is missing and "
+                "writes nothing twice:</p>", f"<pre>python -I desk.py apply --key {esc(key)}</pre>",
+                f"<p><b>If a retry keeps failing</b> because the CRM changed (for example, the e-mail now belongs to "
+                "another contact), withdraw the approval and plan it again against the CRM as it is now; the new "
+                "plan waits for a new approval:</p>",
+                f'<pre>python -I desk.py withdraw {esc(key)} --by "Your name" --reason "the CRM changed"\n'
+                "python -I desk.py plan</pre>"]
     return []
 
 
@@ -340,7 +358,9 @@ def enquiry_page(store, key: str, links, decisions: Decisions) -> str | None:
     body += card(store, enquiry, links, decisions, heading="h2")
     body += ["<h2>Its trail</h2>",
              '<p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a '
-             "row of it.</p>",
+             "row, and each row carries a hash of the one before it. That guards against mistakes, bugs and plain "
+             "edits of the file; it does not stop a person who can open the database file, take the refusal away "
+             "and recompute every hash.</p>",
              "<table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>"]
     for row in audit.rows(store.conn, key):
         detail = json.loads(row[4])

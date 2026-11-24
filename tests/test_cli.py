@@ -123,6 +123,39 @@ class CommandTests(DeskCase):
             with self.assertRaises(DeskError):
                 desk.approve(key, PERSON, "")
 
+    def test_an_apply_failed_that_a_retry_cannot_finish_says_how_to_clear_it_and_that_way_works(self):
+        # The review's loop: the first write failed before it happened, then someone else took the e-mail.
+        from intake.crm.practice import PracticeCRM
+        from intake.home import crm_path
+        from intake import pages
+        from tests.helpers import FlakyCRM, approve_in, enquiry
+
+        key = "webform:test-000001"
+        with self.desk() as desk:
+            desk.receive(enquiry(), via="file")
+            approve_in(desk, key)
+            desk.crm = FlakyCRM(desk.crm, "create_contact", "before")
+            self.assertEqual(desk.apply(key=key)[0].outcome, "apply_failed")
+        other = PracticeCRM(crm_path(self.home))
+        other.create_contact({"name": "Yara Test (invented)", "email": "yara.test@example.com"}, "")
+        other.close()
+        for _ in range(2):
+            self.assertIn("apply_failed", self.cli("apply", expect=1))
+        plan = self.cli("plan")
+        hint = (f"if a retry keeps failing because the CRM changed (the e-mail now belongs to another contact): "
+                f"desk.py withdraw {key} --by <name>, then desk.py plan: it is planned again and waits for a new "
+                "approval")
+        self.assertIn(hint, plan)
+        with self.desk() as desk:
+            page = pages.enquiry_page(desk.store, key, pages.FileLinks(True), pages.Decisions())
+        self.assertIn(f'python -I desk.py withdraw {key} --by "Your name" --reason "the CRM changed"', page)
+        self.cli("withdraw", key, "--by", PERSON, "--reason", "the CRM changed")
+        self.assertIn(f"{key}: planned again: the CRM changed", self.cli("plan"))
+        self.approve_cli(key)
+        self.assertIn(f"{key}: applied", self.cli("apply"))
+        self.assertEqual(self.crm_counts()["contacts"], 11)  # the contact someone else made; no second one
+        self.assertRegex(self.cli("doctor"), r"doctor: (\d+) of \1 checks passed")
+
     def test_a_decision_needs_a_person_not_the_system(self):
         self.cli("ingest", DATA_FILE)
         self.assertIn("a person's name", self.approve_cli("webform:wf-000101", by="  ", expect=1))

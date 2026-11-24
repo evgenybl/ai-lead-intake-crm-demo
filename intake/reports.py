@@ -135,6 +135,10 @@ def enquiry_lines(store, enquiry, crm_note: str = "") -> list:
             lines.append(f"  to approve: desk.py approve {enquiry.key} --by <name> --plan {enquiry.plan_sha[:12]}")
     if enquiry.state == "apply_failed":
         lines.append(f"  apply_failed: {printable(enquiry.error)}")
+        lines.append(f"  to retry: desk.py apply --key {enquiry.key} (it completes what is missing, writes nothing twice)")
+        lines.append(f"  if a retry keeps failing because the CRM changed (the e-mail now belongs to another contact): "
+                     f"desk.py withdraw {enquiry.key} --by <name>, then desk.py plan: it is planned again and "
+                     "waits for a new approval")
     if crm_note:
         lines.append(f"  {crm_note}")
     return lines
