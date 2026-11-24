@@ -152,7 +152,9 @@ def build() -> list:
         "Victor Moss (invented)", "victor.moss@example.com", "000-000-0227", "Moss Joinery (invented)",
         "Do you clean workshops with sawdust?", source="paper-form"))
     add("replay: the first enquiry sent again", "replay", dict(first), keep_time=True)
-    add("replay: the first enquiry sent a third time", "replay", dict(first), keep_time=True)
+    edited = dict(first)  # the form sends the same submission again, after the sender edited its message
+    edited["message"] = first["message"].rstrip(".") + ", with a small kitchen."
+    add("replay: the first enquiry sent a third time, its message edited", "replay", edited, keep_time=True)
     later = dict(hashed)
     later["received_at"] = (_parse(hashed["received_at"]) + _dt.timedelta(minutes=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
     if later["received_at"][:10] != hashed["received_at"][:10]:

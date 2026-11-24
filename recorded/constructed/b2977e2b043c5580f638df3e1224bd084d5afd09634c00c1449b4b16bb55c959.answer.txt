@@ -1,0 +1,6 @@
+{
+  "summary": "Hello <script>alert(1)</script> please quote for our two rooms.",
+  "intent": "quote_request",
+  "urgency": "normal",
+  "reply_draft": "Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet."
+}

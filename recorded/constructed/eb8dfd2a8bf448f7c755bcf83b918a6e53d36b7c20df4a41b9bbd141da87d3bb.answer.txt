@@ -1,0 +1,6 @@
+{
+  "summary": "Do you work on public holidays, or only on working days?",
+  "intent": "other",
+  "urgency": "normal",
+  "reply_draft": "Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet."
+}

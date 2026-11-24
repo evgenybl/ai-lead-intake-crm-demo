@@ -1,0 +1,7 @@
+{
+  "request_sha256": "b781ac80d4af83b01f44848b1d1ad346522fa55aadc2147528666253032e38a5",
+  "answer_file": "b781ac80d4af83b01f44848b1d1ad346522fa55aadc2147528666253032e38a5.answer.txt",
+  "answer_sha256": "3c3b21d0388fca49f0686b9503321ae6026c07bf477f091d7c6623ded572df6d",
+  "origin": "constructed",
+  "how": "Constructed by hand for the demo case ai-answer-refused: the summary names a budget of 1,500, and the message says 1,200. Not from a model."
+}

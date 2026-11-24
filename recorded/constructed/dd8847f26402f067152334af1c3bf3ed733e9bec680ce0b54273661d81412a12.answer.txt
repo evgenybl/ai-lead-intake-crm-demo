@@ -1,0 +1,6 @@
+{
+  "summary": "Please call me on [phone] after 5pm about a quote for the lab.",
+  "intent": "quote_request",
+  "urgency": "normal",
+  "reply_draft": "Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet."
+}

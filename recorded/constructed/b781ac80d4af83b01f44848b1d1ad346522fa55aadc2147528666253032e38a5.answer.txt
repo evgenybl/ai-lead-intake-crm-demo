@@ -1,0 +1,6 @@
+{
+  "summary": "We need 3 offices cleaned twice a week, with a budget of 1,200 a month, starting on 2026-02-02.",
+  "intent": "quote_request",
+  "urgency": "normal",
+  "reply_draft": "Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet."
+}

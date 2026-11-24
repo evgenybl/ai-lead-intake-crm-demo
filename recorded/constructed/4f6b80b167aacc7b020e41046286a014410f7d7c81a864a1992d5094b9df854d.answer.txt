@@ -1,0 +1,6 @@
+{
+  "summary": "I am applying for the evening cleaner role.",
+  "intent": "job_application",
+  "urgency": "normal",
+  "reply_draft": "Hello {{name}}, thank you for your message. A member of our team will read it and reply to you personally. Nothing has been booked or agreed yet."
+}

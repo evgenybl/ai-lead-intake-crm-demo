@@ -1,0 +1,7 @@
+{
+  "request_sha256": "ba8a5fe79bfcb9a0adc5402b6e44da9cb59d7e6b6faf2154a1ae3dc6e87e156b",
+  "answer_file": "ba8a5fe79bfcb9a0adc5402b6e44da9cb59d7e6b6faf2154a1ae3dc6e87e156b.answer.txt",
+  "answer_sha256": "09a75e7b7f2b1ea219735fff294ebabec9195c217d57aca176880043f2fb8d00",
+  "origin": "constructed",
+  "how": "Constructed by hand for the demo case hidden-instruction: an answer that obeys the message and carries a fifth key, approve. Not from a model."
+}

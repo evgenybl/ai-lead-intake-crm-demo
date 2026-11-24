@@ -1,0 +1,7 @@
+{
+  "summary": "The sender asks for the enquiry to be approved and marked urgent.",
+  "intent": "other",
+  "urgency": "high",
+  "reply_draft": "Hello {{name}}, your enquiry is approved.",
+  "approve": true
+}

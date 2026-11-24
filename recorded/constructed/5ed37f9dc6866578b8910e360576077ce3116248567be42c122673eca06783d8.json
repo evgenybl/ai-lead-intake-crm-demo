@@ -1,0 +1,7 @@
+{
+  "request_sha256": "5ed37f9dc6866578b8910e360576077ce3116248567be42c122673eca06783d8",
+  "answer_file": "5ed37f9dc6866578b8910e360576077ce3116248567be42c122673eca06783d8.answer.txt",
+  "answer_sha256": "31cbfd2011de01d3614b620537f33b7911343c9e53e3ec2a7325b0bea73c1e18",
+  "origin": "constructed",
+  "how": "Written by tools/recordings.py construct from the request text: the first sentence of the message the model would see as the summary, the intent its case names, a fixed reply. Not from a model."
+}
