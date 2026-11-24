@@ -201,8 +201,8 @@ the two ever differ, the page is right.*
    the states add up: yes: 27 enquiries + 33 replays = 60 arrived
    apply_failed: none
    replayed with different content (kept as replays; the first content stands):
-     webform:wf-000101 at 2026-01-05T09:00:00Z: message differs from the first copy
-     webform:wf-000101 at 2026-01-05T11:00:00Z: message differs from the first copy
+     webform:wf-000101 at 2026-01-05T15:00:00Z: message differs from the first copy
+     webform:wf-000101 at 2026-01-05T17:00:00Z: message differs from the first copy
    ```
 
    `python -I desk.py doctor` checks the same on the files:

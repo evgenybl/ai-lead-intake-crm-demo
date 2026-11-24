@@ -55,11 +55,11 @@ LINES = _lines_by_case()
 class Home:
     """One new desk and practice CRM in a folder of its own."""
 
-    def __init__(self, folder: str):
+    def __init__(self, folder: str, at: str = "2026-01-05T08:55:00Z"):
         self.folder = folder
         self.files = 0
         os.makedirs(folder, exist_ok=False)
-        self.desk("init", at="2026-01-05T08:55:00Z")
+        self.desk("init", at=at)
 
     def desk(self, *argv, at: str = "2026-01-05T09:00:00Z") -> tuple:
         out = io.StringIO()
@@ -137,42 +137,45 @@ class Run:
 # -- the whole story ---------------------------------------------------------------------------------
 
 APPROVED = ("webform:wf-000101", "webform:wf-000108", "webform:wf-000109", "webform:wf-000110", "webform:wf-000111")
+# The story's clock starts after the last time an enquiry of the invented file was sent (14:39 that day), so that
+# no page of the examples shows an enquiry taken in, approved or written before it was sent.
+DAY = "2026-01-05"
 
 
 def story(run: Run, folder: str, keep: dict | None = None) -> str:
-    home = Home(folder)
+    home = Home(folder, at=f"{DAY}T14:55:00Z")
     keep = {} if keep is None else keep
     before = home.counts()
     run.step("story 1 init", "a new desk; 10 starting contacts", crm_text(before), before["contacts"] == 10,
              "a new desk; 10 starting contacts in the practice CRM")
 
-    out = home.ingest(*LINES)
+    out = home.ingest(*LINES, at=f"{DAY}T15:00:00Z")
     keep["ingest-1.txt"] = out
     got = last_line(out, "ingest: ")
     run.step("story 2 ingest the file", "27 new enquiries, 3 replays", got,
              got.startswith("27 new enquiries, 3 replays"), "27 new enquiries, 3 replays")
 
-    _, out = home.desk("report", at="2026-01-05T09:10:00Z")
+    _, out = home.desk("report", at=f"{DAY}T15:10:00Z")
     keep["report-1.txt"] = out
     got = last_line(out, "the states add up: ")
     run.step("story 3 report", "the states add up", got, got.startswith("yes"), "the states add up: " + got[5:])
 
-    _, out = home.desk("plan", at="2026-01-05T09:20:00Z")
+    _, out = home.desk("plan", at=f"{DAY}T15:20:00Z")
     keep["plan.txt"] = out
-    _, keep["plan-one.txt"] = home.desk("plan", "--key", "webform:wf-000109", "--full", at="2026-01-05T09:21:00Z")
+    _, keep["plan-one.txt"] = home.desk("plan", "--key", "webform:wf-000109", "--full", at=f"{DAY}T15:21:00Z")
     after = home.counts()
     got = last_line(out, "plan: ")
     run.step("story 4 dry run (plan)", "every waiting plan printed; nothing written",
              f"{got}; CRM {crm_text(after)}", after == before, "plans printed; nothing written to the CRM")
 
     resolved, _ = home.desk("resolve", "webform:wf-000111", "--as", "contact:6", "--by", PERSON,
-                            at="2026-01-05T09:25:00Z")
-    codes = [home.approve(key, at="2026-01-05T09:30:00Z")[0] for key in APPROVED]
+                            at=f"{DAY}T15:25:00Z")
+    codes = [home.approve(key, at=f"{DAY}T15:30:00Z")[0] for key in APPROVED]
     run.step("story 5 resolve 1, approve 5", "a hold resolved; 5 approvals recorded",
              f"the phone-only hold resolved as contact 6; {codes.count(0)} approvals recorded",
              resolved == 0 and codes.count(0) == 5, "a person resolves a hold, then approves 5 plans by sha256")
 
-    _, out = home.desk("apply", at="2026-01-05T09:35:00Z")
+    _, out = home.desk("apply", at=f"{DAY}T15:35:00Z")
     keep["apply-1.txt"] = out
     written = home.counts()
     got = last_line(out, "apply: ")
@@ -180,7 +183,7 @@ def story(run: Run, folder: str, keep: dict | None = None) -> str:
              got == "5 applied" and written == {"contacts": 11, "notes": 5, "tasks": 5},
              "5 written: 1 new contact; 4 returning contacts updated")
 
-    out = home.ingest(*LINES, at="2026-01-05T11:00:00Z")
+    out = home.ingest(*LINES, at=f"{DAY}T17:00:00Z")
     keep["ingest-2.txt"] = out
     got = last_line(out, "ingest: ")
     again = home.counts()
@@ -188,24 +191,24 @@ def story(run: Run, folder: str, keep: dict | None = None) -> str:
              f"{got}; CRM {crm_text(again)}", got.startswith("0 new enquiries, 30 replays") and again == written,
              "0 new, 30 replays; nothing new written")
 
-    _, out = home.desk("apply", at="2026-01-05T11:05:00Z")
+    _, out = home.desk("apply", at=f"{DAY}T17:05:00Z")
     got = last_line(out, "apply: ")
     run.step("story 8 apply again", "nothing is approved; nothing written", f"{got}; CRM {crm_text(home.counts())}",
              got == "nothing is approved" and home.counts() == written, "nothing approved; nothing written")
 
-    _, out = home.desk("report", at="2026-01-05T11:10:00Z")
+    _, out = home.desk("report", at=f"{DAY}T17:10:00Z")
     keep["report-2.txt"] = out
     got = last_line(out, "the states add up: ")
     run.step("story 9 report again", "the states add up, with 33 replays", got,
              got.startswith("yes: 27 enquiries + 33 replays"), "the states add up: " + got[5:])
 
-    _, keep["status.txt"] = home.desk("status", at="2026-01-05T11:12:00Z")
-    code, out = home.desk("doctor", at="2026-01-05T11:15:00Z")
+    _, keep["status.txt"] = home.desk("status", at=f"{DAY}T17:12:00Z")
+    code, out = home.desk("doctor", at=f"{DAY}T17:15:00Z")
     keep["doctor.txt"] = out
     got = last_line(out, "doctor: ")
     run.step("story 10 doctor", "every check of the four promises passes", got, code == 0,
              "the doctor: " + got)
-    _, keep["trail.txt"] = home.desk("trail", "webform:wf-000110", at="2026-01-05T11:20:00Z")
+    _, keep["trail.txt"] = home.desk("trail", "webform:wf-000110", at=f"{DAY}T17:20:00Z")
     return home.folder
 
 

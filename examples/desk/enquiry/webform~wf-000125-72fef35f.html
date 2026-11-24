@@ -21,7 +21,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <section class="card" id="webform~wf-000125-72fef35f">
 <h2><a href="webform~wf-000125-72fef35f.html">webform:wf-000125</a></h2>
 <p class="state waiting">Waiting for your approval</p>
-<p>From: Uma Reyes (invented) · Reyes Law (invented) · uma.reyes@example.com · 000-000-0225. Received 2026-01-05T13:52:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
+<p>From: Uma Reyes (invented) · Reyes Law (invented) · uma.reyes@example.com · 000-000-0225. Received 2026-01-05T13:52:00Z (arrived 2026-01-05T15:00:00Z, by file).</p>
 <blockquote>Hello &lt;script&gt;alert(1)&lt;/script&gt; please quote for our two rooms.</blockquote>
 <p><b>Who it is:</b> A new contact: no contact in the CRM has this e-mail or phone.</p>
 <p><b>Model step:</b> <span class="label">Recorded</span></p>
@@ -58,9 +58,9 @@ python -I desk.py reject webform:wf-000125 --by "Your name" --reason "why"</pre>
 <h2>Its trail</h2>
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row, and each row carries a hash of the one before it. That guards against mistakes, bugs and plain edits of the file; it does not stop a person who can open the database file, take the refusal away and recompute every hash.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
-<tr><td>59</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: cd535d2061c4d6aa147980811c9c84397ebf029efe66f02c0d6a0d0dac8b80c8; reasons: []; state: received; via: file</td></tr>
-<tr><td>60</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: b2977e2b043c5580f638df3e1224bd084d5afd09634c00c1449b4b16bb55c959</td></tr>
-<tr><td>61</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: new; plan: 59873f4169e05b9aedeb622e3c08b44ef2ec6139f15948f21f6c446675195b58; state: awaiting_approval</td></tr>
-<tr><td>131</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T13:52:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
+<tr><td>59</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: cd535d2061c4d6aa147980811c9c84397ebf029efe66f02c0d6a0d0dac8b80c8; reasons: []; state: received; via: file</td></tr>
+<tr><td>60</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: b2977e2b043c5580f638df3e1224bd084d5afd09634c00c1449b4b16bb55c959</td></tr>
+<tr><td>61</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: new; plan: 59873f4169e05b9aedeb622e3c08b44ef2ec6139f15948f21f6c446675195b58; state: awaiting_approval</td></tr>
+<tr><td>131</td><td>2026-01-05T17:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T13:52:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
 </table>
 </body></html>

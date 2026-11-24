@@ -462,7 +462,10 @@ for good (see "Limits").
 - `demo.py` drives the real commands through `main(argv)` on new files, with a fixed clock and an
   environment of its own, so nothing from the caller's environment changes it. A CRM that is down is
   simulated by a wrapper that fails one call; the two intake cases start a server on 127.0.0.1. The story
-  resolves the phone-only hold as contact 6 before it approves.
+  resolves the phone-only hold as contact 6 before it approves. Its clock starts at 15:00, after the last time an
+  enquiry of the invented file was sent (14:39 that day): it takes the file in at 15:00, approves at 15:30, writes
+  at 15:35 and takes the file in again at 17:00, so no page of the examples shows an enquiry taken in, approved or
+  written before it was sent.
 - `make_examples.py` runs the whole demo and keeps what it printed and wrote: the outputs of the story's
   steps (`plan-one-in-full.txt` is the plan the README opens with), the desk pages after the story, the closing
   table, and `docs/img/demo.svg` drawn from that table by `tools/term_svg.py`. No path of the computer that ran

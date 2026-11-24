@@ -21,7 +21,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <section class="card" id="webform~wf-000101-350dc523">
 <h2><a href="webform~wf-000101-350dc523.html">webform:wf-000101</a></h2>
 <p class="state done">Written to the CRM</p>
-<p>From: Kira Osei (invented) · Osei Accounting (invented) · kira.osei@example.com · 000-000-0201. Received 2026-01-05T08:00:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
+<p>From: Kira Osei (invented) · Osei Accounting (invented) · kira.osei@example.com · 000-000-0201. Received 2026-01-05T08:00:00Z (arrived 2026-01-05T15:00:00Z, by file).</p>
 <blockquote>Could you quote for weekly cleaning of our office? We are on one floor.</blockquote>
 <p><b>Who it is:</b> A new contact: no contact in the CRM has this e-mail or phone.</p>
 <p><b>Model step:</b> <span class="label">Recorded</span></p>
@@ -50,31 +50,31 @@ Could you quote for weekly cleaning of our office? We are on one floor.</pre></l
 <li>Add a task to the new contact:<pre>webform:wf-000101
 Answer the enquiry from Kira Osei (invented).</pre></li>
 </ol>
-<p><b>Replayed with different content</b> at 2026-01-05T09:00:00Z: message (first: &ldquo;Could you quote for weekly cleaning of our office? We are on one floor.&rdquo;; this time: &ldquo;Could you quote for weekly cleaning of our office? We are on one floor, with a small kitchen.&rdquo;). It is kept as a replay: the first content stands, and nothing new is planned.</p>
-<p><b>Replayed with different content</b> at 2026-01-05T11:00:00Z: message (first: &ldquo;Could you quote for weekly cleaning of our office? We are on one floor.&rdquo;; this time: &ldquo;Could you quote for weekly cleaning of our office? We are on one floor, with a small kitchen.&rdquo;). It is kept as a replay: the first content stands, and nothing new is planned.</p>
+<p><b>Replayed with different content</b> at 2026-01-05T15:00:00Z: message (first: &ldquo;Could you quote for weekly cleaning of our office? We are on one floor.&rdquo;; this time: &ldquo;Could you quote for weekly cleaning of our office? We are on one floor, with a small kitchen.&rdquo;). It is kept as a replay: the first content stands, and nothing new is planned.</p>
+<p><b>Replayed with different content</b> at 2026-01-05T17:00:00Z: message (first: &ldquo;Could you quote for weekly cleaning of our office? We are on one floor.&rdquo;; this time: &ldquo;Could you quote for weekly cleaning of our office? We are on one floor, with a small kitchen.&rdquo;). It is kept as a replay: the first content stands, and nothing new is planned.</p>
 <p><b>Decisions:</b></p>
 <ul>
-<li>Dana Reviewer (invented) approved, and used when it was written to the CRM (plan 455b6421f0b4, at 2026-01-05T09:30:00Z)</li>
+<li>Dana Reviewer (invented) approved, and used when it was written to the CRM (plan 455b6421f0b4, at 2026-01-05T15:30:00Z)</li>
 </ul>
 </section>
 <h2>Its trail</h2>
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row, and each row carries a hash of the one before it. That guards against mistakes, bugs and plain edits of the file; it does not stop a person who can open the database file, take the refusal away and recompute every hash.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
-<tr><td>1</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 89fc7af029e84f8c41121dee7f03ca8fd5f9139932219b1732b83d24ba341c3b; reasons: []; state: received; via: file</td></tr>
-<tr><td>2</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: 7c91d82d9625d6585ca0ef0467eb6484f77499bc997b1a090603c63c90d1b883</td></tr>
-<tr><td>3</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: new; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202; state: awaiting_approval</td></tr>
-<tr><td>68</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T08:00:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
-<tr><td>69</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>replay</td><td>differs: {&quot;message&quot;: {&quot;first&quot;: &quot;Could you quote for weekly cleaning of our office? We are on one floor.&quot;, &quot;this_time&quot;: &quot;Could ...; received_at: 2026-01-05T08:00:00Z; same_content: false; state_now: awaiting_approval; via: file</td></tr>
-<tr><td>73</td><td>2026-01-05T09:30:00Z</td><td>Dana Reviewer (invented)</td><td>approved</td><td>approval: 1; from: awaiting_approval; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202; state: approved</td></tr>
-<tr><td>78</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation_started</td><td>op: create_contact; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202</td></tr>
-<tr><td>79</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: create_contact; ref: 11</td></tr>
-<tr><td>80</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation_started</td><td>op: add_note; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202</td></tr>
-<tr><td>81</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_note; ref: 1</td></tr>
-<tr><td>82</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation_started</td><td>op: add_task; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202</td></tr>
-<tr><td>83</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_task; ref: 1</td></tr>
-<tr><td>84</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>applied</td><td>from: approved; operations: [&quot;create_contact written (11)&quot;, &quot;add_note written (1)&quot;, &quot;add_task written (1)&quot;]; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202; state: applied</td></tr>
-<tr><td>107</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T08:00:00Z; same_content: true; state_now: applied; via: file</td></tr>
-<tr><td>134</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T08:00:00Z; same_content: true; state_now: applied; via: file</td></tr>
-<tr><td>135</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>differs: {&quot;message&quot;: {&quot;first&quot;: &quot;Could you quote for weekly cleaning of our office? We are on one floor.&quot;, &quot;this_time&quot;: &quot;Could ...; received_at: 2026-01-05T08:00:00Z; same_content: false; state_now: applied; via: file</td></tr>
+<tr><td>1</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 89fc7af029e84f8c41121dee7f03ca8fd5f9139932219b1732b83d24ba341c3b; reasons: []; state: received; via: file</td></tr>
+<tr><td>2</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: 7c91d82d9625d6585ca0ef0467eb6484f77499bc997b1a090603c63c90d1b883</td></tr>
+<tr><td>3</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: new; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202; state: awaiting_approval</td></tr>
+<tr><td>68</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T08:00:00Z; same_content: true; state_now: awaiting_approval; via: file</td></tr>
+<tr><td>69</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>replay</td><td>differs: {&quot;message&quot;: {&quot;first&quot;: &quot;Could you quote for weekly cleaning of our office? We are on one floor.&quot;, &quot;this_time&quot;: &quot;Could ...; received_at: 2026-01-05T08:00:00Z; same_content: false; state_now: awaiting_approval; via: file</td></tr>
+<tr><td>73</td><td>2026-01-05T15:30:00Z</td><td>Dana Reviewer (invented)</td><td>approved</td><td>approval: 1; from: awaiting_approval; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202; state: approved</td></tr>
+<tr><td>78</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation_started</td><td>op: create_contact; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202</td></tr>
+<tr><td>79</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: create_contact; ref: 11</td></tr>
+<tr><td>80</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation_started</td><td>op: add_note; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202</td></tr>
+<tr><td>81</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_note; ref: 1</td></tr>
+<tr><td>82</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation_started</td><td>op: add_task; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202</td></tr>
+<tr><td>83</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_task; ref: 1</td></tr>
+<tr><td>84</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>applied</td><td>from: approved; operations: [&quot;create_contact written (11)&quot;, &quot;add_note written (1)&quot;, &quot;add_task written (1)&quot;]; plan: 455b6421f0b4558954a4e00fa2dc3e7f1a39121ffd62639cc147cc8046a80202; state: applied</td></tr>
+<tr><td>107</td><td>2026-01-05T17:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T08:00:00Z; same_content: true; state_now: applied; via: file</td></tr>
+<tr><td>134</td><td>2026-01-05T17:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T08:00:00Z; same_content: true; state_now: applied; via: file</td></tr>
+<tr><td>135</td><td>2026-01-05T17:00:00Z</td><td>system</td><td>replay</td><td>differs: {&quot;message&quot;: {&quot;first&quot;: &quot;Could you quote for weekly cleaning of our office? We are on one floor.&quot;, &quot;this_time&quot;: &quot;Could ...; received_at: 2026-01-05T08:00:00Z; same_content: false; state_now: applied; via: file</td></tr>
 </table>
 </body></html>

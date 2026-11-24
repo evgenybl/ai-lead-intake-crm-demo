@@ -59,7 +59,7 @@ def build(scratch: str) -> dict:
     pages = os.path.join(scratch, "desk")
     with open(os.devnull, "w") as sink:
         desk_main(["render", "--out", pages, "--home", os.path.join(scratch, "demo-run", "story"),
-                   "--at", "2026-01-05T11:30:00Z"], out=sink, environ=dict(demo.ENV))
+                   "--at", f"{demo.DAY}T17:30:00Z"], out=sink, environ=dict(demo.ENV))
     for folder, _, names in os.walk(pages):
         for name in names:
             path = os.path.join(folder, name)

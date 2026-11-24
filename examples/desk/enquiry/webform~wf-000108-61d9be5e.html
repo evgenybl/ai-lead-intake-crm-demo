@@ -21,7 +21,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <section class="card" id="webform~wf-000108-61d9be5e">
 <h2><a href="webform~wf-000108-61d9be5e.html">webform:wf-000108</a></h2>
 <p class="state done">Written to the CRM</p>
-<p>From: Ada Fenwick (invented) · Fenwick Dental (invented) · Ada.Fenwick@Example.com  · 000-000-0101. Received 2026-01-05T09:42:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
+<p>From: Ada Fenwick (invented) · Fenwick Dental (invented) · Ada.Fenwick@Example.com  · 000-000-0101. Received 2026-01-05T09:42:00Z (arrived 2026-01-05T15:00:00Z, by file).</p>
 <blockquote>Please send me a new quote that adds the two rooms upstairs.</blockquote>
 <p><b>Who it is:</b> Returning: contact 1 (found by e-mail and phone).</p>
 <p><b>Model step:</b> <span class="label">Recorded</span></p>
@@ -49,21 +49,21 @@ Answer the enquiry from Ada Fenwick (invented).</pre></li>
 </ol>
 <p><b>Decisions:</b></p>
 <ul>
-<li>Dana Reviewer (invented) approved, and used when it was written to the CRM (plan 34cb9ad37fda, at 2026-01-05T09:30:00Z)</li>
+<li>Dana Reviewer (invented) approved, and used when it was written to the CRM (plan 34cb9ad37fda, at 2026-01-05T15:30:00Z)</li>
 </ul>
 </section>
 <h2>Its trail</h2>
 <p class="note">Every step, as the audit trail recorded it. The database refuses to change or remove a row, and each row carries a hash of the one before it. That guards against mistakes, bugs and plain edits of the file; it does not stop a person who can open the database file, take the refusal away and recompute every hash.</p>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
-<tr><td>22</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 412fa92c14938a1b71290a30a79946f782f38028d16533240e3b89d584eeb060; reasons: []; state: received; via: file</td></tr>
-<tr><td>23</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: e8e6df756ae8225cb075c16b7ad963fdf7f3a5c67f8de699cc8464f8b0afc640</td></tr>
-<tr><td>24</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: returning; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041; state: awaiting_approval</td></tr>
-<tr><td>74</td><td>2026-01-05T09:30:00Z</td><td>Dana Reviewer (invented)</td><td>approved</td><td>approval: 2; from: awaiting_approval; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041; state: approved</td></tr>
-<tr><td>85</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation_started</td><td>op: add_note; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041</td></tr>
-<tr><td>86</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_note; ref: 2</td></tr>
-<tr><td>87</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation_started</td><td>op: add_task; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041</td></tr>
-<tr><td>88</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_task; ref: 2</td></tr>
-<tr><td>89</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>applied</td><td>from: approved; operations: [&quot;add_note written (2)&quot;, &quot;add_task written (2)&quot;]; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041; state: applied</td></tr>
-<tr><td>114</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T09:42:00Z; same_content: true; state_now: applied; via: file</td></tr>
+<tr><td>22</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: 412fa92c14938a1b71290a30a79946f782f38028d16533240e3b89d584eeb060; reasons: []; state: received; via: file</td></tr>
+<tr><td>23</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: used; request: e8e6df756ae8225cb075c16b7ad963fdf7f3a5c67f8de699cc8464f8b0afc640</td></tr>
+<tr><td>24</td><td>2026-01-05T15:00:00Z</td><td>system</td><td>assessed</td><td>draft: used; from: received; identity: returning; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041; state: awaiting_approval</td></tr>
+<tr><td>74</td><td>2026-01-05T15:30:00Z</td><td>Dana Reviewer (invented)</td><td>approved</td><td>approval: 2; from: awaiting_approval; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041; state: approved</td></tr>
+<tr><td>85</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation_started</td><td>op: add_note; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041</td></tr>
+<tr><td>86</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_note; ref: 2</td></tr>
+<tr><td>87</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation_started</td><td>op: add_task; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041</td></tr>
+<tr><td>88</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_task; ref: 2</td></tr>
+<tr><td>89</td><td>2026-01-05T15:35:00Z</td><td>system</td><td>applied</td><td>from: approved; operations: [&quot;add_note written (2)&quot;, &quot;add_task written (2)&quot;]; plan: 34cb9ad37fdaf7db4f378797481306485f33288559a7cb0bde87c3561217f041; state: applied</td></tr>
+<tr><td>114</td><td>2026-01-05T17:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T09:42:00Z; same_content: true; state_now: applied; via: file</td></tr>
 </table>
 </body></html>

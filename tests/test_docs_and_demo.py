@@ -185,6 +185,19 @@ class DemoTests(unittest.TestCase):
         self.assertEqual(code, 0, out.getvalue())
         self.assertIn("total: 1 of 1 steps and cases as expected", out.getvalue())
 
+    def test_no_example_page_shows_an_enquiry_taken_in_approved_or_written_before_it_was_sent(self):
+        folder = os.path.join(ROOT, "examples", "desk", "enquiry")
+        pages = sorted(os.listdir(folder))
+        self.assertEqual(len(pages), 27)
+        for name in pages:
+            page = read("examples", "desk", "enquiry", name)
+            with self.subTest(page=name):
+                received, arrived = re.search(r"Received (\S+) \(arrived (\S+), by", page).groups()
+                times = re.findall(r"<tr><td>\d+</td><td>(\S+?)</td>", page)  # each row of its trail
+                self.assertTrue(times)
+                self.assertLessEqual(received, arrived)
+                self.assertLessEqual(received, min(times))
+
     def test_the_examples_and_the_picture_are_what_a_new_run_makes(self):
         make_examples = load("make_examples_for_tests", "make_examples.py")
         out = io.StringIO()
