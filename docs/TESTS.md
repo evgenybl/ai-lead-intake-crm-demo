@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-261 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+265 test methods in 16 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -450,6 +450,21 @@ End-to-end tests of POST /intake (section 3.1): it fails closed, and it binds 12
 - `test_no_content_length_is_411`
 - `test_the_secret_is_never_written_to_the_log`
 - `test_markup_in_a_message_is_kept_as_text`
+
+### SlowAndBusyTests
+
+A client that drips its request, and a desk file another program holds.
+
+- `test_a_client_that_drips_its_request_is_cut_off_at_the_deadline`
+- `test_a_desk_file_held_by_another_program_is_503_with_a_plain_line`
+
+### BusyDeskPageTests
+
+- `test_the_desk_page_of_a_desk_file_held_by_another_program_is_503_not_a_traceback`
+
+### SecretTests
+
+- `test_a_secret_with_a_letter_outside_ascii_stops_the_server_at_start_with_the_reason`
 
 ### ListenCommandTests
 

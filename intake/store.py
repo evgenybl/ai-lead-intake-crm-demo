@@ -124,8 +124,11 @@ class LedgerRow:
     at: str
 
 
+BUSY_SECONDS = 5.0  # how long a command waits for a desk file another program holds, before it gives up
+
+
 def _connect(path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(path, isolation_level=None)
+    conn = sqlite3.connect(path, isolation_level=None, timeout=BUSY_SECONDS)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 

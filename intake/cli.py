@@ -20,7 +20,7 @@ from .draft import (BACKENDS, DEFAULT_BASE, DEFAULT_MODEL, DRAFT_ENV, KEY_ENV, A
                     RecordedBackend, TemplateBackend, make_backend)
 from .flow import DeskError
 from .home import adapter_choice, crm_path, desk_path, open_crm, open_desk, resolve_home
-from .server import SECRET_ENV, IntakeServer, secret_from
+from .server import SECRET_ENV, IntakeServer, SecretError, secret_from
 from .states import TransitionError
 from .store import DeskStore, HomeError
 
@@ -103,7 +103,7 @@ def main(argv=None, out=None, environ=None) -> int:
         choice = adapter_choice(args.crm, environ)
         command = COMMANDS[args.command]
         return command(args, say, home, choice, clock, environ, out)
-    except (ClockError, HomeError, DraftConfigError) as error:
+    except (ClockError, HomeError, DraftConfigError, SecretError) as error:
         say(f"error: {error}")
         return 2
     except (DeskError, TransitionError) as error:
@@ -335,9 +335,12 @@ def cmd_doctor(args, say, home, choice, clock, environ, out) -> int:
 
 
 def cmd_status(args, say, home, choice, clock, environ, out) -> int:
-    secret = secret_from(environ)
-    say("intake endpoint  POST /intake, 127.0.0.1 only: "
-        + ("configured" if secret else f"not configured ({SECRET_ENV} unset or under 16 characters: every request gets 503)"))
+    try:
+        secret = secret_from(environ)
+        state = "configured" if secret else f"not configured ({SECRET_ENV} unset or under 16 characters: every request gets 503)"
+    except SecretError as error:
+        secret, state = None, f"error ({error})"
+    say("intake endpoint  POST /intake, 127.0.0.1 only: " + state)
     desk_file = desk_path(home)
     say(f"desk file        {os.path.basename(desk_file)} in --home: "
         + ("connected" if os.path.exists(desk_file) else "not configured (run desk.py init)"))

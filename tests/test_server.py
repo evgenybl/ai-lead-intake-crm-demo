@@ -7,12 +7,16 @@ import secrets
 import socket
 import subprocess
 import sys
+import sqlite3
 import threading
+import time
 import unittest
+from unittest import mock
 
+from intake import server as server_module
 from intake.clock import Clock
-from intake.home import open_desk
-from intake.server import IntakeServer, secret_from
+from intake.home import desk_path, open_desk
+from intake.server import IntakeServer, SecretError, secret_from
 
 from tests.helpers import FIXED, ROOT, DeskCase, enquiry, made_up
 
@@ -142,6 +146,94 @@ class IntakeTests(IntakeEndpointCase):
         self.assertEqual(status, 201)
         with self.desk() as desk:
             self.assertEqual(desk.store.get_enquiry(answer["key"]).payload["message"], "Hello <script>alert(1)</script>")
+
+
+class SlowAndBusyTests(IntakeEndpointCase):
+    """A client that drips its request, and a desk file another program holds."""
+
+    def setUp(self):
+        self.server_module_deadline = mock.patch.object(server_module, "REQUEST_DEADLINE_SECONDS", 1.0)
+        self.server_module_deadline.start()
+        self.addCleanup(self.server_module_deadline.stop)
+        super().setUp()
+
+    def test_a_client_that_drips_its_request_is_cut_off_at_the_deadline(self):
+        dripping = socket.create_connection(("127.0.0.1", self.server.port))
+        self.addCleanup(dripping.close)
+        dripping.sendall(b"POST /intake HTTP/1.1\r\nHost: x\r\nContent-Length: 60000\r\n\r\n")
+        stop = threading.Event()
+
+        def drip():
+            while not stop.is_set():
+                try:
+                    dripping.sendall(b"x")
+                except OSError:
+                    return
+                stop.wait(0.3)
+
+        threading.Thread(target=drip, daemon=True).start()
+        self.addCleanup(stop.set)
+        started = time.monotonic()
+        status, _ = self.post(enquiry())  # the server takes one request at a time: this one waits its turn
+        waited = time.monotonic() - started
+        stop.set()
+        self.assertEqual(status, 201)
+        self.assertLess(waited, 4.0)  # the deadline is 1 s here; the drip alone would hold the server for ever
+
+    def test_a_desk_file_held_by_another_program_is_503_with_a_plain_line(self):
+        holder = sqlite3.connect(desk_path(self.home), isolation_level=None)
+        self.addCleanup(holder.close)
+        with mock.patch("intake.store.BUSY_SECONDS", 0.2):
+            holder.execute("BEGIN EXCLUSIVE")
+            try:
+                status, answer = self.post(enquiry())
+            finally:
+                holder.execute("ROLLBACK")
+        self.assertEqual(status, 503)
+        self.assertIn("the desk is busy", answer["error"])
+        self.assertNotIn("Traceback", self.log.getvalue())
+        self.assertEqual(self.post(enquiry())[0], 201)  # sent again once the file is free: taken
+
+
+class BusyDeskPageTests(DeskCase):
+    def test_the_desk_page_of_a_desk_file_held_by_another_program_is_503_not_a_traceback(self):
+        self.init()
+        log = io.StringIO()
+        clock = Clock(FIXED)
+        server = IntakeServer(0, None, lambda: open_desk(self.home, "practice", {}, clock), log=log, desk_pages=True)
+        thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True)
+        thread.start()
+        self.addCleanup(lambda: (server.shutdown(), server.server_close(), thread.join(5)))
+        holder = sqlite3.connect(desk_path(self.home), isolation_level=None)
+        self.addCleanup(holder.close)
+        with mock.patch("intake.store.BUSY_SECONDS", 0.2):
+            holder.execute("BEGIN EXCLUSIVE")
+            try:
+                connection = http.client.HTTPConnection("127.0.0.1", server.port, timeout=10)
+                connection.request("GET", "/desk", headers={"Host": f"127.0.0.1:{server.port}"})
+                response = connection.getresponse()
+                body = response.read().decode("utf-8")
+                connection.close()
+            finally:
+                holder.execute("ROLLBACK")
+        self.assertEqual(response.status, 503)
+        self.assertIn("Another program holds the desk file just now", body)
+        self.assertNotIn("Traceback", log.getvalue())
+
+
+class SecretTests(DeskCase):
+    def test_a_secret_with_a_letter_outside_ascii_stops_the_server_at_start_with_the_reason(self):
+        self.init()
+        secret = "s" + "\u00e9" + "cret-" + secrets.token_hex(12)
+        for command in ("listen", "serve"):
+            with self.subTest(command=command):
+                out = self.cli(command, "--port", "0", env={"INTAKE_SECRET": secret}, expect=2)
+                self.assertIn("not printable ASCII", out)
+                self.assertNotIn(secret, out)
+        self.assertIn("intake endpoint  POST /intake, 127.0.0.1 only: error (INTAKE_SECRET holds a character",
+                      self.cli("status", env={"INTAKE_SECRET": secret}))
+        with self.assertRaises(SecretError):
+            secret_from({"INTAKE_SECRET": "with a space " + secrets.token_hex(8)})
 
 
 class ListenCommandTests(DeskCase):

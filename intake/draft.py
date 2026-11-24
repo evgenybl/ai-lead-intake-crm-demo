@@ -194,7 +194,9 @@ class AnthropicBackend:
         if not isinstance(content, list):
             raise _CallError("the answer has no content list")
         text = "".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
-        return content, text, reply.get("stop_reason"), reply.get("model", self.model)
+        named = reply.get("model")  # kept only when it is a plain model name, never any text the answer carries
+        model = named if isinstance(named, str) and re.fullmatch(r"[A-Za-z0-9._:-]{1,80}", named) else self.model
+        return content, text, reply.get("stop_reason"), model
 
     def draft(self, fields: dict) -> dict:
         req = request.build(fields)
