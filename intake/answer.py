@@ -143,11 +143,13 @@ def check(obj: dict, seen_message: str, fields: dict) -> list:
             reasons.append("the reply draft holds control characters other than a line break")
         if PLACEHOLDER not in reply:
             reasons.append("the reply draft does not hold the placeholder " + PLACEHOLDER)
-        if EMAIL_SHAPE.search(reply):
+        # A reply over its length is refused already, and these two searches take time that grows with the square
+        # of one long word, so they read only a reply within it; what they read is then bounded, as for the summary.
+        if len(reply) <= REPLY_MAX_CHARS and EMAIL_SHAPE.search(reply):
             reasons.append("the reply draft holds an e-mail address")
         if phone_spans(reply):
             reasons.append("the reply draft holds a phone number")
-        if _WEB.search(reply):
+        if len(reply) <= REPLY_MAX_CHARS and _WEB.search(reply):
             reasons.append("the reply draft holds a web address")
     allowed = _numbers(seen_message)
     invented = sorted(set().union(*(_numbers(t) for t in texts)) - allowed)

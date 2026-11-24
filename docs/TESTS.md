@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-336 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+337 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -296,6 +296,7 @@ How the dry run shows the model step: never "None" where an answer was refused.
 - `test_a_good_answer_passes`
 - `test_control_characters_are_refused_and_a_line_break_only_in_the_reply`
 - `test_each_text_has_a_length_in_characters_as_well_as_in_words`
+- `test_the_checks_of_a_long_answer_take_time_in_proportion_to_its_length`
 - `test_a_web_address_with_no_scheme_is_refused_in_the_reply`
 - `test_a_key_name_from_the_answer_is_quoted_and_cut_in_the_reason`
 - `test_text_before_or_after_a_fenced_answer_refuses_it`

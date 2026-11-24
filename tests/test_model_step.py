@@ -262,6 +262,20 @@ class AnswerTests(unittest.TestCase):
         self.assertIn("the reply draft has more than 1200 characters",
                       self.reasons(dict(GOOD, reply_draft="{{name}} " + " ".join(["B" * 5000] * 119))))
 
+    def test_the_checks_of_a_long_answer_take_time_in_proportion_to_its_length(self):
+        # 50,000 characters of the shapes an address search can stall on: one long word, dotted words, digits and
+        # dashes. Searched as they were, each took seconds; read in proportion to their length, each takes far less.
+        import time
+
+        for label, text in (("one long word", "B" * 50000), ("dotted", "b." * 25000), ("digits", "1-" * 25000)):
+            for field in ("summary", "reply_draft"):
+                with self.subTest(shape=label, field=field):
+                    value = text if field == "summary" else "{{name}} " + text
+                    started = time.monotonic()
+                    reasons = self.reasons(dict(GOOD, **{field: value}))
+                    self.assertLess(time.monotonic() - started, 1.0)
+                    self.assertTrue(any("more than" in reason for reason in reasons), reasons)
+
     def test_a_web_address_with_no_scheme_is_refused_in_the_reply(self):
         for reply in ("Hello {{name}}, pay at evil.xyz/pay", "Hello {{name}}, see bit.ly/abc",
                       "Hello {{name}}, [click](javascript:alert)", "Hello {{name}}, visit shop.example today",
