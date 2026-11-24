@@ -139,10 +139,11 @@ def _promise_1(desk) -> list:
             add_up.problems.append(f"{key} has {first[key]} first arrivals, not 1")
     for key in sorted({k for k, _ in arrivals} - keys):
         add_up.problems.append(f"an arrival names {key}, which is not on the desk")
-    resends = f" + {kinds['resend']} corrected resends" if kinds["resend"] else ""
-    add_up.note = f"{len(arrivals)} arrived = {len(keys)} enquiries + {kinds['replay']} replays{resends}"
+    resends = f" + {counted(kinds['resend'], 'corrected resend', 'corrected resends')}" if kinds["resend"] else ""
+    parts = f"{counted(len(keys), 'enquiry', 'enquiries')} + {counted(kinds['replay'], 'replay', 'replays')}{resends}"
+    add_up.note = f"{len(arrivals)} arrived = {parts}"
     if len(arrivals) != len(keys) + kinds["replay"] + kinds["resend"]:
-        add_up.problems.append(f"{len(arrivals)} arrived, but {len(keys)} enquiries + {kinds['replay']} replays{resends}")
+        add_up.problems.append(f"{len(arrivals)} arrived, but {parts}")
     events = Counter(event for (event,) in desk.execute(
         "SELECT event FROM audit WHERE event IN ('arrived', 'replay', 'resent')"))
     for event, held, what in (("arrived", len(keys), "enquiries on the desk"), ("replay", kinds["replay"], "replays"),
@@ -160,6 +161,11 @@ def _promise_1(desk) -> list:
         if state == "apply_failed" and not (error or "").strip():
             errors.problems.append(f"{key} is apply_failed with no error named")
     return [named, add_up, trail, errors]
+
+
+def counted(n: int, one: str, many: str) -> str:
+    """A count and its noun: "1 enquiry", "3 enquiries"."""
+    return f"{n} {one if n == 1 else many}"
 
 
 def _trail_by_key(desk) -> dict:

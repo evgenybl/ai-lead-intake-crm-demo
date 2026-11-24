@@ -135,12 +135,14 @@ def counts_section(store) -> list:
     out = ["<h2>The counts</h2>", "<table><tr><th>State</th><th>Enquiries</th></tr>", *rows,
            f'<tr><th>Total</th><td class="n">{enquiries}</td></tr></table>']
     if enquiries == arrivals["first"]:
-        out.append(f'<p class="ok">The counts add up: {enquiries} enquiries + {arrivals["replay"]} replays'
+        out.append(f'<p class="ok">The counts add up: {reports.counted(enquiries, "enquiry", "enquiries")} + '
+                   f'{reports.counted(arrivals["replay"], "replay", "replays")}'
                    f'{esc(reports.resends_text(arrivals["resend"]))} = {arrived} arrived. A replay is the same '
                    "enquiry sent again; it is counted and recorded, and it creates nothing.</p>")
     else:
-        out.append(f'<p class="bad">The counts do not add up: {enquiries} enquiries, but {arrivals["first"]} '
-                   "first arrivals. Run <code>python -I desk.py doctor</code>.</p>")
+        out.append(f'<p class="bad">The counts do not add up: {reports.counted(enquiries, "enquiry", "enquiries")}, '
+                   f'but {reports.counted(arrivals["first"], "first arrival", "first arrivals")}. Run '
+                   "<code>python -I desk.py doctor</code>.</p>")
     return out
 
 

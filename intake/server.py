@@ -244,8 +244,8 @@ class IntakeHandler(BaseHTTPRequestHandler):
         server = self.server
         if not server.decisions.active:
             return self._html(403, pages.message_page(
-                "Decisions are off", "This desk was started without --allow-decisions; use the commands shown on "
-                                     "each enquiry.", links))
+                "Decisions are off", "This desk takes no decisions on its pages; use the commands shown on each "
+                                     "enquiry.", links))
         origin = self.headers.get("Origin")
         if origin is not None and origin not in server.own_origins():
             return self._html(403, pages.message_page("Not this desk", "The form did not come from this desk.", links))
@@ -278,7 +278,9 @@ class IntakeHandler(BaseHTTPRequestHandler):
                             f"Rejected: {key}, by {field.get('by', '').strip()}. Nothing will be written.")
                 else:
                     return self._html(400, pages.message_page("Not done", "No decision was given.", links))
-        except (DeskError, TransitionError) as error:
+        except DeskError as error:
+            return self._html(400, pages.message_page("Not done", error.for_page, links))
+        except TransitionError as error:
             return self._html(400, pages.message_page("Not done", str(error), links))
         except sqlite3.OperationalError:
             return self._busy(links)

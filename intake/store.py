@@ -314,6 +314,10 @@ class DeskStore:
                 (sha, key, body, self.clock.now()),
             )
 
+    def plan_shas(self, key: str) -> list:
+        """Every plan the desk ever made for this enquiry."""
+        return [sha for (sha,) in self.conn.execute("SELECT sha FROM plans WHERE key = ? ORDER BY made_at", (key,))]
+
     def plan_body(self, sha: str) -> str | None:
         row = self.conn.execute("SELECT body FROM plans WHERE sha = ?", (sha,)).fetchone()
         return row[0] if row else None

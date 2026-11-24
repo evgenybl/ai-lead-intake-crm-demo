@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-319 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+322 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -50,6 +50,8 @@ The whole story of the invented data, command by command.
 - `test_approve_checks_the_plan_the_person_saw`
 - `test_an_approval_without_the_plan_is_refused_so_a_plan_made_again_is_never_approved_unseen`
 - `test_an_apply_failed_that_a_retry_cannot_finish_says_how_to_clear_it_and_that_way_works`
+- `test_counts_of_one_are_said_in_the_singular`
+- `test_naming_a_plan_that_never_was_a_plan_of_the_enquiry_says_so`
 - `test_a_decision_needs_a_person_not_the_system`
 - `test_reject_needs_a_reason_and_then_nothing_is_written`
 - `test_withdraw_puts_the_plan_back_to_wait`
@@ -368,6 +370,7 @@ The desk pages, `render` and `serve`. No script on any page; everything from an 
 - `test_approve_needs_the_ticked_box_and_a_name`
 - `test_a_form_without_this_desks_token_or_from_elsewhere_is_refused`
 - `test_an_approval_names_the_plan_the_person_saw`
+- `test_the_form_s_answers_name_no_command_and_no_option`
 - `test_reject_needs_a_reason`
 - `test_a_rejection_on_the_page_after_part_of_a_plan_was_written_says_what_was_written`
 - `test_the_intake_endpoint_still_works_beside_the_desk`

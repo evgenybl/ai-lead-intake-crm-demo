@@ -1,6 +1,7 @@
 """End-to-end tests that drive `desk.py` through main(argv), on new files in a temporary folder."""
 import contextlib
 import io
+import json
 import os
 import re
 import secrets
@@ -216,6 +217,28 @@ class CommandTests(DeskCase):
         self.assertIn(f"{key}: applied", self.cli("apply"))
         self.assertEqual(self.crm_counts()["contacts"], 11)  # the contact someone else made; no second one
         self.assertRegex(self.cli("doctor"), r"doctor: (\d+) of \1 checks passed")
+
+    def test_counts_of_one_are_said_in_the_singular(self):
+        from tests.helpers import enquiry
+
+        path = os.path.join(self._tmp.name, "one.jsonl")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(enquiry(consent=False)) + "\n" + json.dumps(enquiry()) + "\n")
+        self.assertIn("ingest: 1 new enquiry, 0 replays, 1 corrected resend, 0 lines not taken", self.cli("ingest", path))
+        doctor = self.cli("doctor")
+        self.assertIn("(2 arrived = 1 enquiry + 0 replays + 1 corrected resend)", doctor)
+        self.assertIn("the states add up: yes: 1 enquiry + 0 replays + 1 corrected resend = 2 arrived",
+                      self.cli("report"))
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(enquiry(source_id="test-000002")) + "\n" + json.dumps(enquiry()) + "\n")
+        self.assertIn("ingest: 1 new enquiry, 1 replay, 0 lines not taken", self.cli("ingest", path))
+
+    def test_naming_a_plan_that_never_was_a_plan_of_the_enquiry_says_so(self):
+        self.cli("ingest", DATA_FILE)
+        other = self.plan_sha("webform:wf-000102")[:12]
+        refused = self.cli("approve", "webform:wf-000101", "--by", PERSON, "--plan", other, expect=1)
+        self.assertIn(f"not the one named ({other}), which is not a plan of webform:wf-000101", refused)
+        self.assertNotIn("planned again since", refused)
 
     def test_a_decision_needs_a_person_not_the_system(self):
         self.cli("ingest", DATA_FILE)

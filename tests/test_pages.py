@@ -240,9 +240,11 @@ class ServeWithoutDecisionsTests(ServeCase):
         body = self.request("GET", "/desk")[2]
         self.assertNotIn("<form", body)
         self.assertIn("python -I desk.py approve webform:wf-000101", body)
-        status, _, _ = self.request("POST", "/desk/decide", b"key=webform%3Awf-000101",
-                                    {"Content-Type": "application/x-www-form-urlencoded"})
+        status, _, body = self.request("POST", "/desk/decide", b"key=webform%3Awf-000101",
+                                       {"Content-Type": "application/x-www-form-urlencoded"})
         self.assertEqual(status, 403)
+        self.assertIn("This desk takes no decisions on its pages", body)
+        self.assertNotIn("--allow-decisions", body)
         self.assertEqual(self.state("webform:wf-000101"), "awaiting_approval")
 
     def test_a_request_addressed_to_another_name_is_not_answered(self):
@@ -305,6 +307,21 @@ class ServeWithDecisionsTests(ServeCase):
                 self.assertEqual(status, 400)
                 self.assertIn("an approval names the plan it approves", body)
         self.assertEqual(self.state(key), "awaiting_approval")
+
+    def test_the_form_s_answers_name_no_command_and_no_option(self):
+        key, plan = "webform:wf-000101", self.plan_of("webform:wf-000101")
+        base = {"token": self.token, "key": key, "confirm": "yes"}
+        answers = [self.decide(**base, plan=plan, decision="approve", by=" ")[2],
+                   self.decide(**base, plan=plan[:7], decision="approve", by=PERSON)[2],
+                   self.decide(**base, plan="0" * 12, decision="approve", by=PERSON)[2],
+                   self.decide(**base, plan=plan, decision="reject", by=PERSON, reason=" ")[2]]
+        self.assertIn("a decision needs a person&#x27;s name", answers[0])
+        self.assertIn("an approval names the plan it approves", answers[1])
+        self.assertIn("which is not a plan of webform:wf-000101", answers[2])
+        self.assertIn("a rejection needs a reason", answers[3])
+        for body in answers:
+            text = re.sub(r"<[^>]+>", " ", body.split("<body>", 1)[1])
+            self.assertNotRegex(text, r"--[a-z]|desk\.py")
 
     def test_reject_needs_a_reason(self):
         key, plan = "webform:wf-000106", self.plan_of("webform:wf-000106")

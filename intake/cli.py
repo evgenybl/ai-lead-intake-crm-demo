@@ -84,7 +84,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("key")
     sub.add_parser("report", parents=[common], help="the counts by state, and whether they add up")
     sub.add_parser("doctor", parents=[common], help="run the invariants of the four promises on both files")
-    sub.add_parser("status", parents=[common], help="each adapter and capability: connected, configured (not called), not configured or error")
+    sub.add_parser("status", parents=[common],
+                   help="each adapter and capability: connected, configured (not called), not configured or error")
     return parser
 
 
@@ -177,7 +178,8 @@ def cmd_ingest(args, say, home, choice, clock, environ, out) -> int:
                 why = f": {reports.refusal_text(answer.reasons)}" if answer.state == "refused" else ""
                 say(f"line {number}: {answer.key} -> {answer.state}{why}")
     corrected = f", {resent} corrected resend{'' if resent == 1 else 's'}" if resent else ""
-    say(f"ingest: {new} new enquiries, {replays} replays{corrected}, {not_taken} lines not taken")
+    say(f"ingest: {reports.counted(new, 'new enquiry', 'new enquiries')}, {reports.counted(replays, 'replay', 'replays')}"
+        f"{corrected}, {reports.counted(not_taken, 'line', 'lines')} not taken")
     return 1 if not_taken else 0
 
 

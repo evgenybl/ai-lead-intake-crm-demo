@@ -8,7 +8,7 @@ import json
 import unicodedata
 
 from . import audit, validate
-from .doctor import PROMISES
+from .doctor import PROMISES, counted
 from .identity import rests_on_the_phone_alone
 
 
@@ -35,11 +35,12 @@ def report_lines(store) -> list:
     lines += [f"  {name:<26}{n:>4}" for name, n in counts.items()]
     lines.append(f"  {'total':<26}{enquiries:>4}")
     if enquiries == arrivals["first"]:  # every first arrival is one enquiry in one state; the rest are replays
-        lines.append(f"the states add up: yes: {enquiries} enquiries + {arrivals['replay']} replays"
-                     f"{resends_text(arrivals['resend'])} = {arrived} arrived")
+        lines.append(f"the states add up: yes: {counted(enquiries, 'enquiry', 'enquiries')} + "
+                     f"{counted(arrivals['replay'], 'replay', 'replays')}{resends_text(arrivals['resend'])} = "
+                     f"{arrived} arrived")
     else:
-        lines.append(f"the states add up: NO: {enquiries} enquiries in their states, "
-                     f"but {arrivals['first']} first arrivals (run desk.py doctor)")
+        lines.append(f"the states add up: NO: {counted(enquiries, 'enquiry', 'enquiries')} in their states, "
+                     f"but {counted(arrivals['first'], 'first arrival', 'first arrivals')} (run desk.py doctor)")
     failed = store.enquiries(in_states=("apply_failed",))
     if failed:
         lines.append("apply_failed, named:")

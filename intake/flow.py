@@ -21,7 +21,14 @@ MIN_PLAN_PREFIX = 8  # hex digits of the plan's sha256 an approval must name
 
 
 class DeskError(Exception):
-    """A person's command was refused; the message says why. Nothing was changed."""
+    """A person's command was refused; the message says why. Nothing was changed.
+
+    `for_page` is the same reason worded for the desk page's form, which has no command and no option: where the
+    message names one (--by, desk.py plan), the page's wording does not."""
+
+    def __init__(self, message: str, for_page: str | None = None):
+        super().__init__(message)
+        self.for_page = for_page or message
 
 
 @dataclass(frozen=True)
@@ -51,7 +58,7 @@ def person(name: str) -> str:
     """A person's stated name, as the trail records it. It is what they typed, not a login."""
     cleaned = " ".join((name or "").split())
     if not cleaned:
-        raise DeskError("a decision needs a person's name (--by)")
+        raise DeskError("a decision needs a person's name (--by)", "a decision needs a person's name")
     if validate.starts_like_formula(name or ""):
         raise DeskError("a name may not start with =, +, -, @, a tab or a carriage return")
     if validate.has_control_characters(cleaned):
@@ -229,11 +236,17 @@ class Desk:
             raise DeskError(f"{key} has no plan waiting for approval; it is {enquiry.state}")
         prefix = (plan or "").strip().lower() if isinstance(plan, str) else ""
         if len(prefix) < MIN_PLAN_PREFIX or not all(c in "0123456789abcdef" for c in prefix):
-            raise DeskError(f"an approval names the plan it approves: its sha256, or its first {MIN_PLAN_PREFIX} "
-                            f"or more hex digits, as `desk.py plan` printed it; nothing approved")
+            named = f"an approval names the plan it approves: its sha256, or its first {MIN_PLAN_PREFIX} or more hex digits"
+            raise DeskError(f"{named}, as `desk.py plan` printed it; nothing approved",
+                            f"{named}, as the enquiry's page shows it; nothing approved")
         if not enquiry.plan_sha.startswith(prefix):
-            raise DeskError(f"the plan waiting is {enquiry.plan_sha[:12]}, not the one named ({prefix[:12]}): the desk "
-                            f"planned again since; read it with `desk.py plan`; nothing approved")
+            waiting = f"the plan waiting is {enquiry.plan_sha[:12]}, not the one named ({prefix[:12]})"
+            if not any(sha.startswith(prefix) for sha in self.store.plan_shas(key)):
+                raise DeskError(f"{waiting}, which is not a plan of {key}; read the plan with `desk.py plan`; nothing "
+                                "approved", f"{waiting}, which is not a plan of {key}; nothing approved")
+            raise DeskError(f"{waiting}: the desk planned again since; read it with `desk.py plan`; nothing approved",
+                            f"{waiting}: the desk planned again since; read the plan as it is now on the enquiry's "
+                            "page; nothing approved")
         with self.store.transaction():
             approval = self.store.add_approval(key, enquiry.plan_sha, who, "approved")
             self.store.move(key, "approved", "approved", who, {"approval": approval, "plan": enquiry.plan_sha})
@@ -243,7 +256,7 @@ class Desk:
         who = person(by)
         why = " ".join((reason or "").split())
         if not why:
-            raise DeskError("a rejection needs a reason (--reason)")
+            raise DeskError("a rejection needs a reason (--reason)", "a rejection needs a reason")
         if len(why) > MAX_REASON_CHARS:
             raise DeskError(f"a reason may have at most {MAX_REASON_CHARS} characters")
         enquiry = self._get(key)
@@ -294,7 +307,8 @@ class Desk:
                 yield found
         except ApplyBusy:
             raise DeskError("another `desk.py apply` is running on this desk; nothing was changed. Try again when "
-                            "that one has finished") from None
+                            "that one has finished", "an apply is running on this desk just now; nothing was changed. "
+                            "Try again in a moment") from None
 
     def _record_settled(self, key: str, found: list) -> None:
         for row, there in found:
