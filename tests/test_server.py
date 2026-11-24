@@ -148,6 +148,34 @@ class IntakeTests(IntakeEndpointCase):
             self.assertEqual(desk.store.get_enquiry(answer["key"]).payload["message"], "Hello <script>alert(1)</script>")
 
 
+class RawRequestTests(IntakeEndpointCase):
+    """What a client sends on the request line is logged as one plain line it cannot write into."""
+
+    def raw(self, data: bytes) -> bytes:
+        with socket.create_connection(("127.0.0.1", self.server.port), timeout=10) as connection:
+            connection.sendall(data)
+            answer = b""
+            while True:
+                chunk = connection.recv(65536)
+                if not chunk:
+                    return answer
+                answer += chunk
+
+    def logged(self) -> str:
+        return self.log.getvalue()  # each line is written before its answer goes out, so it is there by now
+
+    def test_the_log_line_writes_a_control_character_as_its_escape_and_cuts_a_long_path(self):
+        self.raw(b"GET /x\x1b[31mRED-FROM-A-CLIENT\x1b[0m HTTP/1.1\r\nHost: x\r\n\r\n")
+        self.raw(b"GE\x1b[2JT /intake HTTP/1.1\r\n\r\n")
+        self.raw(b"GET /" + b"a" * 5000 + b" HTTP/1.1\r\nHost: x\r\n\r\n")
+        log = self.logged()
+        self.assertNotIn("\x1b", log)
+        self.assertIn("GET /x\\x1b[31mRED-FROM-A-CLIENT\\x1b[0m 404\n", log)
+        self.assertIn("GE\\x1b[2JT /intake 501\n", log)
+        longest = max(len(line) for line in log.splitlines())
+        self.assertLess(longest, 300, longest)
+
+
 class SlowAndBusyTests(IntakeEndpointCase):
     """A client that drips its request, and a desk file another program holds."""
 

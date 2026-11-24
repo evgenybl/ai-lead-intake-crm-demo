@@ -18,7 +18,9 @@ those), so a web page elsewhere cannot read the desk or post to it through the b
 
 The intake secret is read from INTAKE_SECRET and compared in constant time. It must be printable ASCII (a
 header carries nothing else); a secret with any other character stops the server at start, with the reason.
-It is never printed or logged; the log line of a request is its method, its path and its status.
+It is never printed or logged; the log line of a request is its method, its path and its status, each with
+every control character written as its escape and cut to 200 characters, so a client cannot write to the
+terminal.
 
 One request at a time, so each has a deadline: a client that has not sent its whole request within 10
 seconds of connecting is cut off, however slowly it drips. A desk file that another program holds locked
@@ -45,6 +47,7 @@ MIN_SECRET_CHARS = 16
 MAX_BODY_BYTES = 64 * 1024
 MAX_DRAIN_BYTES = 1024 * 1024
 REQUEST_DEADLINE_SECONDS = 10.0  # the whole request (line, headers and body) must arrive within this
+LOGGED_MAX_CHARS = 200  # how much of a request's method or path the log line shows
 HOST = "127.0.0.1"
 PAGE_HEADERS = {
     "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; "
@@ -53,6 +56,12 @@ PAGE_HEADERS = {
     "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store",
 }
+
+
+def loggable(text) -> str:
+    """Text a client sent, as the log shows it: one line, every control character as its escape, cut."""
+    shown = reports.printable(text)
+    return shown if len(shown) <= LOGGED_MAX_CHARS else shown[:LOGGED_MAX_CHARS] + "..."
 
 
 class SecretError(Exception):
@@ -314,10 +323,10 @@ class IntakeHandler(BaseHTTPRequestHandler):
     def log_request(self, code="-", size="-"):
         if self.server.log is not None:
             path = urllib.parse.urlsplit(self.path).path
-            self.server.log.write(f"{self.command} {path} {code}\n")
+            self.server.log.write(f"{loggable(self.command)} {loggable(path)} {code}\n")
             self.server.log.flush()
 
     def log_message(self, format, *args):  # errors of the HTTP layer itself: no headers, no body
         if self.server.log is not None:
-            self.server.log.write("http: " + (format % args).replace("\n", " ") + "\n")
+            self.server.log.write("http: " + loggable(format % args) + "\n")
             self.server.log.flush()

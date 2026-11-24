@@ -320,7 +320,9 @@ script):
 - Fails closed: no `INTAKE_SECRET`, or one shorter than 16 characters, means every request gets 503. The
   header is compared in constant time. A secret with a character that is not printable ASCII (a space, an
   accented letter) stops `listen` and `serve` at start with the reason: an HTTP header carries ASCII only, so
-  no request could ever match it. The log line of a request is its method, its path and its status.
+  no request could ever match it. The log line of a request is its method, its path and its status; the method
+  and the path, which any local program can send without the secret, are written with every control character
+  as its escape and cut to 200 characters, so they cannot move the cursor or clear the terminal.
 - One request at a time (a plain `HTTPServer`), and every answer closes its connection, so the desk file
   has one writer and no client holds the server open. Each request has a deadline of 10 seconds from
   connecting to its last byte; a client that drips its request slowly is cut off, and the next one is served.
