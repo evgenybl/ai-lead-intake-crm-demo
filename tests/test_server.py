@@ -177,8 +177,8 @@ class RawRequestTests(IntakeEndpointCase):
         # Python's own messages quote what the client sent; the log does not rely on that.
         handler = server_module.IntakeHandler.__new__(server_module.IntakeHandler)
         handler.server = self.server
-        handler.log_message("code %d, message %s", 400, "Bad \x1b[2J request\nline")
-        self.assertIn("http: code 400, message Bad \\x1b[2J request\\nline\n", self.log.getvalue())
+        handler.log_message("code %d, message %s", 400, "Bad \x1b[2J request\n here")
+        self.assertIn("http: code 400, message Bad \\x1b[2J request\\n here\n", self.log.getvalue())
         self.assertNotIn("\x1b", self.log.getvalue())
 
     def test_the_log_line_writes_a_control_character_as_its_escape_and_cuts_a_long_path(self):
