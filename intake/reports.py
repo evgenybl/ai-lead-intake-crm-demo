@@ -31,7 +31,26 @@ def report_lines(store) -> list:
         lines += [f"  {e.key}: {e.error}" for e in failed]
     else:
         lines.append("apply_failed: none")
+    different = different_replays(store)
+    if different:
+        lines.append("replayed with different content (kept as replays; the first content stands):")
+        for key, at, differs in different:
+            verb = "differs" if len(differs) == 1 else "differ"
+            lines.append(f"  {key} at {at}: {', '.join(differs)} {verb} from the first copy")
+    else:
+        lines.append("replayed with different content: none")
     return lines
+
+
+def different_replays(store, key: str | None = None) -> list:
+    """(key, time, {field: {"first", "this_time"}}) for every replay whose content differed from the first."""
+    found = []
+    for row in audit.rows(store.conn, key):
+        if row[3] == "replay":
+            detail = json.loads(row[4])
+            if detail.get("differs"):
+                found.append((row[2], row[1], detail["differs"]))
+    return found
 
 
 def trail_lines(store, key: str) -> list:

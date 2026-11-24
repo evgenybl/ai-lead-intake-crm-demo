@@ -8,13 +8,16 @@ import argparse
 import os
 import sys
 
-from . import doctor, planner, reports
+import secrets
+
+from . import doctor, pages, planner, reports
 from .arrive import read_lines
 from .clock import ClockError, make_clock
 from .crm.base import CAPABILITIES, CRMError
 from .crm.http_crm import TOKEN_ENV, URL_ENV, HttpCRM
 from .crm.practice import PracticeCRM
-from .draft import TemplateBackend
+from .draft import (BACKENDS, DEFAULT_BASE, DEFAULT_MODEL, DRAFT_ENV, KEY_ENV, AnthropicBackend, DraftConfigError,
+                    RecordedBackend, TemplateBackend, make_backend)
 from .flow import DeskError
 from .home import adapter_choice, crm_path, desk_path, open_crm, open_desk, resolve_home
 from .server import SECRET_ENV, IntakeServer, secret_from
@@ -33,6 +36,8 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--at", help="fix the clock, e.g. 2026-01-05T09:00:00Z (default: $INTAKE_NOW, else the system clock)")
     common.add_argument("--crm", choices=("practice", "http"),
                         help="the CRM adapter (default: $INTAKE_CRM, else practice)")
+    common.add_argument("--draft", choices=BACKENDS,
+                        help="the model step's backend (default: $INTAKE_DRAFT, else recorded)")
 
     parser = argparse.ArgumentParser(prog="desk.py", description="A lead-intake desk: nothing is written to the CRM "
                                      "without a recorded approval. All data here is invented.")
@@ -45,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("file")
     p = sub.add_parser("listen", parents=[common], help="offer POST /intake on 127.0.0.1 (the secret comes from INTAKE_SECRET)")
     p.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"0 lets the system choose (default {DEFAULT_PORT})")
+    p = sub.add_parser("serve", parents=[common], help="POST /intake and the desk pages at /desk, on 127.0.0.1")
+    p.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"0 lets the system choose (default {DEFAULT_PORT})")
+    p.add_argument("--allow-decisions", action="store_true",
+                   help="let the desk page take Approve and Reject, each with a ticked box and a name")
+    p = sub.add_parser("render", parents=[common], help="write the desk pages as files, for a reader with no server")
+    p.add_argument("--out", required=True, help="the folder to write index.html and enquiry/*.html into")
     sub.add_parser("plan", parents=[common], help="the dry run: print every waiting plan; writes nothing to the CRM")
     p = sub.add_parser("approve", parents=[common], help="approve the waiting plan of one enquiry")
     p.add_argument("key")
@@ -91,10 +102,7 @@ def main(argv=None, out=None, environ=None) -> int:
         choice = adapter_choice(args.crm, environ)
         command = COMMANDS[args.command]
         return command(args, say, home, choice, clock, environ, out)
-    except ClockError as error:
-        say(f"error: {error}")
-        return 2
-    except HomeError as error:
+    except (ClockError, HomeError, DraftConfigError) as error:
         say(f"error: {error}")
         return 2
     except (DeskError, TransitionError) as error:
@@ -132,7 +140,7 @@ def cmd_init(args, say, home, choice, clock, environ, out) -> int:
 def cmd_ingest(args, say, home, choice, clock, environ, out) -> int:
     raw = _read_file(args.file)
     new = replays = not_taken = 0
-    with open_desk(home, choice, environ, clock) as desk:
+    with open_desk(home, choice, environ, clock, make_backend(args.draft, environ)) as desk:
         for number, obj, problem in read_lines(raw):
             if problem:
                 not_taken += 1
@@ -141,8 +149,9 @@ def cmd_ingest(args, say, home, choice, clock, environ, out) -> int:
             answer = desk.receive(obj, via="file")
             if answer.replay:
                 replays += 1
+                changed = f"; replayed with different content: {', '.join(answer.differs)}" if answer.differs else ""
                 say(f"line {number}: {answer.key} -> replay of the enquiry first arrived at "
-                    f"{answer.first_arrived_at} (state now: {answer.state}); nothing new is queued")
+                    f"{answer.first_arrived_at} (state now: {answer.state}); nothing new is queued{changed}")
             else:
                 new += 1
                 why = f": {reports.refusal_text(answer.reasons)}" if answer.state == "refused" else ""
@@ -151,16 +160,24 @@ def cmd_ingest(args, say, home, choice, clock, environ, out) -> int:
     return 1 if not_taken else 0
 
 
-def cmd_listen(args, say, home, choice, clock, environ, out) -> int:
+def _serve(args, say, home, choice, clock, environ, out, desk_pages: bool) -> int:
     DeskStore.open(desk_path(home), clock).close()  # fail now, not on the first request
     open_crm(home, choice, environ).close()
+    drafter = make_backend(args.draft, environ)
     secret = secret_from(environ)
-    server = IntakeServer(args.port, secret, lambda: open_desk(home, choice, environ, clock), log=out)
+    decisions = pages.Decisions(secrets.token_urlsafe(24) if getattr(args, "allow_decisions", False) else None)
+    server = IntakeServer(args.port, secret, lambda: open_desk(home, choice, environ, clock, drafter), log=out,
+                          desk_pages=desk_pages, decisions=decisions)
     if secret:
         state = f"configured ({SECRET_ENV} is set)"
     else:
-        state = f"NOT configured: {SECRET_ENV} is unset or shorter than 16 characters, so every request gets 503"
-    say(f"listening on http://127.0.0.1:{server.port}/intake  secret: {state}")
+        state = f"NOT configured: {SECRET_ENV} is unset or shorter than 16 characters, so it answers 503"
+    if desk_pages:
+        say(f"serving http://127.0.0.1:{server.port}/desk  decisions on the page: "
+            f"{'on' if decisions.active else 'off (the page shows the commands)'}")
+        say(f"intake: POST http://127.0.0.1:{server.port}/intake  secret: {state}")
+    else:
+        say(f"listening on http://127.0.0.1:{server.port}/intake  secret: {state}")
     out.flush()
     try:
         server.serve_forever()
@@ -171,8 +188,37 @@ def cmd_listen(args, say, home, choice, clock, environ, out) -> int:
     return 0
 
 
+def cmd_listen(args, say, home, choice, clock, environ, out) -> int:
+    return _serve(args, say, home, choice, clock, environ, out, desk_pages=False)
+
+
+def cmd_serve(args, say, home, choice, clock, environ, out) -> int:
+    return _serve(args, say, home, choice, clock, environ, out, desk_pages=True)
+
+
+def cmd_render(args, say, home, choice, clock, environ, out) -> int:
+    store = DeskStore.open(desk_path(home), clock)
+    try:
+        folder = os.path.join(args.out, "enquiry")
+        os.makedirs(folder, exist_ok=True)
+        _write_text(os.path.join(args.out, "index.html"), pages.desk_page(store, pages.FileLinks(False), pages.Decisions()))
+        enquiries = store.enquiries()
+        for enquiry in enquiries:
+            page = pages.enquiry_page(store, enquiry.key, pages.FileLinks(True), pages.Decisions())
+            _write_text(os.path.join(folder, pages.slug(enquiry.key) + ".html"), page)
+    finally:
+        store.close()
+    say(f"render: wrote index.html and {len(enquiries)} enquiry pages")
+    return 0
+
+
+def _write_text(path: str, text: str) -> None:
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
+
+
 def cmd_plan(args, say, home, choice, clock, environ, out) -> int:
-    with open_desk(home, choice, environ, clock) as desk:
+    with open_desk(home, choice, environ, clock, make_backend(args.draft, environ)) as desk:
         for key, change in desk.prepare():
             say(f"{key}: {change}")
         groups = desk.waiting()
@@ -274,7 +320,8 @@ def cmd_doctor(args, say, home, choice, clock, environ, out) -> int:
     if not os.path.exists(desk_file):
         raise HomeError(f"no desk at {desk_file}: run `desk.py init` first")
     crm_file = crm_path(home) if choice == "practice" and os.path.exists(crm_path(home)) else None
-    say(f"doctor: desk {desk_file}; CRM {crm_file or 'not checked (' + choice + ' adapter)'}")
+    crm_named = os.path.basename(crm_file) if crm_file else f"not checked ({choice} adapter)"
+    say(f"doctor: desk {os.path.basename(desk_file)}; CRM {crm_named}; both in --home")
     checks = doctor.examine(desk_file, crm_file)
     for line in reports.doctor_lines(checks):
         say(line)
@@ -286,7 +333,8 @@ def cmd_status(args, say, home, choice, clock, environ, out) -> int:
     say("intake endpoint  POST /intake, 127.0.0.1 only: "
         + ("configured" if secret else f"not configured ({SECRET_ENV} unset or under 16 characters: every request gets 503)"))
     desk_file = desk_path(home)
-    say(f"desk file        {desk_file}: " + ("connected" if os.path.exists(desk_file) else "not configured (run desk.py init)"))
+    say(f"desk file        {os.path.basename(desk_file)} in --home: "
+        + ("connected" if os.path.exists(desk_file) else "not configured (run desk.py init)"))
     states_seen = {}
     if os.path.exists(crm_path(home)):
         crm = PracticeCRM(crm_path(home))
@@ -312,10 +360,22 @@ def cmd_status(args, say, home, choice, clock, environ, out) -> int:
         state, detail = states_seen[name]
         say(f"crm {name:<12} {labels[name]}: {state} ({detail})")
         say(f"  capabilities: {'; '.join(CAPABILITIES)}: {state}")
+    state, detail = RecordedBackend().check()
+    say(f"draft recorded   answers found by the request's sha256: {state} ({detail})")
     template = TemplateBackend()
     state, detail = template.check()
     say(f"draft template   {template.label}: {state} ({detail})")
-    say(f"active CRM adapter: {choice}")
+    if environ.get(KEY_ENV):
+        try:
+            live = AnthropicBackend(environ[KEY_ENV], environ.get("ANTHROPIC_BASE_URL") or DEFAULT_BASE,
+                                    environ.get("INTAKE_MODEL") or DEFAULT_MODEL)
+            state, detail = live.check()
+            say(f"draft anthropic  {live.label}: {state} ({detail})")
+        except DraftConfigError as error:
+            say(f"draft anthropic  Live path: error ({error})")
+    else:
+        say(f"draft anthropic  Live path: not configured (set {KEY_ENV})")
+    say(f"active CRM adapter: {choice}; active draft backend: {args.draft or environ.get(DRAFT_ENV) or 'recorded'}")
     return 1 if states_seen[choice][0] == "error" else 0
 
 
@@ -331,6 +391,8 @@ COMMANDS = {
     "init": cmd_init,
     "ingest": cmd_ingest,
     "listen": cmd_listen,
+    "serve": cmd_serve,
+    "render": cmd_render,
     "plan": cmd_plan,
     "approve": cmd_approve,
     "reject": cmd_reject,
