@@ -494,6 +494,16 @@ class AfterAFailedApplyTests(DeskCase):
             self.assertNotIn("\x1b", out)
             self.assertIn("contact 11\\x1b[2J created", out)
 
+    def test_a_crm_id_found_when_withdrawn_is_printed_on_one_line_that_cannot_move_the_cursor(self):
+        from intake.cli import _say_settled
+        from intake.store import LedgerRow
+
+        said = []
+        row = LedgerRow("webform:wf-000103", "add_note", "0" * 64, "started", None, None, "now", None)
+        _say_settled(said.append, [(row, ("n-1\x1b[2J", "found", "c-9\x1b[2J"))])
+        self.assertEqual(said, ["the step add_note, begun by an apply that did not finish, is found in the CRM: note "
+                                "n-1\\x1b[2J on contact c-9\\x1b[2J; the desk records it"])
+
     def apply_one(self, key):
         with self.desk() as desk:
             (result,) = desk.apply(key=key)

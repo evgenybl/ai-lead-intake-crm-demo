@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-330 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+331 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -206,6 +206,7 @@ Withdrawing or rejecting after an apply that did not finish leaves the ledger tr
 - `test_the_gate_refuses_a_plan_that_states_a_step_the_ledger_records_on_another_contact`
 - `test_the_doctor_offers_no_command_for_a_started_step_in_a_state_where_none_would_work`
 - `test_a_crm_id_in_what_was_written_is_printed_on_one_line_that_cannot_move_the_cursor`
+- `test_a_crm_id_found_when_withdrawn_is_printed_on_one_line_that_cannot_move_the_cursor`
 - `test_withdraw_waits_for_a_crm_that_cannot_be_read_and_changes_nothing`
 
 ### OneApplyAtATimeTests
