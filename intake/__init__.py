@@ -8,6 +8,9 @@ Where to look first:
 - the state names and transitions ........... intake/states.py
 - the invariants that `desk.py doctor` runs . intake/doctor.py
 - the allow-list of CRM operations .......... intake/ops.py
+- the request to a model, and its guard ..... intake/request.py
+- the answer's checks, and the backends ..... intake/answer.py, intake/draft.py
+- the desk pages ............................ intake/pages.py
 
 Everything here is the Python standard library. All people and companies in data/ are invented.
 """
