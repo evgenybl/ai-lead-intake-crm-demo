@@ -284,6 +284,13 @@ class ServeWithDecisionsTests(ServeCase):
                                       by=PERSON)
         self.assertEqual(status, 400)
         self.assertIn("nothing approved", body)
+        plan = self.plan_of(key)
+        for named in ({}, {"plan": ""}, {"plan": plan[:7]}):  # no plan, an empty one, too few digits
+            with self.subTest(named=named):
+                status, _, body = self.decide(token=self.token, key=key, decision="approve", confirm="yes", by=PERSON,
+                                              **named)
+                self.assertEqual(status, 400)
+                self.assertIn("an approval names the plan it approves", body)
         self.assertEqual(self.state(key), "awaiting_approval")
 
     def test_reject_needs_a_reason(self):

@@ -11,8 +11,9 @@ What the model step reads, found by the sha256 of each request.
 
 Every request in `requests/` has a real answer in `answers/`. Each meta file's `how` says how the answer was
 obtained: the request text, whole and unchanged, was given as the whole prompt to a Claude Code subagent on
-2026-11-24, whose transcript names the model as claude-haiku-5-5. Such a subagent also runs under its harness's
-own system prompt, so this is not the live path's API call. The sha256 in each meta file shows only that the
+2026-11-24, whose transcript names the model as claude-haiku-5-5, a small model; the live path's default model is
+another one, claude-opus-5-5. Such a subagent also runs under its harness's own system prompt, so this is not the
+live path's API call. The sha256 in each meta file shows only that the
 answer has not changed since it was added, and which request it answers. The origin is the author's record.
 
 The desk reads `answers/` first, and a constructed answer only for a request with no recorded one. With every
