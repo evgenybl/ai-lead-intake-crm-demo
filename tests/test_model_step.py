@@ -4,8 +4,10 @@ import hashlib
 import io
 import json
 import os
+import re
 import secrets
 import tempfile
+import unicodedata
 import unittest
 from unittest import mock
 
@@ -46,8 +48,10 @@ class RequestTests(unittest.TestCase):
                 self.assertNotIn(fields["email"].strip().lower(), text.lower()) if fields["email"] else None
                 if fields["phone"].strip():
                     self.assertNotIn(fields["phone"].strip(), text)
+                # Compared as the scrub compares: Unicode NFKC and case folding, so a sharp s or a dotted I counts.
+                seen = unicodedata.normalize("NFKC", request.message_part(text)).casefold()
                 for word in request.name_words(fields["name"]):
-                    self.assertNotRegex(request.message_part(text).casefold(), rf"(?<!\w){word}(?!\w)")
+                    self.assertNotRegex(seen, rf"(?<![^\W_]){re.escape(word)}(?![^\W_])")
 
     def test_the_message_is_scrubbed_of_the_senders_own_values_in_any_case(self):
         fields = dict(FIELDS, message="QUINN here: quinn.hart@EXAMPLE.com, or 000-000-0218. Hart Dental, Quinn.")
@@ -97,11 +101,66 @@ class RequestTests(unittest.TestCase):
         fields = dict(FIELDS, name="Dana Reviewer (invented)", message="Regards, Dana_Reviewer and DanaReviewer.")
         self.assertEqual(request.build(fields).message, "Regards, [name]_[name] and DanaReviewer.")
 
+    def test_the_senders_name_is_found_whatever_its_case_folding_or_unicode_form(self):
+        cases = [
+            ("J\u00f6rg Wei\u00df (invented)", "Hello, J\u00f6rg Wei\u00df here. Ask for Herr Wei\u00df, WEISS or Weiss.",
+             "Hello, [name] [name] here. Ask for Herr [name], [name] or [name]."),
+            ("\u0130brahim Demir (invented)", "Merhaba, \u0130brahim here. \u0130BRAH\u0130M, Ibrahim, ibrahim.",
+             "Merhaba, [name] here. [name], [name], [name]."),
+            ("I\u015f\u0131k Demir (invented)", "I\u015eIK here, and I\u015f\u0131k.", "[name] here, and [name]."),
+            ("Zo\u00eb Quince (invented)", "Zoe\u0308 here, typed with a combining mark; Zo\u00eb typed whole.",
+             "[name] here, typed with a combining mark; [name] typed whole."),
+            ("Zoe\u0308 Quince (invented)", "Zo\u00eb here, the other way round.", "[name] here, the other way round."),
+            ("\uff24\uff41\uff4e\uff41 Reviewer (invented)", "Dana here, in full-width letters in the field.",
+             "[name] here, in full-width letters in the field."),
+            ("Dana Reviewer (invented)", "Dana Reviewer here (the control case).", "[name] [name] here (the control case)."),
+        ]
+        for name, message, scrubbed in cases:
+            with self.subTest(name=name):
+                fields = dict(FIELDS, name=name, message=message)
+                self.assertEqual(request.build(fields).message, scrubbed)
+                left_in = request.PROMPT + request.MESSAGE_OPEN + message + request.MESSAGE_CLOSE
+                self.assertIn("the sender's name", request.guard(left_in, fields))
+                self.assertEqual(request.guard(request.build(fields).text, fields), [])
+
+    def test_a_name_in_a_script_written_without_spaces_is_found_inside_a_longer_run(self):
+        cases = [("\u5f20\u4f1f (invented)", "\u6211\u662f\u5f20\u4f1f\uff0c\u8bf7\u8054\u7cfb\u5f20\u4f1f\u3002",
+                  "\u6211\u662f[name]\uff0c\u8bf7\u8054\u7cfb[name]\u3002"),
+                 ("\u3055\u304f\u3089 Ito (invented)", "\u79c1\u306f\u3055\u304f\u3089\u3067\u3059",
+                  "\u79c1\u306f[name]\u3067\u3059"),
+                 ("\u0e2a\u0e21\u0e0a\u0e32\u0e22 (invented)", "\u0e1c\u0e21\u0e0a\u0e37\u0e48\u0e2d\u0e2a\u0e21\u0e0a\u0e32\u0e22\u0e04\u0e23\u0e31\u0e1a",
+                  "\u0e1c\u0e21\u0e0a\u0e37\u0e48\u0e2d[name]\u0e04\u0e23\u0e31\u0e1a")]
+        for name, message, scrubbed in cases:
+            with self.subTest(name=name):
+                fields = dict(FIELDS, name=name, message=message)
+                self.assertEqual(request.build(fields).message, scrubbed)
+                left_in = request.PROMPT + request.MESSAGE_OPEN + message + request.MESSAGE_CLOSE
+                self.assertIn("the sender's name", request.guard(left_in, fields))
+        # A name word in a script written with spaces stays a whole word: it is not found inside another.
+        latin = dict(FIELDS, name="Dana Reviewer (invented)", message="Ask DanaReviewer.")
+        self.assertEqual(request.build(latin).message, "Ask DanaReviewer.")
+
+    def test_an_address_with_an_apostrophe_or_other_legal_punctuation_is_replaced_whole(self):
+        fields = dict(FIELDS, message="Mail pat.o'brien@example.com, a!b#c@example.com or 'x=y@example.com'.")
+        self.assertEqual(request.build(fields).message, "Mail [email], [email] or '[email]'.")
+        left_in = request.PROMPT + request.MESSAGE_OPEN + "pat.o'brien@example.com" + request.MESSAGE_CLOSE
+        self.assertIn("an e-mail address", request.guard(left_in, FIELDS))
+
+    def test_a_digit_group_is_kept_as_a_date_only_when_it_is_a_real_date(self):
+        fields = dict(FIELDS, message="Ref 5550-14-23, ref 2026-02-30, from 2026-02-02 or 2028-02-29.")
+        self.assertEqual(request.build(fields).message, "Ref [phone], ref [phone], from 2026-02-02 or 2028-02-29.")
+        left_in = request.PROMPT + request.MESSAGE_OPEN + "Ref 5550-14-23" + request.MESSAGE_CLOSE
+        self.assertIn("a phone number", request.guard(left_in, FIELDS))
+
     def test_what_the_scrub_does_not_recognise_reaches_the_model(self):
         # Said in the README: an address written out in words, a name joined to another word, anyone else's name.
         fields = dict(FIELDS, email="pat.lee@example.com", name="Pat Lee (invented)",
                       message="Write to info at example dot com. Ask PatLee or Tom Baker, 12 Mill Lane.")
         self.assertEqual(request.build(fields).message, fields["message"])
+        # A name spelt without its accent, a one-letter name word, an address with a quoted part before its @.
+        fields = dict(FIELDS, email="zoe@example.com", name="Zo\u00eb O Quince (invented)",
+                      message='Zoe and O here; or "zoe q"@example.com.')
+        self.assertEqual(request.build(fields).message, 'Zoe and O here; or "zoe q"@example.com.')
 
     def test_the_guard_refuses_a_request_that_still_holds_personal_data(self):
         with mock.patch.object(request, "scrub", lambda message, fields: message):
@@ -252,6 +311,19 @@ class AnswerTests(unittest.TestCase):
                       self.reasons(dict(GOOD, summary="3 rooms for 1,500 a month.")))
         self.assertIn("a number that is not in the message: '4'", self.reasons(dict(GOOD, reply_draft="Hi {{name}}, 4 rooms.")))
 
+    def test_neither_text_holds_the_senders_name_whatever_its_case_folding_or_unicode_form(self):
+        for name, said in (("J\u00f6rg Wei\u00df (invented)", "Herr WEISS asks for a quote."),
+                           ("\u0130brahim Demir (invented)", "\u0130BRAH\u0130M asks for a quote."),
+                           ("Zo\u00eb Quince (invented)", "Zoe\u0308 asks for a quote."),
+                           ("\u5f20\u4f1f (invented)", "\u5f20\u4f1f\u60f3\u8981\u62a5\u4ef7\u3002")):
+            with self.subTest(name=name):
+                fields = dict(FIELDS, name=name)
+                self.assertIn("the summary holds the sender's name",
+                              answer.check(dict(GOOD, summary=said), "a quote", fields))
+                reply = "Hello {{name}}, thank you, " + said
+                self.assertIn("the reply draft holds the sender's name",
+                              answer.check(dict(GOOD, reply_draft=reply), "a quote", fields))
+
     def test_neither_text_holds_the_senders_own_values(self):
         self.assertIn("the summary holds the sender's name", self.reasons(dict(GOOD, summary="Quinn wants a quote.")))
         self.assertIn("the reply draft holds the sender's e-mail",
@@ -342,6 +414,23 @@ class AnthropicBackendTests(unittest.TestCase):
     def test_the_label_names_a_custom_endpoint(self):
         self.assertEqual(self.backend.label, f"Live path (custom endpoint: {self.url.split('//')[1]})")
         self.assertEqual(AnthropicBackend(self.key).label, "Live path")
+
+    def test_what_the_endpoint_receives_holds_no_word_of_the_senders_name_in_any_form(self):
+        for name, message, words in (
+                ("J\u00f6rg Wei\u00df (invented)", "Hello, J\u00f6rg Wei\u00df here. Ask for Herr Wei\u00df.", ("j\u00f6rg", "weiss")),
+                ("\u0130brahim Demir (invented)", "Merhaba, \u0130brahim here. Ask for \u0130brahim.", ("brahim",)),
+                ("Zo\u00eb Quince (invented)", "Zoe\u0308 here (the same name, with a combining mark).", ("zo\u00eb",)),
+                ("\u5f20\u4f1f (invented)", "\u6211\u662f\u5f20\u4f1f\u3002", ("\u5f20\u4f1f",)),
+                ("Dana Reviewer (invented)", "Dana Reviewer here (the control case).", ("dana", "reviewer"))):
+            with self.subTest(name=name):
+                self.fake.answer(json.dumps(GOOD))
+                before = len(self.fake.requests)
+                self.backend.draft(dict(FIELDS, name=name, message=message))
+                sent = request.message_part(self.fake.requests[before]["messages"][0]["content"])
+                seen = unicodedata.normalize("NFKC", sent).casefold()
+                for word in words:
+                    self.assertNotIn(word, seen)
+                self.assertIn("[name]", sent)
 
     def test_one_request_carries_only_the_request_text(self):
         self.fake.answer(json.dumps(GOOD))

@@ -306,16 +306,21 @@ holds the name, e-mail or phone fields, and the message is scrubbed first. **Exa
 - the sender's own e-mail, as written, in any letter case;
 - the sender's own phone, found by its digits wherever a run of digits holds them, whatever stands between them:
   spaces of any kind, dashes of any kind, dots, slashes, underscores, brackets, a line break, `tel:` before it;
-- anything shaped like an e-mail address, with letters of any alphabet;
-- any run of 7 or more digits (a long figure, a card number, someone else's phone), except a date written
-  `2026-02-02`;
-- each word of the sender's own name (two letters or more) as a whole word in any letter case; an underscore
-  ends a word.
+- anything shaped like an e-mail address, with letters of any alphabet, and the punctuation an address may hold
+  unquoted before its `@` (`pat.o'brien@example.com`, `a!b@example.com`);
+- any run of 7 or more digits (a long figure, a card number, someone else's phone), except a real date written
+  `2026-02-02` (`5550-14-23` is not a date, so it is taken out);
+- each word of the sender's own name (two letters or more) as a whole word, compared after Unicode
+  normalisation (NFKC) and case folding: `Weiß`, `WEISS` and `Weiss` are one word, as are `İbrahim`, `IBRAHIM`
+  and `ibrahim`, and an `ë` typed as one character or as an `e` with a combining mark. An underscore ends a word.
+  A name word in a script written without spaces (Chinese, Japanese, Thai and the like) is found inside a longer
+  run of letters too.
 
 **What it does NOT recognise**, and so what a model can see: an address written out in words (`name at example dot
-com`, `name(at)example.com`, spaces around the `@`); a name joined to another word with no separator, changed
-(`Danas`) or given as an initial; anyone else's name; a street address; a number of 6 digits or fewer; anything
-else that identifies a person. A guard reads the finished request again and refuses to send it if any of the
+com`, `name(at)example.com`, spaces around the `@`); a name in a script written with spaces joined to another word
+with no separator (`DanaReviewer`), changed (`Danas`), spelt without its accent (`Zoe` for `Zoë`) or given as an
+initial; a name word of one letter; an address with a quoted part before its `@`; anyone else's name; a street
+address; a number of 6 digits or fewer; anything else that identifies a person. A guard reads the finished request again and refuses to send it if any of the
 replaced kinds is still there, by the same comparisons.
 
 The answer must be one JSON object with exactly four keys: a summary, an intent, an urgency and a reply draft.

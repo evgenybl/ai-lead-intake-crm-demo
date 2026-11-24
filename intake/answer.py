@@ -24,8 +24,7 @@ import re
 import unicodedata
 
 from . import normalise
-from .request import EMAIL_SHAPE, INTENTS, PLACEHOLDER, URGENCIES, name_words, own_phone_spans, phone_spans
-from .request import _word as word_pattern
+from .request import EMAIL_SHAPE, INTENTS, PLACEHOLDER, URGENCIES, name_spans, own_phone_spans, phone_spans
 
 KEYS = ("summary", "intent", "urgency", "reply_draft")
 SUMMARY_MAX_WORDS = 40
@@ -154,6 +153,6 @@ def check(obj: dict, seen_message: str, fields: dict) -> list:
             reasons.append(f"the {label} holds the sender's e-mail")
         if own_phone_spans(text, fields.get("phone", "")):
             reasons.append(f"the {label} holds the sender's phone")
-        if any(word_pattern(w).search(text) for w in name_words(fields.get("name", ""))):
+        if name_spans(text, fields.get("name", "")):
             reasons.append(f"the {label} holds the sender's name")
     return reasons

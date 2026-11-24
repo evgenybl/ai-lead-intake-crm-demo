@@ -12,24 +12,30 @@ The message is scrubbed of exactly these, each replaced by [email], [phone] or [
 - the sender's own e-mail as written, in any letter case;
 - the digits of the sender's own phone, wherever a run of digits holds them, whatever stands between
   them ("tel:0000000199" too);
-- anything shaped like an e-mail address: letters of any alphabet, digits and . _ % + - before an @, and
-  a domain with a dot after it;
-- any run of 7 or more digits (a long figure, a card number, a phone of anyone), except a date written
-  2026-02-02;
-- every word of the sender's own name (two letters or more), as a whole word in any letter case, where
-  an underscore also ends a word ("Dana_Reviewer" is two words).
+- anything shaped like an e-mail address: before an @, letters of any alphabet, digits and any of
+  . ! # $ % & ' * + / = ? ^ _ ` { | } ~ - (an apostrophe not first); after it, a domain with a dot;
+- any run of 7 or more digits (a long figure, a card number, a phone of anyone), except a real date
+  written 2026-02-02 (5550-14-23 is not a date, so it is part of a run);
+- every word of the sender's own name (two letters or more), compared after Unicode NFKC and case
+  folding, so "Weiss", "WEISS" and "Weiß" are one, as are "İbrahim" in any case and a composed and a
+  decomposed "Zoë". A word is a run of letters, digits and combining marks: anything else, an underscore
+  too, ends it ("Dana_Reviewer" is two words), and a name word must be a whole word. A name word in a
+  script written without spaces (Han, Hiragana, Katakana, Thai, Lao, Khmer, Myanmar and the like) is found
+  wherever it stands, inside a longer run of letters too.
 All are found on the original text in one pass, so one replacement never creates or hides another.
 
 It does NOT recognise, and the model may see: an address written out in words ("dana at example dot com",
 "dana(at)example.com", spaces around the @); a name joined to another word with no separator
-("DanaReviewer"), changed ("Danas"), or given as an initial; anyone else's name; a street address; a
-number of 6 digits or fewer; anything else that identifies a person.
+("DanaReviewer"), changed ("Danas"), spelt without its accent ("Zoe" for "Zoë"), or given as an initial;
+a name word of one letter; an address with a quoted part before its @; anyone else's name; a street
+address; a number of 6 digits or fewer; anything else that identifies a person.
 
 The guard looks again at the finished request and refuses to send it if any of the five is still there,
 by the same comparisons.
 """
 from __future__ import annotations
 
+import datetime
 import hashlib
 import re
 import unicodedata
@@ -62,10 +68,11 @@ PROMPT = (
     "Message:\n"
 )
 
-EMAIL_SHAPE = re.compile(r"[\w.%+-]+@[\w-]+(?:\.[\w-]+)+")
+# An address: before the @, the characters an address may hold there (an apostrophe not first, so a quote
+# before an address is not taken with it); after it, a domain with a dot.
+EMAIL_SHAPE = re.compile(r"[\w.!#$%&*+/=?^`{|}~-][\w.!#$%&'*+/=?^`{|}~-]*@[\w-]+(?:\.[\w-]+)+")
 _DIGIT_RUN = re.compile(r"\+?\(?\d(?:[\W_]*\d)*")  # digits, with only non-letters between; a leading + or (
 _DATE_IN_TEXT = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)")
-_NAME_WORD = re.compile(r"[^\W\d_]{2,}")
 LONG_NUMBER_DIGITS = 7  # a run of this many digits or more is taken out as a possible phone number
 
 
@@ -86,13 +93,23 @@ def digit_runs(text: str, dates_apart: bool = False) -> list:
     so two dates side by side ("2026-02-02 (2026-03-01)") are not read as one long number."""
     text = text or ""
     if dates_apart:
-        text = _DATE_IN_TEXT.sub(lambda m: "x" * len(m.group(0)), text)
+        text = _DATE_IN_TEXT.sub(lambda m: "x" * len(m.group(0)) if _real_date(m.group(0)) else m.group(0), text)
     runs = []
     for match in _DIGIT_RUN.finditer(text):
         positions = tuple(match.start() + i for i, ch in enumerate(match.group(0)) if ch.isdecimal())
         digits = "".join(str(unicodedata.decimal(text[p])) for p in positions)
         runs.append(DigitRun(match.start(), match.end(), digits, positions))
     return runs
+
+
+def _real_date(text: str) -> bool:
+    """Whether YYYY-MM-DD is a date of the calendar: 2026-02-02 is, 5550-14-23 is not."""
+    year, month, day = (int(part) for part in text.split("-"))
+    try:
+        datetime.date(year, month, day)
+    except ValueError:
+        return False
+    return True
 
 
 def long_number_spans(text: str) -> list:
@@ -124,15 +141,104 @@ def phone_spans(text: str) -> list:
 
 MARKER_WORDS = frozenset({"invented"})  # the data's "(invented)" marks a name; it is not part of one
 
+# Scripts written without spaces between words: a name word in one is found inside a longer run of letters.
+NO_SPACE_SCRIPTS = (
+    (0x0E00, 0x0EFF),  # Thai, Lao
+    (0x0F00, 0x0FFF),  # Tibetan
+    (0x1000, 0x109F), (0xA9E0, 0xA9FF), (0xAA60, 0xAA7F),  # Myanmar
+    (0x1780, 0x17FF), (0x19E0, 0x19FF),  # Khmer
+    (0x1B00, 0x1B7F), (0xA980, 0xA9DF),  # Balinese, Javanese
+    (0x2E80, 0x2FDF), (0x3005, 0x3007), (0x3021, 0x3029),  # CJK radicals, iteration and number marks
+    (0x3040, 0x30FF), (0x31F0, 0x31FF), (0xFF66, 0xFF9F),  # Hiragana, Katakana
+    (0x3100, 0x312F), (0x31A0, 0x31BF),  # Bopomofo
+    (0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF), (0x20000, 0x323AF),  # Han
+    (0xA000, 0xA4CF),  # Yi
+)
+
+
+def fold(text: str) -> str:
+    """Text as a name is compared: Unicode NFKC, then case folding, then NFKC again; and the dotted and the
+    dotless i of Turkish compared as i, which case folding alone does not do ("İBRAHİM" folds to two dotted i's,
+    "İbrahim" to one). "Weiß" and "WEISS" fold to one form, as do a composed and a decomposed "ë"."""
+    folded = unicodedata.normalize("NFKC", unicodedata.normalize("NFKC", text).casefold())
+    return folded.replace("i̇", "i").replace("ı", "i")
+
+
+def _is_mark(ch: str) -> bool:
+    return unicodedata.category(ch).startswith("M")
+
+
+def _runs(text: str, inside) -> list:
+    """(start, end) of each run of characters for which inside(ch) holds."""
+    spans, start = [], None
+    for i, ch in enumerate(text):
+        if inside(ch):
+            start = i if start is None else start
+        elif start is not None:
+            spans.append((start, i))
+            start = None
+    if start is not None:
+        spans.append((start, len(text)))
+    return spans
+
+
+def _without_spaces(word: str) -> bool:
+    return any(low <= ord(ch) <= high for ch in word for low, high in NO_SPACE_SCRIPTS)
+
 
 def name_words(name: str) -> list:
-    """The words of the sender's name that are personal: letters only, two or more of them, not the marker."""
-    return sorted({w.casefold() for w in _NAME_WORD.findall(name or "")} - MARKER_WORDS)
+    """The words of the sender's name that are personal, folded: runs of letters and their combining marks with
+    two letters or more, not the marker word."""
+    name = name or ""
+    found = set()
+    for start, end in _runs(name, lambda ch: ch.isalpha() or _is_mark(ch)):
+        word = name[start:end]
+        if sum(ch.isalpha() for ch in word) >= 2:
+            found.add(fold(word))
+    return sorted(found - MARKER_WORDS)
 
 
-def _word(word: str) -> re.Pattern:
-    """The word on its own: not next to another letter or digit. An underscore ends a word."""
-    return re.compile(r"(?<![^\W_])" + re.escape(word) + r"(?![^\W_])", re.IGNORECASE)
+def _folded_with_places(word: str) -> tuple:
+    """The folded word, and for each of its characters the (start, end) in `word` of the letter and marks it came
+    from, so a match found in the folded text can be cut out of the original."""
+    clusters = []
+    start = 0
+    for i in range(1, len(word) + 1):
+        if i == len(word) or not _is_mark(word[i]):
+            clusters.append((start, i))
+            start = i
+    folded, places = [], []
+    for start, end in clusters:
+        part = fold(word[start:end])
+        folded.append(part)
+        places += [(start, end)] * len(part)
+    return "".join(folded), places
+
+
+def name_spans(text: str, name: str) -> list:
+    """(start, end) in `text` of each place a word of the sender's name stands: a whole word equal to it once both
+    are folded or, for a name word in a script written without spaces, anywhere inside a word."""
+    words = name_words(name)
+    if not words or not text:
+        return []
+    whole = {w for w in words if not _without_spaces(w)}
+    anywhere = [w for w in words if _without_spaces(w)]
+    spans = []
+    for start, end in _runs(text, lambda ch: ch.isalnum() or _is_mark(ch)):
+        word = text[start:end]
+        if fold(word) in whole:
+            spans.append((start, end))
+            continue
+        if not anywhere:
+            continue
+        folded, places = _folded_with_places(word)
+        for name_word in anywhere:
+            at = folded.find(name_word)
+            while at >= 0:
+                last = at + len(name_word) - 1
+                spans.append((start + places[at][0], start + places[last][1]))
+                at = folded.find(name_word, at + len(name_word))
+    return sorted(spans)
 
 
 def scrub(message: str, fields: dict) -> str:
@@ -156,9 +262,8 @@ def scrub(message: str, fields: dict) -> str:
         add(*m.span(), "[email]")
     for start, end in phone_spans(message):
         add(start, end, "[phone]")
-    for word in name_words(fields.get("name", "")):
-        for m in _word(word).finditer(message):
-            add(*m.span(), "[name]")
+    for start, end in name_spans(message, fields.get("name", "")):
+        add(start, end, "[name]")
     out, last = [], 0
     for start, end, token in sorted(spans):
         out.append(message[last:start])
@@ -198,6 +303,6 @@ def guard(text: str, fields: dict) -> list:
         found.append("an e-mail address")
     if phone_spans(text) or own_phone_spans(text, own_phone) or (own_phone and own_phone.casefold() in lowered):
         found.append("a phone number")
-    if any(_word(word).search(message) for word in name_words(fields.get("name", ""))):
+    if name_spans(message, fields.get("name", "")):
         found.append("the sender's name")
     return found

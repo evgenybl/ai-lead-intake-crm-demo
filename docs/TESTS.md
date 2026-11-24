@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-298 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+304 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -254,6 +254,10 @@ The request and its guard, the strict answer, the three backends, and the hidden
 - `test_an_address_with_letters_outside_ascii_is_scrubbed`
 - `test_a_long_number_is_scrubbed_but_a_date_and_a_short_figure_are_kept`
 - `test_a_name_word_next_to_an_underscore_is_scrubbed`
+- `test_the_senders_name_is_found_whatever_its_case_folding_or_unicode_form`
+- `test_a_name_in_a_script_written_without_spaces_is_found_inside_a_longer_run`
+- `test_an_address_with_an_apostrophe_or_other_legal_punctuation_is_replaced_whole`
+- `test_a_digit_group_is_kept_as_a_date_only_when_it_is_a_real_date`
 - `test_what_the_scrub_does_not_recognise_reaches_the_model`
 - `test_the_guard_refuses_a_request_that_still_holds_personal_data`
 - `test_the_request_is_named_by_its_sha256`
@@ -280,6 +284,7 @@ How the dry run shows the model step: never "None" where an answer was refused.
 - `test_the_shape_and_the_limits`
 - `test_the_reply_holds_no_email_phone_or_web_address`
 - `test_every_number_in_digits_must_appear_in_the_message`
+- `test_neither_text_holds_the_senders_name_whatever_its_case_folding_or_unicode_form`
 - `test_neither_text_holds_the_senders_own_values`
 - `test_parsing_is_strict`
 
@@ -299,6 +304,7 @@ The label "Recorded" is earned only by a matching recording in recorded/answers/
 The live path, against a local mock only.
 
 - `test_the_label_names_a_custom_endpoint`
+- `test_what_the_endpoint_receives_holds_no_word_of_the_senders_name_in_any_form`
 - `test_one_request_carries_only_the_request_text`
 - `test_a_failing_answer_gets_one_retry_with_the_reasons`
 - `test_two_failing_answers_are_not_used`

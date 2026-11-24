@@ -347,17 +347,26 @@ for good (see "Limits").
   scrubbed of exactly these, each replaced by `[email]`, `[phone]` or `[name]`:
   the sender's own e-mail as written, in any letter case; the digits of the sender's own phone, wherever a run
   of digits holds them, whatever stands between them; anything shaped like an e-mail address, with letters of
-  any alphabet; any run of 7 or more digits, except a date written `2026-02-02` (a date is never part of a run,
-  so two dates side by side stay); each word of the sender's name (two letters or more), as a whole word in
-  any letter case, where an underscore also ends a word (the data's marker word "invented", from "(invented)",
-  is not a name word and stays). All replacements are found on the original text in one pass, so one
-  replacement never makes or hides another.
+  any alphabet and, before the `@`, any of `. ! # $ % & ' * + / = ? ^ _ ` { | } ~ -` (an apostrophe not first,
+  so a quote before an address stays); any run of 7 or more digits, except a real date written `2026-02-02` (a
+  date is never part of a run, so two dates side by side stay; `5550-14-23` and `2026-02-30` are not dates, so
+  they are part of one); each word of the sender's name (two letters or more), as a whole word. Names are
+  compared folded: Unicode NFKC, case folding, NFKC again, and the dotted and dotless i of Turkish taken as
+  `i`, so `Weiß` and `WEISS`, `İbrahim` and `IBRAHIM`, a composed and a decomposed `ë`, a full-width `Ｄａｎａ`
+  and `Dana`, are one. A word is a run of letters, digits and combining marks: anything else, an underscore
+  too, ends it. A name word in a script written without spaces (Han, Hiragana, Katakana, Bopomofo, Thai, Lao,
+  Khmer, Myanmar, Tibetan, Yi, Javanese, Balinese) is found wherever it stands, inside a longer run of letters
+  too. The data's marker word "invented", from "(invented)", is not a name word and stays. All replacements are
+  found on the original text in one pass, so one replacement never makes or hides another.
 - **What the scrub does not recognise:** an address written out in words (`name at example dot com`,
-  `name(at)example.com`, spaces around the `@`); a name joined to another word with no separator, changed
-  (`Danas`) or given as an initial; anyone else's name; a street address; a number of 6 digits or fewer;
+  `name(at)example.com`, spaces around the `@`); a name in a script written with spaces joined to another word
+  with no separator (`DanaReviewer`), changed (`Danas`), spelt without its accent (`Zoe` for `Zoë`) or given as
+  an initial; a name word of one letter; an address with a quoted part before its `@` (`"pat lee"@example.com`);
+  anyone else's name; a street address; a number of 6 digits or fewer;
   anything else that identifies a person. A test sends such a message and shows it reaches the request as it
   was. A **guard** reads the finished request again and refuses to send it if any of the replaced kinds is
-  still there, by the same comparisons (the digits of the sender's phone in any run; any run of 7 or more).
+  still there, by the same comparisons (the digits of the sender's phone in any run; any run of 7 or more; a
+  name word, folded). The answer checks compare the sender's name the same way.
 - **The request's sha256** is over its UTF-8 bytes and names it; `recorded/requests/<sha256>.txt` holds it.
   `python -I tools/recordings.py requests` writes one for every invented enquiry that reaches the model:
   the ones not refused, and not replays (a held enquiry reaches it: its draft helps the person resolve it).
