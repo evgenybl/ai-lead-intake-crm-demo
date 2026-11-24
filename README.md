@@ -164,6 +164,14 @@ Then open `http://127.0.0.1:8765/desk`. To approve or reject on the page itself,
 `--allow-decisions`: each decision then needs a ticked confirmation box and a name. The same pages, written as
 files after the demo story, are in `examples/desk/` (`index.html`, and a page per enquiry).
 
+One enquiry's page from that folder, after its plan was approved and written:
+
+![An enquiry's page: who it is from, the recorded model step with its summary and reply draft, the plan with the note and the task in full, and the changed phone number shown and not overwritten](docs/img/enquiry-page.png)
+
+*A capture of `examples/desk/enquiry/webform~wf-000109-ad3b9127.html` at 1280 by 1200 in a headless browser with no
+network, taken on 24 November 2026. The page is written by `desk.py render`; CI does not make the picture again, so if
+the two ever differ, the page is right.*
+
 **The tests:** `python -I run_tests.py` runs every test. `docs/TESTS.md` lists them.
 
 ## The four promises

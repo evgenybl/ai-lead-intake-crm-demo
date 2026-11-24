@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-283 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+284 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -91,6 +91,7 @@ The documents say only what a run printed; the demo and the examples are what th
 
 ### DocumentTests
 
+- `test_the_enquiry_page_picture_is_captioned_with_how_it_was_made`
 - `test_every_image_a_markdown_file_embeds_exists`
 - `test_every_block_quoted_from_the_examples_is_a_real_slice_of_its_file`
 - `test_every_quoted_model_sentence_is_a_real_slice_of_its_recorded_answer`

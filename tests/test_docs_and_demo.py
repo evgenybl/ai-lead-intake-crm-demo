@@ -41,6 +41,13 @@ def read(*path):
 
 
 class DocumentTests(unittest.TestCase):
+    def test_the_enquiry_page_picture_is_captioned_with_how_it_was_made(self):
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as handle:
+            readme = handle.read()
+        self.assertIn("](docs/img/enquiry-page.png)", readme)
+        self.assertIn("*A capture of `examples/desk/enquiry/webform~wf-000109-ad3b9127.html`", readme)
+        self.assertTrue(os.path.exists(os.path.join(ROOT, "examples", "desk", "enquiry", "webform~wf-000109-ad3b9127.html")))
+
     def test_every_image_a_markdown_file_embeds_exists(self):
         seen = 0
         for path in markdown_files():
