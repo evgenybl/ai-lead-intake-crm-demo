@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-309 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+311 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -44,6 +44,8 @@ The whole story of the invented data, command by command.
 - `test_a_line_that_is_not_json_is_named_and_the_others_are_taken`
 - `test_a_missing_desk_or_file_is_a_usage_error`
 - `test_a_desk_file_held_by_another_program_is_a_plain_message_and_nothing_is_changed`
+- `test_a_file_that_is_not_a_database_is_named_in_one_plain_line_not_a_traceback`
+- `test_serve_or_listen_on_a_port_in_use_says_so_in_one_plain_line`
 - `test_a_bad_fixed_time_is_a_usage_error`
 - `test_approve_checks_the_plan_the_person_saw`
 - `test_an_approval_without_the_plan_is_refused_so_a_plan_made_again_is_never_approved_unseen`

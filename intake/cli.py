@@ -119,6 +119,13 @@ def main(argv=None, out=None, environ=None) -> int:
         say(f"the desk file could not be used ({error}): another program may hold it. Nothing was changed by this "
             "command; run it again in a moment")
         return 1
+    except doctor.Unreadable as error:
+        say(f"error: {error}; nothing was changed. It may be damaged, or not a file this desk made")
+        return 2
+    except sqlite3.DatabaseError as error:
+        say(f"error: the desk file in --home is not a database this desk can read ({error}); nothing was changed. "
+            "It may be damaged, or not a file this desk made")
+        return 2
 
 
 # -- the commands -----------------------------------------------------------------------------------
@@ -180,8 +187,14 @@ def _serve(args, say, home, choice, clock, environ, out, desk_pages: bool) -> in
     drafter = make_backend(args.draft, environ)
     secret = secret_from(environ)
     decisions = pages.Decisions(secrets.token_urlsafe(24) if getattr(args, "allow_decisions", False) else None)
-    server = IntakeServer(args.port, secret, lambda: open_desk(home, choice, environ, clock, drafter), log=out,
-                          desk_pages=desk_pages, decisions=decisions)
+    try:
+        server = IntakeServer(args.port, secret, lambda: open_desk(home, choice, environ, clock, drafter), log=out,
+                              desk_pages=desk_pages, decisions=decisions)
+    except (OSError, OverflowError) as error:
+        why = getattr(error, "strerror", None) or str(error)
+        say(f"error: cannot listen on 127.0.0.1:{args.port} ({why}): another program may be using that port. "
+            "Choose another with --port, or --port 0 to let the system choose")
+        return 2
     if secret:
         state = f"configured ({SECRET_ENV} is set)"
     else:

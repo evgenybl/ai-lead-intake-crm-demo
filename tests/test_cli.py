@@ -101,6 +101,43 @@ class CommandTests(DeskCase):
         self.assertNotIn("Traceback", out)
         self.assertIn("first arrivals               0", self.cli("report"))
 
+    def test_a_file_that_is_not_a_database_is_named_in_one_plain_line_not_a_traceback(self):
+        from intake.home import crm_path, desk_path
+
+        not_a_database = b"this is a text file, not a database made by the desk" * 4
+        with open(crm_path(self.home), "rb") as handle:
+            crm_file = handle.read()
+        with open(crm_path(self.home), "wb") as handle:
+            handle.write(not_a_database)
+        out = self.cli("doctor", expect=2)
+        self.assertIn("error: practice-crm.sqlite3 is not a database the doctor can read", out)
+        with open(crm_path(self.home), "wb") as handle:
+            handle.write(crm_file)
+        with open(desk_path(self.home), "wb") as handle:
+            handle.write(not_a_database)
+        self.assertIn("error: desk.sqlite3 is not a database the doctor can read", self.cli("doctor", expect=2))
+        for command in (["report"], ["plan"], ["apply"], ["trail", "webform:wf-000101"]):
+            with self.subTest(command=command[0]):
+                self.assertIn("error: the desk file in --home is not a database this desk can read",
+                              self.cli(*command, expect=2))
+
+    def test_serve_or_listen_on_a_port_in_use_says_so_in_one_plain_line(self):
+        import socket
+
+        holder = socket.socket()
+        self.addCleanup(holder.close)
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):  # Windows: otherwise a second socket may bind the same port
+            holder.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        holder.bind(("127.0.0.1", 0))
+        holder.listen()
+        port = str(holder.getsockname()[1])
+        for command in ("serve", "listen"):
+            with self.subTest(command=command):
+                out = self.cli(command, "--port", port, env={"INTAKE_SECRET": secrets.token_urlsafe(24)}, expect=2)
+                self.assertIn(f"error: cannot listen on 127.0.0.1:{port} (", out)
+                self.assertIn("or --port 0 to let the system choose", out)
+        self.assertIn("error: cannot listen on 127.0.0.1:70000", self.cli("listen", "--port", "70000", expect=2))
+
     def test_a_bad_fixed_time_is_a_usage_error(self):
         self.assertIn("must look like", self.cli("report", at="tomorrow", expect=2))
 

@@ -30,10 +30,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import pathlib
 import re
 import sqlite3
 from collections import Counter
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from . import audit, normalise, states
@@ -64,21 +66,38 @@ class Check:
         return not self.problems
 
 
+class Unreadable(Exception):
+    """A file the doctor cannot read as a database: damaged, or not one at all. The message names it."""
+
+
 def _read_only(path: str) -> sqlite3.Connection:
     return sqlite3.connect(pathlib.Path(path).resolve().as_uri() + "?mode=ro", uri=True)
 
 
+@contextmanager
+def _reading(path: str):
+    """A file that is not a database is named; one that another program holds stays the caller's to say."""
+    try:
+        yield
+    except sqlite3.OperationalError:
+        raise
+    except sqlite3.DatabaseError as error:
+        raise Unreadable(f"{os.path.basename(path)} is not a database the doctor can read ({error})") from None
+
+
 def examine(desk_path: str, crm_path: str | None) -> list:
     """Every check, in promise order. A CRM path of None skips the CRM checks and says so."""
+    with _reading(crm_path or ""):
+        crm = _crm_records(crm_path) if crm_path else None
     desk = _read_only(desk_path)
     try:
-        crm = _crm_records(crm_path) if crm_path else None
-        checks = (
-            _promise_1(desk)
-            + _promise_2(crm)
-            + _promise_3(desk, crm)
-            + _promise_4(desk, crm)
-        )
+        with _reading(desk_path):
+            checks = (
+                _promise_1(desk)
+                + _promise_2(crm)
+                + _promise_3(desk, crm)
+                + _promise_4(desk, crm)
+            )
     finally:
         desk.close()
     return checks
