@@ -111,6 +111,9 @@ class IntakeHandler(BaseHTTPRequestHandler):
     server_version = "lead-intake-desk"
     sys_version = ""
     protocol_version = "HTTP/1.1"
+    # A request line that cannot be read leaves no version. Python 3.11 then answers as to HTTP/0.9, with no status
+    # line; with this, its 400 goes out as on 3.13.
+    default_request_version = "HTTP/1.0"
     timeout = 10
 
     def setup(self):
