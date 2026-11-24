@@ -9,12 +9,14 @@ from dataclasses import dataclass
 from . import normalise, planner, validate
 from .canonical import canonical_json
 from .crm.base import CRMError
-from .draft import TemplateBackend
+from .draft import RecordedBackend
 from .identity import idempotency_key
 
 SYSTEM = "system"
 MAX_NAME_CHARS = 80
 MAX_REASON_CHARS = 500
+# A name that starts so could be read as a formula by a spreadsheet that opens an export of the trail.
+FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
 
 
 class DeskError(Exception):
@@ -32,6 +34,7 @@ class Answer:
     via: str
     reasons: tuple = ()
     same_content: bool | None = None
+    differs: tuple = ()  # for a replay with different content: the fields that differ
 
     def as_dict(self) -> dict:
         answer = {"key": self.key, "state": self.state, "replay": self.replay}
@@ -45,6 +48,8 @@ def person(name: str) -> str:
     cleaned = " ".join((name or "").split())
     if not cleaned:
         raise DeskError("a decision needs a person's name (--by)")
+    if (name or "")[:1] in FORMULA_STARTS or cleaned[:1] in FORMULA_STARTS:
+        raise DeskError("a name may not start with =, +, -, @, a tab or a carriage return")
     if len(cleaned) > MAX_NAME_CHARS:
         raise DeskError(f"a name may have at most {MAX_NAME_CHARS} characters")
     if cleaned.casefold() == SYSTEM:
@@ -52,12 +57,21 @@ def person(name: str) -> str:
     return cleaned
 
 
+def replay_differences(first: dict, this_time: dict) -> dict:
+    """What a replay changes against the first arrival, field by field. The time it was sent is not content."""
+    differs = {}
+    for name in validate.FIELDS:
+        if name != "received_at" and first.get(name) != this_time.get(name):
+            differs[name] = {"first": first.get(name), "this_time": this_time.get(name)}
+    return differs
+
+
 class Desk:
     def __init__(self, store, crm, clock, drafter=None):
         self.store = store
         self.crm = crm
         self.clock = clock
-        self.drafter = drafter or TemplateBackend()
+        self.drafter = drafter or RecordedBackend()
 
     # -- arrive -----------------------------------------------------------------------------------
 
@@ -70,10 +84,14 @@ class Desk:
         with self.store.transaction():
             existing = self.store.get_enquiry(key)
             if existing is not None:
-                same = canonical_json(existing.payload) == payload
-                self.store.add_replay(key, via, {"same_content": same, "state_now": existing.state})
+                differs = replay_differences(existing.payload, fields)
+                detail = {"same_content": not differs, "state_now": existing.state,
+                          "received_at": fields["received_at"]}
+                if differs:
+                    detail["differs"] = differs
+                self.store.add_replay(key, via, detail)
                 return Answer(key, existing.state, True, existing.first_arrived_at, existing.via,
-                              tuple(existing.reasons), same)
+                              tuple(existing.reasons), not differs, tuple(differs))
             reasons = validate.reasons(extracted)
             state = "refused" if reasons else "received"
             detail = {"reasons": reasons}
@@ -99,10 +117,14 @@ class Desk:
                 self.store.set_fields(key, error=f"identity: {error}")
                 self.store.audit(key, "identity_failed", {"error": str(error), "state": "received"}, SYSTEM)
             return "received"
-        draft = self.drafter.draft(enquiry.payload.get("message", ""))
+        draft = self.drafter.draft(enquiry.payload)
         with self.store.transaction():
             self.store.set_fields(key, draft=draft, error=None)
-            self.record_assessment(key, assessment, "assessed", SYSTEM, {"draft": draft["label"]})
+            noted = {"label": draft["label"], "outcome": draft["outcome"], "request": draft.get("request", "")}
+            if draft.get("reason"):
+                noted["reason"] = draft["reason"]
+            self.store.audit(key, "draft", noted, SYSTEM)
+            self.record_assessment(key, assessment, "assessed", SYSTEM, {"draft": draft["outcome"]})
         return assessment.state
 
     def record_assessment(self, key: str, assessment, event: str, actor: str, extra: dict | None = None) -> None:

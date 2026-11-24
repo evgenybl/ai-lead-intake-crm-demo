@@ -161,7 +161,7 @@ class CommandTests(DeskCase):
         lines = self.cli("trail", "webform:wf-000109").splitlines()
         events = [line.split()[3] if line.split()[2] == "system" else None for line in lines[1:]]
         self.assertTrue(lines[0].startswith("trail of webform:wf-000109 (state now: applied)"))
-        self.assertEqual(events[:2], ["arrived", "assessed"])
+        self.assertEqual(events[:3], ["arrived", "draft", "assessed"])
         self.assertTrue(all(FIXED in line for line in lines[1:]))
         self.assertIn("no enquiry with the key", self.cli("trail", "webform:nothing-here", expect=1))
 

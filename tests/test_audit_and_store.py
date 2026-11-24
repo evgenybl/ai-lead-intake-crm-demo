@@ -61,7 +61,8 @@ class AuditTrailTests(DeskCase):
             desk.approve("webform:test-000001", PERSON)
             rows = desk.store.trail("webform:test-000001")
         events = [(r[3], r[5]) for r in rows]
-        self.assertEqual(events, [("arrived", "system"), ("assessed", "system"), ("approved", PERSON)])
+        self.assertEqual(events, [("arrived", "system"), ("draft", "system"), ("assessed", "system"),
+                                  ("approved", PERSON)])
         self.assertTrue(all(r[1] == "2026-01-05T09:00:00Z" for r in rows))
 
 

@@ -71,8 +71,9 @@ class NormaliseTests(unittest.TestCase):
 
 class DraftTests(unittest.TestCase):
     def test_the_stand_in_says_it_is_not_a_model(self):
-        draft = TemplateBackend().draft("Hello there. A second sentence.")
+        draft = TemplateBackend().draft({"message": "Hello there. A second sentence."})
         self.assertEqual(draft["label"], "stand-in, no model")
+        self.assertEqual(draft["outcome"], "stand-in")
         self.assertEqual(draft["summary"], "Hello there.")
         self.assertEqual(draft["intent"], "other")
         self.assertIsNone(draft["reply_draft"])

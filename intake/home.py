@@ -58,7 +58,7 @@ def open_crm(home: str, choice: str, environ):
 
 
 @contextmanager
-def open_desk(home: str, choice: str, environ, clock):
+def open_desk(home: str, choice: str, environ, clock, drafter=None):
     """The desk and its CRM adapter for one command or one HTTP request; both closed afterwards."""
     store = DeskStore.open(desk_path(home), clock)
     try:
@@ -67,7 +67,7 @@ def open_desk(home: str, choice: str, environ, clock):
         store.close()
         raise
     try:
-        yield Desk(store, crm, clock)
+        yield Desk(store, crm, clock, drafter)
     finally:
         crm.close()
         store.close()
