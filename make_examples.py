@@ -56,8 +56,9 @@ def build(scratch: str) -> dict:
     for name, source in KEPT.items():
         files[f"{EXAMPLES}/{name}"] = kept[source]
     pages = os.path.join(scratch, "desk")
-    desk_main(["render", "--out", pages, "--home", os.path.join(scratch, "demo-run", "story"),
-               "--at", "2026-01-05T11:30:00Z"], out=open(os.devnull, "w"), environ=dict(demo.ENV))
+    with open(os.devnull, "w") as sink:
+        desk_main(["render", "--out", pages, "--home", os.path.join(scratch, "demo-run", "story"),
+                   "--at", "2026-01-05T11:30:00Z"], out=sink, environ=dict(demo.ENV))
     for folder, _, names in os.walk(pages):
         for name in names:
             path = os.path.join(folder, name)

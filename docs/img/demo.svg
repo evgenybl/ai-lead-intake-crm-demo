@@ -20,9 +20,9 @@
 <text x="16" y="291" fill="#7ee787">PASS  returning-contact             no second contact; empty field filled; phone shown, kept</text>
 <text x="16" y="310" fill="#7ee787">PASS  two-contacts-held             held, no plan; resolved as contact 7, then as 8</text>
 <text x="16" y="329" fill="#7ee787">PASS  possible-duplicate-held       held, no plan; resolved as new, then as contact 5</text>
-<text x="16" y="348" fill="#ffa198">PASS  refused-inputs                7 not taken, each with its reason; model and CRM untouched</text>
+<text x="16" y="348" fill="#7ee787">PASS  inputs-not-taken              7 not taken, each with its reason; model and CRM untouched</text>
 <text x="16" y="367" fill="#7ee787">PASS  hidden-instruction            waits for a person; the answer with a 5th key not used</text>
-<text x="16" y="386" fill="#ffa198">PASS  ai-answer-refused             a figure not in the message: not used; plan the same</text>
+<text x="16" y="386" fill="#7ee787">PASS  ai-answer-not-used            a figure not in the message: not used; plan the same</text>
 <text x="16" y="405" fill="#7ee787">PASS  apply-without-approval        the gate stops it: no approval; nothing written</text>
 <text x="16" y="424" fill="#7ee787">PASS  approval-for-another-plan     the CRM changed since approval: planned again, waits</text>
 <text x="16" y="443" fill="#7ee787">PASS  apply-twice                   the approval is used once; the second apply writes nothing</text>

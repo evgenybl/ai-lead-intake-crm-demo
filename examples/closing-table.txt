@@ -13,9 +13,9 @@ PASS  replay-three-times            one contact, one note; the edited copy shown
 PASS  returning-contact             no second contact; empty field filled; phone shown, kept
 PASS  two-contacts-held             held, no plan; resolved as contact 7, then as 8
 PASS  possible-duplicate-held       held, no plan; resolved as new, then as contact 5
-PASS  refused-inputs                7 not taken, each with its reason; model and CRM untouched
+PASS  inputs-not-taken              7 not taken, each with its reason; model and CRM untouched
 PASS  hidden-instruction            waits for a person; the answer with a 5th key not used
-PASS  ai-answer-refused             a figure not in the message: not used; plan the same
+PASS  ai-answer-not-used            a figure not in the message: not used; plan the same
 PASS  apply-without-approval        the gate stops it: no approval; nothing written
 PASS  approval-for-another-plan     the CRM changed since approval: planned again, waits
 PASS  apply-twice                   the approval is used once; the second apply writes nothing

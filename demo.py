@@ -5,7 +5,9 @@
     python -I demo.py --list                        the cases
 
 Each line says what was expected and what happened. The run ends with a closing table, one line per step
-or case, and a total line. The clock is fixed, the data is the invented file, the model step uses the
+or case, and a total line. In that table the cases refused-inputs and ai-answer-refused are named
+inputs-not-taken and ai-answer-not-used: the table is drawn as a picture by tools/term_svg.py, which colours
+any line holding the word "refused" red, as a failure. The clock is fixed, the data is the invented file, the model step uses the
 answers under recorded/ (a constructed answer is labelled so), and nothing leaves this computer: the CRM is
 the practice CRM, and the two intake cases start a server on 127.0.0.1 and post to it.
 """
@@ -113,10 +115,10 @@ class Run:
         self.say = say
         self.rows = []
 
-    def step(self, label: str, expected: str, happened: str, ok: bool, short: str) -> bool:
+    def step(self, label: str, expected: str, happened: str, ok: bool, short: str, table_label: str = "") -> bool:
         verdict = "as expected" if ok else "NOT AS EXPECTED"
         self.say(f"[{label}] expected: {expected} | happened: {happened} | {verdict}")
-        self.rows.append((label, ok, short))
+        self.rows.append((table_label or label, ok, short))
         return ok
 
     def closing_table(self) -> list:
@@ -286,7 +288,8 @@ def case_refused_inputs(run: Run, folder: str) -> None:
     reasons = sorted({line.split(" -> refused: ")[1] for line in lines})
     run.step("refused-inputs", "each refused with its reason; nothing reaches the model or the CRM",
              f"{len(lines)} refused ({'; '.join(reasons)}); model step run for {len(drafted)}; CRM untouched", ok,
-             f"{len(lines)} not taken, each with its reason; model and CRM untouched")
+             f"{len(lines)} not taken, each with its reason; model and CRM untouched",
+             table_label="inputs-not-taken")  # the picture tool draws a line red when it holds "refused"
 
 
 def case_hidden_instruction(run: Run, folder: str) -> None:
@@ -318,7 +321,8 @@ def case_ai_answer_refused(run: Run, folder: str) -> None:
     ok = bad.draft["outcome"] == "refused" and plain.draft["outcome"] == "none" and bad.plan_sha == plain.plan_sha
     run.step("ai-answer-refused", "a figure not in the message: not used; the plan unchanged",
              f"AI draft refused: {bad.draft['reason']}; plan {bad.plan_sha[:12]} with it, "
-             f"{plain.plan_sha[:12]} without", ok, "a figure not in the message: not used; plan the same")
+             f"{plain.plan_sha[:12]} without", ok, "a figure not in the message: not used; plan the same",
+             table_label="ai-answer-not-used")
 
 
 def case_apply_without_approval(run: Run, folder: str) -> None:
