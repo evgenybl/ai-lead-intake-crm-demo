@@ -32,7 +32,7 @@ STARTING_CONTACTS = [
     {"name": "Celia Marsh (invented)", "email": "celia.marsh@example.com", "phone": "000-000-0103", "company": ""},
     {"name": "Dmitri Volk (invented)", "email": "dmitri.volk@example.com", "phone": "", "company": "Volk Bakery (invented)"},
     {"name": "Elena Ruiz (invented)", "email": "elena.ruiz@example.com", "phone": "000-000-0105", "company": "Ruiz Architects (invented)"},
-    {"name": "Farid Haddad (invented)", "email": "", "phone": "000-000-0106", "company": "Haddad Motors (invented)"},
+    {"name": "Farid Haddad (invented)", "email": "farid.haddad@example.com", "phone": "000-000-0106", "company": "Haddad Motors (invented)"},
     {"name": "Greta Lind (invented)", "email": "greta.lind@example.com", "phone": "000-000-0107", "company": "Lind Yoga Studio (invented)"},
     {"name": "Hugo Brandt (invented)", "email": "hugo.brandt@example.com", "phone": "000-000-0108", "company": "Brandt Legal (invented)"},
     {"name": "Ines Novak (invented)", "email": "ines.novak@example.com", "phone": "000-000-0109", "company": "Novak Florists (invented)"},
@@ -95,7 +95,7 @@ def build() -> list:
     add("returning: by e-mail, fills the empty company", "awaiting_approval", _person(
         "Celia Marsh (invented)", "celia.marsh@example.com", "000-000-0103", "Marsh Pottery (invented)",
         "My pottery studio now has a shop at the front. Could you clean both rooms?"))
-    add("returning: by phone only", "awaiting_approval", _person(
+    add("held: only the phone matches, and the contact has an e-mail", "held_possible_duplicate", _person(
         "Farid Haddad (invented)", "", "(000) 000-0106", "Haddad Motors (invented)",
         "Call me back about cleaning the showroom floor."))
     add("held: the e-mail and the phone belong to two contacts", "held_two_contacts", _person(

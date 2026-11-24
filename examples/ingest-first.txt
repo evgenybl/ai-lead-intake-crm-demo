@@ -8,7 +8,7 @@ line 7: webform:wf-000107 -> awaiting_approval
 line 8: webform:wf-000108 -> awaiting_approval
 line 9: webform:wf-000109 -> awaiting_approval
 line 10: webform:wf-000110 -> awaiting_approval
-line 11: webform:wf-000111 -> awaiting_approval
+line 11: webform:wf-000111 -> held_possible_duplicate
 line 12: webform:wf-000112 -> held_two_contacts
 line 13: webform:wf-000113 -> held_possible_duplicate
 line 14: webform:wf-000114 -> refused: consent is not true

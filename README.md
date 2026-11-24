@@ -148,10 +148,10 @@ files after the demo story, are in `examples/desk/` (`index.html`, and a page pe
    #28    2026-01-05T09:00:00Z  system                     arrived              payload_sha256=ad08c481c6a2 reasons=[] state=received via=file
    #29    2026-01-05T09:00:00Z  system                     draft                label=Recorded outcome=used request=925a01ff0688
    #30    2026-01-05T09:00:00Z  system                     assessed             draft=used from=received identity=returning plan=a6c74785415d state=awaiting_approval
-   #74    2026-01-05T09:30:00Z  Dana Reviewer (invented)   approved             approval=4 from=awaiting_approval plan=a6c74785415d state=approved
-   #86    2026-01-05T09:35:00Z  system                     operation            how=written (filled: company) op=fill_empty_fields ref=3
-   #87    2026-01-05T09:35:00Z  system                     operation            how=written op=add_note ref=4
-   #88    2026-01-05T09:35:00Z  system                     operation            how=written op=add_task ref=4
+   #76    2026-01-05T09:30:00Z  Dana Reviewer (invented)   approved             approval=4 from=awaiting_approval plan=a6c74785415d state=approved
+   #88    2026-01-05T09:35:00Z  system                     operation            how=written (filled: company) op=fill_empty_fields ref=3
+   #89    2026-01-05T09:35:00Z  system                     operation            how=written op=add_note ref=4
+   #90    2026-01-05T09:35:00Z  system                     operation            how=written op=add_task ref=4
    ```
 
 ## How it works
@@ -175,9 +175,11 @@ flowchart LR
 2. **Validate.** No name, no message, no way to answer, an e-mail that is not an address, a phone that is not a
    phone number, no consent, the honeypot filled (a hidden field a person leaves empty), or a message above 5,000
    characters: the enquiry is refused, kept, counted, and never reaches the model or the CRM.
-3. **Identity.** A contact is matched by its exact e-mail or phone, never by a similar name. If the e-mail and
-   the phone point to two contacts, or a contact has the same name and company but neither key, the enquiry is
-   held for a person. The desk never merges contacts.
+3. **Identity.** A contact is matched by its exact e-mail or phone, never by a similar name. The enquiry is held
+   for a person when the e-mail and the phone point to two contacts; when only the phone matches and the e-mails
+   do not agree (a colleague on a shared office line must not be attached to someone else's contact); or when a
+   contact has the same name and company but neither key. The person decides "this contact" or "new". The desk
+   never merges contacts.
 4. **Draft.** The model step suggests a summary, an intent, an urgency and a reply draft. Everything it returns
    is checked, and an answer that fails a check is not used. The CRM path never depends on it. Held enquiries
    reach the model too: the summary helps the person who resolves the hold.
@@ -263,7 +265,7 @@ eb8dfd2a8bf4  recorded     not used  new: other
 e8e6df756ae8  recorded     used      returning: by e-mail, nothing differs
 db890210e130  recorded     used      returning: by e-mail, a changed phone shown
 925a01ff0688  recorded     used      returning: by e-mail, fills the empty company
-5ed37f9dc686  recorded     not used  returning: by phone only
+5ed37f9dc686  recorded     not used  held: only the phone matches, and the contact has an e-mail
               the answer has keys beyond the four: urgency_note; it is refused whole
 e895a17472c8  recorded     not used  held: the e-mail and the phone belong to two contacts
               the answer has keys beyond the four: reply_draft_placeholder_check; it is refused whole

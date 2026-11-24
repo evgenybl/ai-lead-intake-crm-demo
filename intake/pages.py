@@ -144,6 +144,10 @@ def _identity(found: dict | None) -> str:
         ways = [w for w, k in (("e-mail", "by_email"), ("phone", "by_phone")) if found.get(k)]
         how = " and ".join(ways) if ways else "a person's decision"
         text = f"Returning: contact {found.get('contact')} (found by {how})."
+    elif kind == "phone_only":
+        text = (f"Only the phone matches contact {', '.join(found.get('by_phone', []))}, and the e-mails do not agree: "
+                "it may be a colleague on a shared line. A person decides whether it is that contact or a new "
+                "one; nothing is planned until then.")
     elif kind == "two_contacts":
         text = (f"The e-mail belongs to contact {', '.join(found.get('by_email', [])) or 'none'} and the phone to "
                 f"contact {', '.join(found.get('by_phone', [])) or 'none'}. A person decides which one it is; "

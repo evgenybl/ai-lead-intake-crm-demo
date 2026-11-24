@@ -35,10 +35,11 @@ class GeneratorTests(unittest.TestCase):
         for intent in intents:
             self.assertEqual(count(f"new: {intent}"), 1, intent)
         self.assertEqual(count("replay:"), 3)
-        self.assertEqual(count("returning:"), 4)
+        self.assertEqual(count("returning:"), 3)
         self.assertEqual(count("returning: by e-mail, a changed phone"), 1)
         self.assertEqual(count("held: the e-mail and the phone"), 1)
         self.assertEqual(count("held: a new address with the name and company"), 1)
+        self.assertEqual(count("held: only the phone matches"), 1)
         self.assertEqual(count("refused: consent"), 2)
         self.assertEqual(count("refused: the honeypot"), 1)
         self.assertEqual(count("refused: no way to answer"), 1)

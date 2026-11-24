@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-239 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+240 test methods in 16 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -454,6 +454,7 @@ The table of section 3.3, against a real practice CRM file.
 - `test_returning_by_phone_as_digits`
 - `test_returning_when_email_and_phone_point_to_the_same_contact`
 - `test_held_when_the_email_and_the_phone_belong_to_two_contacts`
+- `test_held_when_only_the_phone_matches_and_the_emails_do_not_agree`
 - `test_held_when_the_phone_alone_belongs_to_two_contacts`
 - `test_possible_duplicate_needs_the_same_name_and_company`
 - `test_never_a_similar_name`

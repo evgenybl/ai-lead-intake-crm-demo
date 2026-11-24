@@ -10,7 +10,7 @@
 <text x="16" y="101" fill="#7ee787">PASS  story 2 ingest the file       27 new enquiries, 3 replays</text>
 <text x="16" y="120" fill="#7ee787">PASS  story 3 report                the states add up: 27 enquiries + 3 replays = 30 arrived</text>
 <text x="16" y="139" fill="#7ee787">PASS  story 4 dry run (plan)        plans printed; nothing written to the CRM</text>
-<text x="16" y="158" fill="#7ee787">PASS  story 5 approve 5             a person approves 5 plans, each by its sha256</text>
+<text x="16" y="158" fill="#7ee787">PASS  story 5 resolve 1, approve 5  a person resolves a hold, then approves 5 plans by sha256</text>
 <text x="16" y="177" fill="#7ee787">PASS  story 6 apply                 5 written: 1 new contact; 4 returning contacts updated</text>
 <text x="16" y="196" fill="#7ee787">PASS  story 7 ingest it again       0 new, 30 replays; nothing new written</text>
 <text x="16" y="215" fill="#7ee787">PASS  story 8 apply again           nothing approved; nothing written</text>

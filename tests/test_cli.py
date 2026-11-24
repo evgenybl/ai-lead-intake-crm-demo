@@ -25,6 +25,7 @@ class StoryTests(DeskCase):
         self.assertIn("the dry run: nothing below has been written to the CRM", plan)
         self.assertEqual(self.crm_counts(), {"contacts": 10, "notes": 0, "tasks": 0})
 
+        self.cli("resolve", "webform:wf-000111", "--as", "contact:6", "--by", PERSON)  # held: only the phone matched
         for key in ("webform:wf-000101", "webform:wf-000109", "webform:wf-000110", "webform:wf-000111"):
             self.approve_cli(key)
         applied = self.cli("apply")

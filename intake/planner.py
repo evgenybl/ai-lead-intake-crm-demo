@@ -23,7 +23,8 @@ _SAME = {
     "phone": normalise.phone_digits,
 }
 
-HOLDS = {"two_contacts": "held_two_contacts", "possible_duplicate": "held_possible_duplicate"}
+HOLDS = {"two_contacts": "held_two_contacts", "phone_only": "held_possible_duplicate",
+         "possible_duplicate": "held_possible_duplicate"}
 
 
 @dataclass(frozen=True)

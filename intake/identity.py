@@ -8,7 +8,10 @@ The key
 Matching
     Contacts are found by the normalised e-mail and by the phone's digits, never by a similar name.
     The contacts found that way form one set:
-        one contact ............ returning
+        one contact ............ returning; but held: phone only (a person decides) when it was found by the
+                                 phone alone and the e-mails do not agree: the enquiry gives an e-mail the
+                                 contact does not have, or the contact has an e-mail the enquiry does not
+                                 give. A shared office line must not attach a new person to someone else.
         two or more ............ held: two contacts (a person decides)
         none ................... a contact with the same normalised name AND company (both not empty)
                                  makes it held: possible duplicate; otherwise it is new.
@@ -54,7 +57,7 @@ def idempotency_key(fields: dict) -> str:
 
 @dataclass(frozen=True)
 class Match:
-    kind: str  # "new" | "returning" | "two_contacts" | "possible_duplicate"
+    kind: str  # "new" | "returning" | "two_contacts" | "phone_only" | "possible_duplicate"
     contact: object = None  # the Contact, when returning
     by_email: tuple = ()
     by_phone: tuple = ()
@@ -88,6 +91,8 @@ def match_contact(fields: dict, crm) -> Match:
     phone_ids = tuple(sorted({c.id for c in by_phone}, key=_id_order))
     if len(keyed) == 1:
         (contact,) = keyed.values()
+        if not email_ids and (email or normalise.email(contact.email)):
+            return Match("phone_only", by_phone=phone_ids)
         return Match("returning", contact=contact, by_email=email_ids, by_phone=phone_ids)
     if len(keyed) > 1:
         return Match("two_contacts", by_email=email_ids, by_phone=phone_ids)

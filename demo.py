@@ -164,9 +164,12 @@ def story(run: Run, folder: str, keep: dict | None = None) -> str:
     run.step("story 4 dry run (plan)", "every waiting plan printed; nothing written",
              f"{got}; CRM {crm_text(after)}", after == before, "plans printed; nothing written to the CRM")
 
+    resolved, _ = home.desk("resolve", "webform:wf-000111", "--as", "contact:6", "--by", PERSON,
+                            at="2026-01-05T09:25:00Z")
     codes = [home.approve(key, at="2026-01-05T09:30:00Z")[0] for key in APPROVED]
-    run.step("story 5 approve 5", "5 approvals recorded", f"{codes.count(0)} approvals recorded",
-             codes.count(0) == 5, "a person approves 5 plans, each by its sha256")
+    run.step("story 5 resolve 1, approve 5", "a hold resolved; 5 approvals recorded",
+             f"the phone-only hold resolved as contact 6; {codes.count(0)} approvals recorded",
+             resolved == 0 and codes.count(0) == 5, "a person resolves a hold, then approves 5 plans by sha256")
 
     _, out = home.desk("apply", at="2026-01-05T09:35:00Z")
     keep["apply-1.txt"] = out

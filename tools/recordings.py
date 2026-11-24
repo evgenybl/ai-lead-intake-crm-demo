@@ -37,7 +37,7 @@ INTENT_OF_CASE = {
     "returning: by e-mail, nothing differs": "quote_request",
     "returning: by e-mail, a changed phone shown": "booking",
     "returning: by e-mail, fills the empty company": "quote_request",
-    "returning: by phone only": "support",
+    "held: only the phone matches, and the contact has an e-mail": "support",
     "held: the e-mail and the phone belong to two contacts": "booking",
     "held: a new address with the name and company of an existing contact": "quote_request",
     "new: the message repeats the sender's own phone": "quote_request",

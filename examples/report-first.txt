@@ -6,8 +6,8 @@ enquiries by state
   received                     0
   refused                      7
   held_two_contacts            1
-  held_possible_duplicate      1
-  awaiting_approval           18
+  held_possible_duplicate      2
+  awaiting_approval           17
   approved                     0
   rejected                     0
   applied                      0

@@ -5,6 +5,11 @@ webform:wf-000112  [held_two_contacts]
   draft (Recorded): AI draft refused: the answer has keys beyond the four: reply_draft_placeholder_check; it is refused whole
   waits for a person: desk.py resolve webform:wf-000112 --as new|contact:<id> --by <name>  (contacts found: 7, 8)
 
+webform:wf-000111  [held_possible_duplicate]
+  identity: by_phone=["6"] kind=phone_only
+  draft (Recorded): AI draft refused: the answer has keys beyond the four: urgency_note; it is refused whole
+  waits for a person: desk.py resolve webform:wf-000111 --as new|contact:<id> --by <name>  (contacts found: 6)
+
 webform:wf-000113  [held_possible_duplicate]
   identity: by_name_and_company=["5"] kind=possible_duplicate
   draft (Recorded; intent quote_request, urgency normal): A business that opened a second studio asks for a quote for the new location.
@@ -99,14 +104,6 @@ webform:wf-000110  [awaiting_approval]
     3. add_task on contact 3: first line 'webform:wf-000110', then 1 more line
   to approve: desk.py approve webform:wf-000110 --by <name> --plan a6c74785415d
 
-webform:wf-000111  [awaiting_approval]
-  identity: by_phone=["6"] contact=6 kind=returning
-  draft (Recorded): AI draft refused: the answer has keys beyond the four: urgency_note; it is refused whole
-  plan 7754ca96ecdb8be6af8895cc26122953ccd5b450831bdcd46cd4ddc455abfa40
-    1. add_note on contact 6: first line 'webform:wf-000111', then 3 more lines
-    2. add_task on contact 6: first line 'webform:wf-000111', then 1 more line
-  to approve: desk.py approve webform:wf-000111 --by <name> --plan 7754ca96ecdb
-
 webform:wf-000118  [awaiting_approval]
   identity: kind=new
   draft (Recorded; intent quote_request, urgency normal): The sender asks for a phone call after 5pm to discuss a quote for the lab.
@@ -170,4 +167,4 @@ hash:309d80d718634c0b178a0cc09967246c  [awaiting_approval]
     3. add_task on contact created: first line 'hash:309d80d718634c0b178a0cc09967246c', then 1 more line
   to approve: desk.py approve hash:309d80d718634c0b178a0cc09967246c --by <name> --plan da372b68127a
 
-plan: 20 waiting (1 held_two_contacts, 1 held_possible_duplicate, 18 awaiting_approval)
+plan: 20 waiting (1 held_two_contacts, 2 held_possible_duplicate, 17 awaiting_approval)

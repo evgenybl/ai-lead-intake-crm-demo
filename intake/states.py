@@ -11,7 +11,8 @@ STATES = {
     "refused": "failed validation; kept with its reasons; never reaches the model or the CRM, until a copy "
                "that passes arrives under the same key",
     "held_two_contacts": "the e-mail and the phone point to different contacts; waits for a person",
-    "held_possible_duplicate": "no exact key matches, but a contact has the same name and company; waits for a person",
+    "held_possible_duplicate": "a contact might be the same person: only the phone matches and the e-mails do not "
+                               "agree, or no key matches but the name and company do; waits for a person",
     "awaiting_approval": "a plan is ready and waits for a person's approval",
     "approved": "a person approved exactly this plan; not applied yet",
     "rejected": "a person rejected the plan, with a reason; nothing is written",

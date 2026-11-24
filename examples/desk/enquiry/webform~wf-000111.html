@@ -23,10 +23,10 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}</style></head
 <p class="state done">Written to the CRM</p>
 <p>From: Farid Haddad (invented) · Haddad Motors (invented) · (000) 000-0106. Received 2026-01-05T10:19:00Z (arrived 2026-01-05T09:00:00Z, by file).</p>
 <blockquote>Call me back about cleaning the showroom floor.</blockquote>
-<p><b>Who it is:</b> Returning: contact 6 (found by phone).</p>
+<p><b>Who it is:</b> Returning: contact 6 (found by a person&#x27;s decision). a person resolved it as contact 6</p>
 <p><b>Model step:</b> <span class="label">Recorded</span></p>
 <p class="bad">AI draft refused: the answer has keys beyond the four: urgency_note; it is refused whole. The enquiry goes on with no AI text, and its plan is the same as without it.</p>
-<p><b>The plan</b> (plan 7754ca96ecdb): exactly what would be written to the CRM, and nothing else.</p>
+<p><b>The plan</b> (plan 4d44a85f4179): exactly what would be written to the CRM, and nothing else.</p>
 <ol>
 <li>Add a note to contact 6. Its first line is the enquiry's key, so it is never added twice:<pre>webform:wf-000111
 Enquiry from webform, received 2026-01-05T10:19:00Z.
@@ -37,7 +37,7 @@ Answer the enquiry from Farid Haddad (invented).</pre></li>
 </ol>
 <p><b>Decisions:</b></p>
 <ul>
-<li>Dana Reviewer (invented) approved, and used when it was written to the CRM (plan 7754ca96ecdb, at 2026-01-05T09:30:00Z)</li>
+<li>Dana Reviewer (invented) approved, and used when it was written to the CRM (plan 4d44a85f4179, at 2026-01-05T09:30:00Z)</li>
 </ul>
 </section>
 <h2>Its trail</h2>
@@ -45,11 +45,13 @@ Answer the enquiry from Farid Haddad (invented).</pre></li>
 <table><tr><th>#</th><th>Time</th><th>Who</th><th>Event</th><th>Detail</th></tr>
 <tr><td>31</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>arrived</td><td>payload_sha256: d6a122e6d31422513f38e6cc5c826ac5f7bcb19b2f1db00966ab12f8614b9cd8; reasons: []; state: received; via: file</td></tr>
 <tr><td>32</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>draft</td><td>label: Recorded; outcome: refused; reason: the answer has keys beyond the four: urgency_note; it is refused whole; request: 5ed37f9dc6866578b8910e360576077ce3116248567be42c122673eca06783d8</td></tr>
-<tr><td>33</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: refused; from: received; identity: returning; plan: 7754ca96ecdb8be6af8895cc26122953ccd5b450831bdcd46cd4ddc455abfa40; state: awaiting_approval</td></tr>
-<tr><td>75</td><td>2026-01-05T09:30:00Z</td><td>Dana Reviewer (invented)</td><td>approved</td><td>approval: 5; from: awaiting_approval; plan: 7754ca96ecdb8be6af8895cc26122953ccd5b450831bdcd46cd4ddc455abfa40; state: approved</td></tr>
-<tr><td>90</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_note; ref: 5</td></tr>
-<tr><td>91</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_task; ref: 5</td></tr>
-<tr><td>92</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>applied</td><td>from: approved; operations: [&quot;add_note written (5)&quot;, &quot;add_task written (5)&quot;]; plan: 7754ca96ecdb8be6af8895cc26122953ccd5b450831bdcd46cd4ddc455abfa40; state: applied</td></tr>
-<tr><td>103</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T10:19:00Z; same_content: true; state_now: applied; via: file</td></tr>
+<tr><td>33</td><td>2026-01-05T09:00:00Z</td><td>system</td><td>assessed</td><td>draft: refused; from: received; identity: phone_only; plan: null; state: held_possible_duplicate</td></tr>
+<tr><td>71</td><td>2026-01-05T09:25:00Z</td><td>Dana Reviewer (invented)</td><td>resolution</td><td>as: contact:6; candidates: [&quot;6&quot;]</td></tr>
+<tr><td>72</td><td>2026-01-05T09:25:00Z</td><td>Dana Reviewer (invented)</td><td>resolved</td><td>from: held_possible_duplicate; identity: returning; plan: 4d44a85f417994e0089e9d2c9113979806eef3c53809d746ef5472f461c27f4c; state: awaiting_approval</td></tr>
+<tr><td>77</td><td>2026-01-05T09:30:00Z</td><td>Dana Reviewer (invented)</td><td>approved</td><td>approval: 5; from: awaiting_approval; plan: 4d44a85f417994e0089e9d2c9113979806eef3c53809d746ef5472f461c27f4c; state: approved</td></tr>
+<tr><td>92</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_note; ref: 5</td></tr>
+<tr><td>93</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>operation</td><td>how: written; op: add_task; ref: 5</td></tr>
+<tr><td>94</td><td>2026-01-05T09:35:00Z</td><td>system</td><td>applied</td><td>from: approved; operations: [&quot;add_note written (5)&quot;, &quot;add_task written (5)&quot;]; plan: 4d44a85f417994e0089e9d2c9113979806eef3c53809d746ef5472f461c27f4c; state: applied</td></tr>
+<tr><td>105</td><td>2026-01-05T11:00:00Z</td><td>system</td><td>replay</td><td>received_at: 2026-01-05T10:19:00Z; same_content: true; state_now: applied; via: file</td></tr>
 </table>
 </body></html>

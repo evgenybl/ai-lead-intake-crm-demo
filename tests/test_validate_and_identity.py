@@ -160,8 +160,9 @@ class MatchTests(unittest.TestCase):
         self.assertEqual((found.kind, found.contact.id), ("returning", "1"))
 
     def test_returning_by_phone_as_digits(self):
-        found = self.match(email="", phone="(000) 000 0101")
-        self.assertEqual((found.kind, found.contact.id), ("returning", "1"))
+        contact = self.crm.create_contact({"name": "Ed Roe (invented)", "phone": "000-000-0109"}, "")
+        found = self.match(email="", phone="(000) 000 0109")
+        self.assertEqual((found.kind, found.contact.id), ("returning", contact.id))
 
     def test_returning_when_email_and_phone_point_to_the_same_contact(self):
         found = self.match(email="ada@example.com", phone="000-000-0101")
@@ -171,6 +172,19 @@ class MatchTests(unittest.TestCase):
         found = self.match(email="ada@example.com", phone="000-000-0102")
         self.assertEqual(found.kind, "two_contacts")
         self.assertEqual((found.by_email, found.by_phone), (("1",), ("2", "3")))
+
+    def test_held_when_only_the_phone_matches_and_the_emails_do_not_agree(self):
+        # A colleague on a shared office line: a new name and e-mail, the contact's phone.
+        found = self.match(email="tom.newman@example.com", phone="000-000-0101", name="Tom Newman (invented)")
+        self.assertEqual((found.kind, found.contact, found.by_phone), ("phone_only", None, ("1",)))
+        # No e-mail given, and the contact has one: the phone alone cannot say it is the same person.
+        self.assertEqual(self.match(email="", phone="000-000-0101").kind, "phone_only")
+        # An e-mail given, and the contact has none: the plan would fill another person's e-mail in.
+        self.assertEqual(self.match(email="cy.new@example.com", phone="000-000-0109").kind, "new")
+        self.crm.create_contact({"name": "Ed Roe (invented)", "phone": "000-000-0109"}, "")
+        self.assertEqual(self.match(email="cy.new@example.com", phone="000-000-0109").kind, "phone_only")
+        # Neither has an e-mail: the phone is all there is, and it matches.
+        self.assertEqual(self.match(email="", phone="000-000-0109").kind, "returning")
 
     def test_held_when_the_phone_alone_belongs_to_two_contacts(self):
         self.assertEqual(self.match(email="", phone="000-000-0102").kind, "two_contacts")
