@@ -126,6 +126,25 @@ class CorrectedResendTests(DeskCase):
         self.assertEqual(self.problems(), [])
 
 
+class FormulaLikeContactFieldsTests(DeskCase):
+    """A phone or an e-mail that would start a formula in a spreadsheet, or holds a control character, is refused at
+    the door, as a name or a company is: none reaches the CRM, whoever approves what."""
+
+    def test_none_of_the_four_contact_fields_reaches_the_crm_starting_like_a_formula(self):
+        self.init()
+        cases = {"formula-phone": {"phone": "=1+1+cmd|' /C calc'!A0 5550142", "email": ""},
+                 "formula-email": {"email": "=1+1@example.com", "phone": ""},
+                 "escape-email": {"email": "esc\x1b[31m@example.com", "phone": ""}}
+        with self.desk() as desk:
+            for source_id, fields in cases.items():
+                with self.subTest(case=source_id):
+                    answer = desk.receive(enquiry(source_id=source_id, **fields), via="file")
+                    self.assertEqual(answer.state, "refused")
+        self.assertEqual(self.cli("apply"), "apply: nothing is approved\n")
+        self.assertEqual(self.crm_counts(), {"contacts": 10, "notes": 0, "tasks": 0})
+        self.assertEqual(self.problems(), [])
+
+
 class DoctorFindsEachBrokenPromiseTests(DeskCase):
     """Beyond the five controls: the doctor names a break of each promise, made directly in the files."""
 

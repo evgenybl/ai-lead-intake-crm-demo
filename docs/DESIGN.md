@@ -75,9 +75,13 @@ happens is an audit row that records the state it comes from and the state it en
 No name; no message; neither e-mail nor phone; an e-mail that is not an address; a phone that is not a phone
 number (7 to 15 digits); consent that is not the JSON value `true`; the honeypot field filled; a message above
 5,000 characters after trimming; a `received_at` that is not a date and time; a text field sent as another JSON
-type; a name or company that starts like a spreadsheet formula (`=`, `+`, `-`, `@`, a tab or a carriage return,
-as sent or after trimming); a name or company that holds a control character, or a character that reorders or
-hides text (a bidi control, a zero-width space). Every reason that applies is kept, in a fixed order.
+type; a name, company, e-mail or phone that starts like a spreadsheet formula (`=`, `+`, `-`, `@`, a tab or a
+carriage return, as sent or after trimming; a phone may start with a `+` that a digit follows, as a country code
+does); a name, company, e-mail or phone that holds a control character, or a character that reorders or hides
+text (a bidi control, a zero-width space). These four are the fields the desk writes to the CRM. A phone may
+otherwise hold any character: only its ASCII digits are compared, and it must have 7 to 15 of them, or none (a
+phone with no digit, such as "call me", counts as no phone). Every reason that applies is kept, in a fixed
+order.
 
 ## What "normalised" means
 

@@ -17,7 +17,9 @@ TEXT_FIELDS = ("source", "source_id", "received_at", "name", "email", "phone", "
 MAX_MESSAGE_CHARS = 5000
 # A value that starts so could be read as a formula by a spreadsheet that opens an export of the CRM or the trail.
 FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
-SPREADSHEET_FIELDS = ("name", "company")
+# The four contact fields the desk writes to the CRM. A phone may start with a + that a digit follows (+44 ...);
+# any other character may stand in a phone, except a control character: only its digits are compared.
+SPREADSHEET_FIELDS = ("name", "company", "email", "phone")
 
 REASONS = {
     "no_name": "no name",
@@ -30,7 +32,8 @@ REASONS = {
     "message_too_long": "a message above 5,000 characters",
     "received_at_invalid": "received_at is not a date and time",
     "not_text": "a field that must be text is not text",
-    "formula_start": "a field that starts like a spreadsheet formula (=, +, -, @, a tab or a carriage return)",
+    "formula_start": "a field that starts like a spreadsheet formula (=, +, -, @, a tab or a carriage return; a phone "
+                     "may start with + and a digit)",
     "control_characters": "a field that holds control characters",
 }
 
@@ -108,6 +111,16 @@ def starts_like_formula(value: str) -> bool:
     return bool(value) and (value[:1] in FORMULA_STARTS or value.strip()[:1] in FORMULA_STARTS)
 
 
+def phone_starts_like_formula(value: str) -> bool:
+    """As starts_like_formula, but a + that a digit follows is how a phone number with a country code starts."""
+    for text in (value, value.strip()):
+        if text[:1] == "+" and text[1:2] in tuple("0123456789"):
+            continue
+        if text[:1] in FORMULA_STARTS:
+            return True
+    return False
+
+
 def has_control_characters(value: str) -> bool:
     """True for a C0 or C1 control character, or a character that reorders or hides text (bidi, zero width)."""
     return any(unicodedata.category(c) in ("Cc", "Cf") for c in value)
@@ -139,7 +152,7 @@ def reasons(extracted: Extracted) -> list:
     if f["received_at"].strip() and parse_time(f["received_at"]) is None:
         found.append("received_at_invalid")
     for name in SPREADSHEET_FIELDS:
-        if starts_like_formula(f[name]):
+        if (phone_starts_like_formula if name == "phone" else starts_like_formula)(f[name]):
             found.append(f"formula_start:{name}")
         if has_control_characters(f[name]):
             found.append(f"control_characters:{name}")

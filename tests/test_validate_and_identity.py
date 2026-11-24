@@ -78,6 +78,25 @@ class ValidateTests(unittest.TestCase):
                 self.assertEqual(reasons_of(enquiry(company=value)), ["control_characters:company"])
         self.assertEqual(reasons_of(enquiry(name="Zoë Ångström (invented)")), [])
 
+    def test_an_email_or_a_phone_a_spreadsheet_would_read_as_a_formula_is_refused(self):
+        cases = [("phone", "=1+1+cmd|' /C calc'!A0 5550142"), ("email", "=1+1@example.com"), ("phone", "+x 000-000-0101"),
+                 ("phone", "+ 44 000 000 0101"), ("phone", "-000-000-0101"), ("phone", "@000 000 0101"),
+                 ("phone", " =000 000 0101"), ("email", "+tag@example.com"), ("email", "-dash@example.com"),
+                 ("email", " =spaced@example.com")]
+        for field, value in cases:
+            with self.subTest(field=field, value=value):
+                self.assertIn(f"formula_start:{field}", reasons_of(enquiry(**{field: value})))
+        for phone in ("+1 000-000-0101", "+44 (0)20 0000 0101", "(000) 000-0106", "000.000.0106", " +1 000 000 0101"):
+            with self.subTest(phone=phone):
+                self.assertEqual(reasons_of(enquiry(phone=phone)), [])
+        self.assertIn("a phone may start with + and a digit", validate.describe("formula_start:phone"))
+
+    def test_an_email_or_a_phone_with_control_characters_is_refused(self):
+        self.assertEqual(reasons_of(enquiry(email="esc\x1b[31m@example.com")), ["control_characters:email"])
+        self.assertEqual(reasons_of(enquiry(phone="000-000\x1b[2J-0101")), ["control_characters:phone"])
+        self.assertEqual(reasons_of(enquiry(phone="000\u200b000\u200b0101")), ["control_characters:phone"])
+        self.assertEqual(reasons_of(enquiry(email="", phone="call me")), ["no_way_to_answer"])  # free text, no digits
+
     def test_received_at(self):
         extracted = validate.extract({k: v for k, v in enquiry().items() if k != "received_at"}, ARRIVED)
         self.assertTrue(extracted.received_at_filled)

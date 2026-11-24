@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-304 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+307 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -423,6 +423,12 @@ A refused enquiry never holds its key against a later copy that passes.
 - `test_a_good_enquiry_then_a_bad_copy_stays_a_replay_and_changes_nothing`
 - `test_refused_twice_stays_refused_and_the_second_is_a_replay`
 
+### FormulaLikeContactFieldsTests
+
+A phone or an e-mail that would start a formula in a spreadsheet, or holds a control character, is refused at the door, as a name or a company is: none reaches the CRM, whoever approves what.
+
+- `test_none_of_the_four_contact_fields_reaches_the_crm_starting_like_a_formula`
+
 ### DoctorFindsEachBrokenPromiseTests
 
 Beyond the five controls: the doctor names a break of each promise, made directly in the files.
@@ -549,6 +555,8 @@ Unit tests: validation, the idempotency key and contact matching.
 - `test_a_field_of_the_wrong_type_is_a_reason_not_a_crash`
 - `test_a_name_or_company_a_spreadsheet_would_read_as_a_formula_is_refused`
 - `test_a_name_or_company_with_control_characters_is_refused`
+- `test_an_email_or_a_phone_a_spreadsheet_would_read_as_a_formula_is_refused`
+- `test_an_email_or_a_phone_with_control_characters_is_refused`
 - `test_received_at`
 - `test_times_are_read_the_same_way_on_every_python`
 - `test_unknown_fields_are_ignored_and_named`

@@ -276,8 +276,8 @@ flowchart LR
    form's own id when it has one, otherwise a fingerprint of its e-mail, phone, message and date.
 2. **Validate.** No name, no message, no way to answer, an e-mail that is not an address, a phone that is not a
    phone number, no consent, the honeypot filled (a hidden field a person leaves empty), a message above 5,000
-   characters, or a name or company that starts like a spreadsheet formula or holds control characters: the
-   enquiry is refused, kept, counted, and never reaches the model or the CRM.
+   characters, or a name, company, e-mail or phone that starts like a spreadsheet formula or holds control
+   characters: the enquiry is refused, kept, counted, and never reaches the model or the CRM.
 3. **Identity.** A contact is matched by its exact e-mail or phone, never by a similar name. The enquiry is held
    for a person when the e-mail and the phone point to two contacts; when only the phone matches and the e-mails
    do not agree (a colleague on a shared office line must not be attached to someone else's contact); or when a
@@ -531,8 +531,11 @@ was written stays in the CRM: the new plan does not write it twice, and names it
 - The audit trail guards against mistakes, bugs and plain edits, not against a person who can open the database
   file and recompute the chain (see promise 4).
 - No reply is ever sent. The HTTP CRM is a shape defined here. This project writes no CSV file. Even so, an
-  enquiry whose name or company starts with `=`, `+`, `-`, `@`, a tab or a carriage return is refused, and so is
-  such a name given with `--by`, so none of them can become a formula in a spreadsheet that opens an export.
+  enquiry whose name, company, e-mail or phone starts with `=`, `+`, `-`, `@`, a tab or a carriage return is
+  refused (a phone may start with a `+` followed by a digit, as `+44` does), and so is one whose name, company,
+  e-mail or phone holds a control character, and so is such a name given with `--by`, so none of them can become
+  a formula in a spreadsheet that opens an export. A phone may otherwise hold any characters: only its digits are
+  compared, and it must have 7 to 15 of them, or none.
 
 ## How this was built
 
