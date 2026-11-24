@@ -15,6 +15,7 @@ from .identity import idempotency_key
 SYSTEM = "system"
 MAX_NAME_CHARS = 80
 MAX_REASON_CHARS = 500
+MIN_PLAN_PREFIX = 8  # hex digits of the plan's sha256 an approval must name
 # A name that starts so could be read as a formula by a spreadsheet that opens an export of the trail.
 FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
 
@@ -198,15 +199,22 @@ class Desk:
             self.record_assessment(key, assessment, "resolved", who)
         return assessment.state
 
-    def approve(self, key: str, by: str, plan_prefix: str | None = None) -> str:
+    def approve(self, key: str, by: str, plan: str) -> str:
+        """Approve the waiting plan, named by its sha256 or its first 8 or more hex digits.
+
+        The plan must be named: the person approves the plan they saw, and if the desk planned again since
+        (the CRM changed), the name no longer fits and nothing is approved."""
         who = person(by)
         enquiry = self._get(key)
         if enquiry.state != "awaiting_approval" or not enquiry.plan_sha:
             raise DeskError(f"{key} has no plan waiting for approval; it is {enquiry.state}")
-        if plan_prefix is not None:
-            prefix = plan_prefix.strip().lower()
-            if len(prefix) < 8 or not enquiry.plan_sha.startswith(prefix):
-                raise DeskError(f"the plan waiting is {enquiry.plan_sha}, not {plan_prefix!r}: nothing approved")
+        prefix = (plan or "").strip().lower() if isinstance(plan, str) else ""
+        if len(prefix) < MIN_PLAN_PREFIX or not all(c in "0123456789abcdef" for c in prefix):
+            raise DeskError(f"an approval names the plan it approves: its sha256, or its first {MIN_PLAN_PREFIX} "
+                            f"or more hex digits, as `desk.py plan` printed it; nothing approved")
+        if not enquiry.plan_sha.startswith(prefix):
+            raise DeskError(f"the plan waiting is {enquiry.plan_sha[:12]}, not the one named ({prefix[:12]}): the desk "
+                            f"planned again since; read it with `desk.py plan`; nothing approved")
         with self.store.transaction():
             approval = self.store.add_approval(key, enquiry.plan_sha, who, "approved")
             self.store.move(key, "approved", "approved", who, {"approval": approval, "plan": enquiry.plan_sha})

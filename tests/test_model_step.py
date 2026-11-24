@@ -372,8 +372,10 @@ class ReplayDifferenceTests(DeskCase):
         self.cli("ingest", DATA_FILE)
         for name in ("=HYPERLINK(1)", "+1", "-x", "@x", "\tDana", " =Dana"):
             with self.subTest(name=name):
-                self.assertIn("may not start with", self.cli("approve", "webform:wf-000101", f"--by={name}", expect=1))
-        self.cli("approve", "webform:wf-000101", "--by", PERSON)
+                sha = self.plan_sha("webform:wf-000101")[:12]
+                self.assertIn("may not start with",
+                              self.cli("approve", "webform:wf-000101", f"--by={name}", "--plan", sha, expect=1))
+        self.approve_cli("webform:wf-000101")
 
 
 if __name__ == "__main__":

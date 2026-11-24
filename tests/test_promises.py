@@ -28,7 +28,7 @@ class PromiseTests(DeskCase):
     def test_promise_2_no_duplicate_is_created_a_replay_writes_nothing_and_a_returning_contact_is_not_doubled(self):
         self.cli("ingest", DATA_FILE)
         for key in ("webform:wf-000101", "webform:wf-000108", "webform:wf-000109", "webform:wf-000110"):
-            self.cli("approve", key, "--by", PERSON)
+            self.approve_cli(key)
         self.cli("apply")
         after_first = self.crm_counts()
         self.assertEqual(after_first["contacts"], 11)  # one new contact; three returning ones updated, not doubled
@@ -47,7 +47,7 @@ class PromiseTests(DeskCase):
         self.cli("apply", "--key", "webform:wf-000101", expect=1)
         self.cli("apply", "--dry-run")
         self.assertEqual(self.crm_counts(), {"contacts": 10, "notes": 0, "tasks": 0})
-        self.cli("approve", "webform:wf-000101", "--by", PERSON)
+        self.approve_cli("webform:wf-000101")
         self.cli("apply", "--dry-run")
         self.assertEqual(self.crm_counts(), {"contacts": 10, "notes": 0, "tasks": 0})
         self.cli("apply")
@@ -60,7 +60,7 @@ class PromiseTests(DeskCase):
 
     def test_promise_4_every_step_is_on_the_record_in_a_trail_the_database_refuses_to_change(self):
         self.cli("ingest", DATA_FILE)
-        self.cli("approve", "webform:wf-000110", "--by", PERSON)
+        self.approve_cli("webform:wf-000110")
         self.cli("apply")
         trail = self.cli("trail", "webform:wf-000110")
         for event in ("arrived", "assessed", "approved", "operation", "applied"):
@@ -80,7 +80,7 @@ class DoctorFindsEachBrokenPromiseTests(DeskCase):
         super().setUp()
         self.init()
         self.cli("ingest", DATA_FILE)
-        self.cli("approve", "webform:wf-000101", "--by", PERSON)
+        self.approve_cli("webform:wf-000101")
         self.cli("apply")
         self.assertEqual(self.problems(), [])
 

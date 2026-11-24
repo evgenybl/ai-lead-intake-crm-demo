@@ -12,7 +12,7 @@ from intake.home import crm_path
 from intake.ops import ALLOWED_OPS
 from intake.states import TransitionError
 
-from tests.helpers import PERSON, DeskCase, FlakyCRM, enquiry
+from tests.helpers import DeskCase, FlakyCRM, PERSON, approve_in, enquiry
 
 KEY = "webform:test-000001"
 
@@ -39,7 +39,7 @@ class ControlTests(DeskCase):
 
     def approve(self, key=KEY):
         with self.desk() as desk:
-            desk.approve(key, PERSON)
+            approve_in(desk, key)
 
     def test_control_1_the_key_lookup_made_to_miss_a_duplicate_note_appears(self):
         self.approve()
@@ -101,7 +101,7 @@ class ControlTests(DeskCase):
         with mock.patch.object(planner, "build_plan", with_a_merge):
             with self.desk() as desk:
                 desk.receive(enquiry(source_id="test-000003"), via="file")
-                desk.approve("webform:test-000003", PERSON)
+                approve_in(desk, "webform:test-000003")
                 # The matching check, with the allow-list as it is: refused before anything leaves.
                 (refused,) = desk.apply(key="webform:test-000003")
                 self.assertEqual(refused.outcome, "refused")

@@ -4,7 +4,7 @@ import unittest
 
 from intake import audit
 
-from tests.helpers import PERSON, DeskCase, enquiry
+from tests.helpers import DeskCase, PERSON, approve_in, enquiry
 
 
 class AuditTrailTests(DeskCase):
@@ -58,7 +58,7 @@ class AuditTrailTests(DeskCase):
 
     def test_each_row_names_time_key_event_detail_and_actor(self):
         with self.desk() as desk:
-            desk.approve("webform:test-000001", PERSON)
+            approve_in(desk, "webform:test-000001")
             rows = desk.store.trail("webform:test-000001")
         events = [(r[3], r[5]) for r in rows]
         self.assertEqual(events, [("arrived", "system"), ("draft", "system"), ("assessed", "system"),

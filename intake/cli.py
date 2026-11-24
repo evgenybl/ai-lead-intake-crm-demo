@@ -60,7 +60,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("approve", parents=[common], help="approve the waiting plan of one enquiry")
     p.add_argument("key")
     p.add_argument("--by", required=True, help="the name of the person who decides")
-    p.add_argument("--plan", help="the plan's sha256, or its first 8 or more hex digits, as `plan` printed it")
+    p.add_argument("--plan", required=True,
+                   help="the plan's sha256, or its first 8 or more hex digits, as `plan` printed it")
     p = sub.add_parser("reject", parents=[common], help="reject the waiting plan of one enquiry, with a reason")
     p.add_argument("key")
     p.add_argument("--by", required=True)

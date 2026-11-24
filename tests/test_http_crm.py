@@ -9,7 +9,7 @@ from intake.crm.base import CRMConflict, CRMError
 from intake.crm.http_crm import HttpCRM
 
 from tests.fake_crm import FakeCRM
-from tests.helpers import PERSON, WRONG, DeskCase, enquiry, made_up
+from tests.helpers import DeskCase, PERSON, WRONG, approve_in, enquiry, made_up
 
 KEY = "webform:test-000001"
 
@@ -115,7 +115,7 @@ class DeskOverHttpTests(FakeCRMCase):
     def receive_and_approve(self, **overrides):
         with self.desk(crm=self.crm) as desk:
             answer = desk.receive(enquiry(**overrides), via="file")
-            desk.approve(answer.key, PERSON)
+            approve_in(desk, answer.key)
         return answer.key
 
     def apply(self, key):

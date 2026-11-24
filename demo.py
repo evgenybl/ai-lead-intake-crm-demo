@@ -73,6 +73,10 @@ class Home:
             handle.write("".join(LINES[case] + "\n" for case in cases))
         return self.desk("ingest", path, at=at)[1]
 
+    def approve(self, key: str, at: str = "2026-01-05T09:00:00Z") -> tuple:
+        """`desk.py approve`, naming the plan that waits by the 12 hex digits `desk.py plan` prints for it."""
+        return self.desk("approve", key, "--by", PERSON, "--plan", self.enquiry(key).plan_sha[:12], at=at)
+
     def counts(self) -> dict:
         conn = sqlite3.connect(crm_path(self.folder))
         try:
@@ -160,7 +164,7 @@ def story(run: Run, folder: str, keep: dict | None = None) -> str:
     run.step("story 4 dry run (plan)", "every waiting plan printed; nothing written",
              f"{got}; CRM {crm_text(after)}", after == before, "plans printed; nothing written to the CRM")
 
-    codes = [home.desk("approve", key, "--by", PERSON, at="2026-01-05T09:30:00Z")[0] for key in APPROVED]
+    codes = [home.approve(key, at="2026-01-05T09:30:00Z")[0] for key in APPROVED]
     run.step("story 5 approve 5", "5 approvals recorded", f"{codes.count(0)} approvals recorded",
              codes.count(0) == 5, "a person approves 5 plans, each by its sha256")
 
@@ -209,7 +213,7 @@ def case_replay_three_times(run: Run, folder: str) -> None:
     copies = (first, "replay: the first enquiry sent again", "replay: the first enquiry sent a third time, "
               "its message edited")
     out = home.ingest(*copies)
-    home.desk("approve", "webform:wf-000101", "--by", PERSON)
+    home.approve("webform:wf-000101")
     home.desk("apply")
     home.ingest(*copies, at="2026-01-05T10:00:00Z")
     home.desk("apply", at="2026-01-05T10:05:00Z")
@@ -226,7 +230,7 @@ def case_returning_contact(run: Run, folder: str) -> None:
     home.ingest("returning: by e-mail, a changed phone shown", "returning: by e-mail, fills the empty company")
     _, plan = home.desk("plan")
     for key in ("webform:wf-000109", "webform:wf-000110"):
-        home.desk("approve", key, "--by", PERSON)
+        home.approve(key)
     home.desk("apply")
     conn = sqlite3.connect(crm_path(home.folder))
     try:
@@ -339,7 +343,7 @@ def case_approval_for_another_plan(run: Run, folder: str) -> None:
     home = Home(folder)
     home.ingest("new: quote_request", "new: the same new person's second enquiry")
     for key in ("webform:wf-000101", "webform:wf-000124"):
-        home.desk("approve", key, "--by", PERSON)
+        home.approve(key)
     home.desk("apply", "--key", "webform:wf-000101", at="2026-01-05T09:35:00Z")
     code, out = home.desk("apply", "--key", "webform:wf-000124", at="2026-01-05T09:40:00Z")
     after = home.enquiry("webform:wf-000124")
@@ -353,7 +357,7 @@ def case_approval_for_another_plan(run: Run, folder: str) -> None:
 def case_apply_twice(run: Run, folder: str) -> None:
     home = Home(folder)
     home.ingest("new: quote_request")
-    home.desk("approve", "webform:wf-000101", "--by", PERSON)
+    home.approve("webform:wf-000101")
     home.desk("apply")
     once = home.counts()
     code, out = home.desk("apply", "--key", "webform:wf-000101", at="2026-01-05T09:45:00Z")
@@ -386,7 +390,7 @@ def case_crm_down_then_retry(run: Run, folder: str) -> None:
     home = Home(folder)
     key = "webform:wf-000101"
     home.ingest("new: quote_request")
-    home.desk("approve", key, "--by", PERSON)
+    home.approve(key)
     with home.open() as desk:
         desk.crm = _DownOnce(desk.crm)
         (first,) = desk.apply(key=key)

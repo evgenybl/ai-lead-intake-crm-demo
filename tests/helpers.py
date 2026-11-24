@@ -58,6 +58,11 @@ def enquiry(**overrides) -> dict:
     return value
 
 
+def approve_in(desk, key: str, by: str = PERSON) -> str:
+    """Approve the plan that waits now, named by its sha256, as a person does after reading `desk.py plan`."""
+    return desk.approve(key, by, desk.store.get_enquiry(key).plan_sha)
+
+
 class FlakyCRM:
     """Wraps a CRM and fails one chosen write, once.
 
@@ -103,6 +108,14 @@ class DeskCase(unittest.TestCase):
 
     def init(self, empty: bool = False) -> None:
         self.cli("init", *(["--empty-crm"] if empty else []))
+
+    def plan_sha(self, key: str) -> str:
+        with self.desk() as desk:
+            return desk.store.get_enquiry(key).plan_sha
+
+    def approve_cli(self, key: str, by: str = PERSON, expect: int = 0, at: str = FIXED) -> str:
+        """`desk.py approve`, naming the plan that waits now by the 12 hex digits `desk.py plan` prints."""
+        return self.cli("approve", key, "--by", by, "--plan", self.plan_sha(key)[:12], expect=expect, at=at)
 
     # -- the same objects the commands use --
     @contextmanager

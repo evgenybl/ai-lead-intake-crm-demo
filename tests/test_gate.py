@@ -7,7 +7,7 @@ from intake.crm.practice import PracticeCRM
 from intake.gate import GateRefusal, WriteGate
 from intake.home import crm_path
 
-from tests.helpers import PERSON, DeskCase, FlakyCRM, enquiry
+from tests.helpers import DeskCase, FlakyCRM, PERSON, approve_in, enquiry
 
 KEY = "webform:test-000001"
 
@@ -21,7 +21,7 @@ class GateTests(DeskCase):
 
     def approve(self, key=KEY):
         with self.desk() as desk:
-            return desk.approve(key, PERSON)
+            return approve_in(desk, key)
 
     def apply(self, crm=None, dry_run=False, key=KEY):
         with self.desk(crm=crm) as desk:
@@ -66,7 +66,7 @@ class GateTests(DeskCase):
             sha = sha256_hex(plan)
             desk.store.save_plan(sha, KEY, canonical_json(plan))
             desk.store.set_fields(KEY, plan_sha=sha)
-            desk.approve(KEY, PERSON)
+            approve_in(desk, KEY)
         before = self.crm_counts()
         result = self.apply()
         self.assertEqual(result.outcome, "refused")
@@ -182,7 +182,7 @@ class GateTests(DeskCase):
     def test_a_lost_ledger_mid_plan_on_a_returning_contact_completes_once(self):
         with self.desk() as desk:
             desk.receive(enquiry(source_id="test-000002", email="ada.fenwick@example.com"), via="file")
-            desk.approve("webform:test-000002", PERSON)
+            approve_in(desk, "webform:test-000002")
             desk.crm = FlakyCRM(desk.crm, "add_task", "before")
             desk.apply(key="webform:test-000002")  # the note is written, the task is not
         self.desk_db().execute("DELETE FROM ledger")
@@ -208,7 +208,7 @@ class GateTests(DeskCase):
             desk.apply(key=KEY)
             desk.withdraw(KEY, PERSON, "check the CRM first")
             self.assertTrue(desk.refresh(KEY))  # the contact this plan created is now found: a returning plan
-            desk.approve(KEY, PERSON)
+            approve_in(desk, KEY)
         result = self.apply()
         self.assertEqual(result.outcome, "applied")
         self.assertEqual(self.crm_counts(), {"contacts": 11, "notes": 1, "tasks": 1})

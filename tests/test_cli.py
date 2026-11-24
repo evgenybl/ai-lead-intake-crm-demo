@@ -1,8 +1,12 @@
 """End-to-end tests that drive `desk.py` through main(argv), on new files in a temporary folder."""
+import contextlib
+import io
 import os
 import re
 import secrets
 import unittest
+
+from intake.flow import DeskError
 
 from tests.helpers import DATA_FILE, FIXED, PERSON, DeskCase
 
@@ -22,7 +26,7 @@ class StoryTests(DeskCase):
         self.assertEqual(self.crm_counts(), {"contacts": 10, "notes": 0, "tasks": 0})
 
         for key in ("webform:wf-000101", "webform:wf-000109", "webform:wf-000110", "webform:wf-000111"):
-            self.cli("approve", key, "--by", PERSON)
+            self.approve_cli(key)
         applied = self.cli("apply")
         self.assertIn("apply: 4 applied", applied)
         written = self.crm_counts()
@@ -42,9 +46,8 @@ class StoryTests(DeskCase):
         for name in ("first", "second"):
             self.home = os.path.join(self._tmp.name, name)
             self.init()
-            steps = [("ingest", DATA_FILE), ("approve", "webform:wf-000101", "--by", PERSON), ("apply",),
-                     ("trail", "webform:wf-000101"), ("report",)]
-            outputs.append([self.cli(*step) for step in steps])
+            outputs.append([self.cli("ingest", DATA_FILE), self.approve_cli("webform:wf-000101"), self.cli("apply"),
+                            self.cli("trail", "webform:wf-000101"), self.cli("report")])
         self.assertEqual(outputs[0], outputs[1])
 
 
@@ -91,10 +94,38 @@ class CommandTests(DeskCase):
         sha = plan.split("--plan ")[1].split()[0]
         self.assertIn("approved: webform:wf-000101", self.cli("approve", "webform:wf-000101", "--by", PERSON, "--plan", sha))
 
+    def test_an_approval_without_the_plan_is_refused_so_a_plan_made_again_is_never_approved_unseen(self):
+        # The sequence the review reproduced: the plan is shown, the CRM changes, the desk plans again, and an
+        # approval that did not name the plan approved the new one, which apply then wrote.
+        self.cli("ingest", DATA_FILE)
+        key = "webform:wf-000109"
+        seen = self.cli("plan").split(f"to approve: desk.py approve {key} --by <name> --plan ")[1].split()[0]
+        conn = self.crm_db()
+        conn.execute("UPDATE contacts SET phone = '000-000-0188', phone_digits = '0000000188' WHERE id = 2")
+        conn.commit()
+        self.assertIn(f"{key}: planned again: the CRM changed", self.cli("plan"))
+        self.assertNotEqual(self.plan_sha(key)[:12], seen)
+        before = self.crm_counts()
+        usage = io.StringIO()
+        with contextlib.redirect_stderr(usage):
+            self.cli("approve", key, "--by", PERSON, expect=2)
+        self.assertIn("the following arguments are required: --plan", usage.getvalue())
+        refused = self.cli("approve", key, "--by", PERSON, "--plan", seen, expect=1)
+        self.assertIn("the desk planned again since", refused)
+        self.assertIn("nothing is approved", self.cli("apply"))
+        self.assertEqual(self.crm_counts(), before)
+        with self.desk() as desk:
+            self.assertEqual(desk.store.get_enquiry(key).state, "awaiting_approval")
+            self.assertEqual(desk.store.approvals(key), [])
+            with self.assertRaises(DeskError):
+                desk.approve(key, PERSON, None)
+            with self.assertRaises(DeskError):
+                desk.approve(key, PERSON, "")
+
     def test_a_decision_needs_a_person_not_the_system(self):
         self.cli("ingest", DATA_FILE)
-        self.assertIn("a person's name", self.cli("approve", "webform:wf-000101", "--by", "  ", expect=1))
-        self.assertIn("the desk's own name", self.cli("approve", "webform:wf-000101", "--by", "System", expect=1))
+        self.assertIn("a person's name", self.approve_cli("webform:wf-000101", by="  ", expect=1))
+        self.assertIn("the desk's own name", self.approve_cli("webform:wf-000101", by="System", expect=1))
 
     def test_reject_needs_a_reason_and_then_nothing_is_written(self):
         self.cli("ingest", DATA_FILE)
@@ -106,7 +137,7 @@ class CommandTests(DeskCase):
 
     def test_withdraw_puts_the_plan_back_to_wait(self):
         self.cli("ingest", DATA_FILE)
-        self.cli("approve", "webform:wf-000101", "--by", PERSON)
+        self.approve_cli("webform:wf-000101")
         self.cli("withdraw", "webform:wf-000101", "--by", PERSON, "--reason", "wrong person")
         self.assertIn("no approval in the state approved", self.cli("apply", "--key", "webform:wf-000101", expect=1))
         self.assertIn("refused", self.cli("withdraw", "webform:wf-000101", "--by", PERSON, expect=1))
@@ -119,7 +150,7 @@ class CommandTests(DeskCase):
                       self.cli("resolve", key, "--as", "new", "--by", PERSON, expect=1))
         self.assertIn("not one that identity found", self.cli("resolve", key, "--as", "contact:1", "--by", PERSON, expect=1))
         self.assertIn("now awaiting_approval", self.cli("resolve", key, "--as", "contact:8", "--by", PERSON))
-        self.cli("approve", key, "--by", PERSON)
+        self.approve_cli(key)
         self.cli("apply")
         self.assertEqual(self.notes_with_key(key), 1)
         note_contact = self.crm_db().execute("SELECT contact_id FROM notes").fetchone()[0]
@@ -130,7 +161,7 @@ class CommandTests(DeskCase):
         self.cli("ingest", DATA_FILE)
         key = "webform:wf-000113"
         self.cli("resolve", key, "--as", "new", "--by", PERSON)
-        self.cli("approve", key, "--by", PERSON)
+        self.approve_cli(key)
         self.cli("apply")
         self.assertEqual(self.crm_counts()["contacts"], 11)
         self.assertRegex(self.cli("trail", key), re.escape(PERSON) + r" +resolution ")
@@ -140,7 +171,7 @@ class CommandTests(DeskCase):
         key = "webform:wf-000113"
         self.cli("resolve", key, "--as", "contact:5", "--by", PERSON)
         self.assertIn("shown for a person: email", self.cli("plan"))
-        self.cli("approve", key, "--by", PERSON)
+        self.approve_cli(key)
         self.cli("apply")
         self.assertEqual(self.crm_counts()["contacts"], 10)  # the system never merges; the person chose contact 5
         self.assertEqual(self.crm_db().execute("SELECT email FROM contacts WHERE id = 5").fetchone()[0],
@@ -158,7 +189,7 @@ class CommandTests(DeskCase):
 
     def test_the_trail_shows_one_enquirys_life_in_order(self):
         self.cli("ingest", DATA_FILE)
-        self.cli("approve", "webform:wf-000109", "--by", PERSON)
+        self.approve_cli("webform:wf-000109")
         self.cli("apply")
         lines = self.cli("trail", "webform:wf-000109").splitlines()
         events = [line.split()[3] if line.split()[2] == "system" else None for line in lines[1:]]
