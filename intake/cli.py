@@ -184,7 +184,11 @@ def cmd_ingest(args, say, home, choice, clock, environ, out) -> int:
 
 
 def _serve(args, say, home, choice, clock, environ, out, desk_pages: bool) -> int:
-    DeskStore.open(desk_path(home), clock).close()  # fail now, not on the first request
+    store = DeskStore.open(desk_path(home), clock)  # fail now, not on the first request
+    try:
+        store.state_counts()  # a read: a desk file that is not a database stops the server here, with one line
+    finally:
+        store.close()
     open_crm(home, choice, environ).close()
     drafter = make_backend(args.draft, environ)
     secret = secret_from(environ)

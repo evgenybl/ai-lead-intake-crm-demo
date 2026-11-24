@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-332 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+333 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -563,6 +563,10 @@ A client that drips its request, and a desk file another program holds.
 ### SecretTests
 
 - `test_a_secret_with_a_letter_outside_ascii_stops_the_server_at_start_with_the_reason`
+
+### DamagedDeskFileTests
+
+- `test_serve_and_listen_refuse_to_start_on_a_desk_file_that_is_not_a_database`
 
 ### ListenCommandTests
 

@@ -289,6 +289,28 @@ class SecretTests(DeskCase):
             secret_from({"INTAKE_SECRET": "with a space " + secrets.token_hex(8)})
 
 
+class DamagedDeskFileTests(DeskCase):
+    def test_serve_and_listen_refuse_to_start_on_a_desk_file_that_is_not_a_database(self):
+        self.init()
+        with open(desk_path(self.home), "wb") as handle:
+            handle.write(b"this is a text file, not a database made by the desk" * 4)
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("INTAKE_", "ANTHROPIC_"))}
+        env.update({"INTAKE_SECRET": secrets.token_urlsafe(24), "PYTHONIOENCODING": "utf-8"})
+        for command in ("listen", "serve"):
+            with self.subTest(command=command):
+                try:  # a real process: had it started, it would serve until stopped
+                    done = subprocess.run([sys.executable, "-I", os.path.join(ROOT, "desk.py"), command, "--port", "0",
+                                           "--home", self.home], capture_output=True, text=True, encoding="utf-8",
+                                          env=env, timeout=20)
+                except subprocess.TimeoutExpired:
+                    self.fail(f"{command} started on a desk file that is not a database")
+                self.assertEqual(done.returncode, 2, done.stdout + done.stderr)
+                self.assertEqual(done.stdout.splitlines(), [
+                    "error: the desk file in --home is not a database this desk can read (file is not a database); "
+                    "nothing was changed. It may be damaged, or not a file this desk made"])
+                self.assertEqual(done.stderr, "")
+
+
 class ListenCommandTests(DeskCase):
     """`python -I desk.py listen` as a real process, on a port the system assigns."""
 
