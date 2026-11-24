@@ -68,10 +68,10 @@ be Python 3.11 or later (`python3 --version` says which).
 
 Every `desk.py` command works on the folder named by `--home`, which holds the desk's two files; this page uses
 `--home try-it` throughout. Setting `INTAKE_NOW` fixes the desk's clock, so that what you see matches this page
-exactly (bash: `export INTAKE_NOW=2026-01-05T10:00:00Z`; PowerShell: `$env:INTAKE_NOW = "2026-01-05T10:00:00Z"`).
+exactly (bash: `export INTAKE_NOW=2026-01-05T15:00:00Z`; PowerShell: `$env:INTAKE_NOW = "2026-01-05T15:00:00Z"`).
 Leave it out, and the times are your own.
 
-<!-- run: in order, from the repository's folder, with INTAKE_NOW=2026-01-05T10:00:00Z -->
+<!-- run: in order, from the repository's folder, with INTAKE_NOW=2026-01-05T15:00:00Z -->
 ```text
 $ python -I desk.py init --home try-it
 created desk.sqlite3 in try-it
@@ -85,8 +85,8 @@ line 12: webform:wf-000112 -> held_two_contacts
 line 13: webform:wf-000113 -> held_possible_duplicate
 line 14: webform:wf-000114 -> refused: consent is not true
 ...
-line 29: webform:wf-000101 -> replay of the enquiry first arrived at 2026-01-05T10:00:00Z (state now: awaiting_approval); nothing new is queued; replayed with different content: message
-line 30: hash:309d80d718634c0b178a0cc09967246c -> replay of the enquiry first arrived at 2026-01-05T10:00:00Z (state now: awaiting_approval); nothing new is queued
+line 29: webform:wf-000101 -> replay of the enquiry first arrived at 2026-01-05T15:00:00Z (state now: awaiting_approval); nothing new is queued; replayed with different content: message
+line 30: hash:309d80d718634c0b178a0cc09967246c -> replay of the enquiry first arrived at 2026-01-05T15:00:00Z (state now: awaiting_approval); nothing new is queued
 ingest: 27 new enquiries, 3 replays, 0 lines not taken
 $ python -I desk.py plan --key webform:wf-000109 --home try-it
 the dry run: nothing below has been written to the CRM
@@ -161,7 +161,7 @@ The same `curl` again is answered as a replay, pointing to the first arrival; wi
 
 <!-- run: the server, the same curl again -->
 ```text
-{"key": "webform:wf-curl-0001", "original": {"arrived_at": "2026-01-05T10:00:00Z", "via": "http"}, "replay": true, "state": "awaiting_approval"}
+{"key": "webform:wf-curl-0001", "original": {"arrived_at": "2026-01-05T15:00:00Z", "via": "http"}, "replay": true, "state": "awaiting_approval"}
 ```
 
 In PowerShell, the same with `Invoke-RestMethod` (the server started as above, after
@@ -262,14 +262,14 @@ the two ever differ, the page is right.*
    ```text
    $ python -I desk.py trail webform:wf-000109 --home try-it
    trail of webform:wf-000109 (state now: applied)
-   #25    2026-01-05T10:00:00Z  system                     arrived              payload_sha256=b20bb0a72289 reasons=[] state=received via=file
-   #26    2026-01-05T10:00:00Z  system                     draft                label=Recorded outcome=used request=db890210e130
-   #27    2026-01-05T10:00:00Z  system                     assessed             draft=used from=received identity=returning plan=e9a616cc484b state=awaiting_approval
-   #71    2026-01-05T10:00:00Z  Dana Reviewer (invented)   approved             approval=1 from=awaiting_approval plan=e9a616cc484b state=approved
-   #72    2026-01-05T10:00:00Z  system                     operation_started    op=add_note plan=e9a616cc484b
-   #73    2026-01-05T10:00:00Z  system                     operation            how=written op=add_note ref=1
-   #74    2026-01-05T10:00:00Z  system                     operation_started    op=add_task plan=e9a616cc484b
-   #75    2026-01-05T10:00:00Z  system                     operation            how=written op=add_task ref=1
+   #25    2026-01-05T15:00:00Z  system                     arrived              payload_sha256=b20bb0a72289 reasons=[] state=received via=file
+   #26    2026-01-05T15:00:00Z  system                     draft                label=Recorded outcome=used request=db890210e130
+   #27    2026-01-05T15:00:00Z  system                     assessed             draft=used from=received identity=returning plan=e9a616cc484b state=awaiting_approval
+   #71    2026-01-05T15:00:00Z  Dana Reviewer (invented)   approved             approval=1 from=awaiting_approval plan=e9a616cc484b state=approved
+   #72    2026-01-05T15:00:00Z  system                     operation_started    op=add_note plan=e9a616cc484b
+   #73    2026-01-05T15:00:00Z  system                     operation            how=written op=add_note ref=1
+   #74    2026-01-05T15:00:00Z  system                     operation_started    op=add_task plan=e9a616cc484b
+   #75    2026-01-05T15:00:00Z  system                     operation            how=written op=add_task ref=1
    ...
    ```
 

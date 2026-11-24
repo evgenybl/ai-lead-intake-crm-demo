@@ -23,7 +23,7 @@ from intake.cli import main as desk_main
 from tests.helpers import ROOT
 
 RUN = re.compile(r"<!-- run: ([^>]*) -->\n([ \t]*)```text\n(.*?)\n[ \t]*```", re.DOTALL)
-NOW = "2026-01-05T10:00:00Z"
+NOW = "2026-01-05T15:00:00Z"  # the clock of the example story: after the last enquiry was sent
 README_PORT = "8765"
 
 
@@ -105,6 +105,16 @@ class ReadmeCommandTests(unittest.TestCase):
         out = io.StringIO()
         desk_main(argv[3:], out=out, environ={"INTAKE_NOW": NOW})
         return out.getvalue().rstrip("\n").split("\n")
+
+    def test_the_walk_through_s_clock_comes_after_every_enquiry_of_the_invented_file_was_sent(self):
+        with open(os.path.join(ROOT, "data", "enquiries.synthetic.jsonl"), encoding="utf-8") as handle:
+            sent = [json.loads(line)["received_at"] for line in handle if line.strip()]
+        self.assertGreater(NOW, max(sent))
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as handle:
+            readme = handle.read()
+        for named in (f"`export INTAKE_NOW={NOW}`", f'`$env:INTAKE_NOW = "{NOW}"`', f"with INTAKE_NOW={NOW} -->"):
+            self.assertIn(named, readme)
+        self.assertEqual(sorted(set(re.findall(r"INTAKE_NOW\W+(2026-[0-9T:Z-]+)", readme))), [NOW])
 
     def test_the_blocks_are_there(self):
         whats = [what for what, _ in readme_blocks()]

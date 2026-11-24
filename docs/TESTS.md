@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-331 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+332 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -492,6 +492,7 @@ The README's commands, run in the order it gives them, print what it shows.
 
 ### ReadmeCommandTests
 
+- `test_the_walk_through_s_clock_comes_after_every_enquiry_of_the_invented_file_was_sent`
 - `test_the_blocks_are_there`
 - `test_the_opening_command_prints_the_opening_block_after_the_first_two_commands_of_try_it`
 - `test_the_commands_may_be_python3_with_3_11_or_later`
