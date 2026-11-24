@@ -12,6 +12,7 @@ dropped and a row is changed, the chain no longer adds up and `desk.py doctor` n
 from __future__ import annotations
 
 import json
+import sqlite3
 
 from .canonical import canonical_json, sha256_hex
 
@@ -92,3 +93,25 @@ def chain_problems(conn) -> list:
 def missing_triggers(conn) -> list:
     present = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'trigger'")}
     return [name for name in TRIGGERS if name not in present]
+
+
+def _written_triggers() -> dict:
+    """Each trigger's SQL as SQLite stores it when SCHEMA creates it."""
+    conn = sqlite3.connect(":memory:")
+    try:
+        conn.executescript(SCHEMA)
+        return dict(conn.execute("SELECT name, sql FROM sqlite_master WHERE type = 'trigger'"))
+    finally:
+        conn.close()
+
+
+def trigger_problems(conn) -> list:
+    """A trigger that is missing, or whose SQL is not the SQL this module writes (one that does nothing, say)."""
+    present = dict(conn.execute("SELECT name, sql FROM sqlite_master WHERE type = 'trigger'"))
+    problems = []
+    for name, sql in _written_triggers().items():
+        if name not in present:
+            problems.append(f"the trigger {name} is missing: the trail can be changed")
+        elif present[name] != sql:
+            problems.append(f"the trigger {name} is not as written: the trail may be changed")
+    return problems

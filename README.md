@@ -149,9 +149,12 @@ files after the demo story, are in `examples/desk/` (`index.html`, and a page pe
    #29    2026-01-05T09:00:00Z  system                     draft                label=Recorded outcome=used request=925a01ff0688
    #30    2026-01-05T09:00:00Z  system                     assessed             draft=used from=received identity=returning plan=a6c74785415d state=awaiting_approval
    #76    2026-01-05T09:30:00Z  Dana Reviewer (invented)   approved             approval=4 from=awaiting_approval plan=a6c74785415d state=approved
-   #88    2026-01-05T09:35:00Z  system                     operation            how=written (filled: company) op=fill_empty_fields ref=3
-   #89    2026-01-05T09:35:00Z  system                     operation            how=written op=add_note ref=4
-   #90    2026-01-05T09:35:00Z  system                     operation            how=written op=add_task ref=4
+   #95    2026-01-05T09:35:00Z  system                     operation_started    op=fill_empty_fields plan=a6c74785415d
+   #96    2026-01-05T09:35:00Z  system                     operation            how=written (filled: company) op=fill_empty_fields ref=3
+   #97    2026-01-05T09:35:00Z  system                     operation_started    op=add_note plan=a6c74785415d
+   #98    2026-01-05T09:35:00Z  system                     operation            how=written op=add_note ref=4
+   #99    2026-01-05T09:35:00Z  system                     operation_started    op=add_task plan=a6c74785415d
+   #100   2026-01-05T09:35:00Z  system                     operation            how=written op=add_task ref=4
    ```
 
 ## How it works

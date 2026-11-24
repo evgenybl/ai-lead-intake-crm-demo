@@ -8,14 +8,22 @@ Before anything leaves, the gate refuses:
      approval is withdrawn by the system, the enquiry is planned again and waits again;
   4. any write when the run is a dry run.
 
+Before each CRM write, the gate records its intent: the ledger row `started` and the audit row
+`operation_started`, in one transaction. If the process is killed between the write and its record, the
+desk still shows that the step began; `desk.py doctor` names the ledger row left at `started`, and the
+next apply continues the same plan under the same approval.
+
 Writes are idempotent at the CRM too. Before each write the gate looks, in this order: in the local
 ledger; then in the contact's own notes (or tasks) by their first line, which is the enquiry's key; then,
 for a note, in a search for the key, confirmed by the first line. A contact the gate created is found
-again by its origin key. A lost ledger therefore writes nothing twice.
+again by its origin key. A step that was written but not recorded is therefore found, not written twice.
 
 A failed CRM call leaves the enquiry in `apply_failed` with the error. A retry completes the approved
 plan step by step and skips what is already there. It does not plan again once a step of the plan has
 started: the CRM now holds this plan's own first writes, which are not a change by anyone else.
+
+One apply runs at a time on a desk: `Desk.apply` holds the desk's apply lock for the whole run, and a
+second apply started meanwhile is refused before it reads anything (see `DeskStore.apply_lock`).
 """
 from __future__ import annotations
 
@@ -93,7 +101,7 @@ class WriteGate:
             return self._refuse(enquiry, str(refusal))
 
         started = [row for row in self.store.ledger_rows(key) if row.plan_sha == enquiry.plan_sha]
-        if enquiry.state == "approved" or not started:  # a first attempt at this plan: check it is still the plan
+        if not started:  # a first attempt at this plan: check it is still the plan the person approved
             try:
                 current = planner.assess(key, enquiry.payload, enquiry.resolution, self.crm)
             except CRMError as error:
@@ -135,7 +143,9 @@ class WriteGate:
         handler = getattr(self, "_do_" + name, None)
         if handler is None:
             raise RuntimeError(f"the gate has no way to perform {name!r}")
-        self.store.ledger_start(key, name, plan_sha)
+        with self.store.transaction():  # the intent, on the record before the CRM is called
+            self.store.ledger_start(key, name, plan_sha)
+            self.store.audit(key, "operation_started", {"op": name, "plan": plan_sha}, SYSTEM)
         ref, how = handler(key, op, refs)
         with self.store.transaction():
             self.store.ledger_done(key, name, ref, how)

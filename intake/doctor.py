@@ -1,20 +1,29 @@
 """`desk.py doctor`: the invariants of the four promises, run on the desk file and the practice CRM file.
 
-It reads both files and changes nothing. Each check belongs to one promise of section 2:
+It reads both files and changes nothing. Each check belongs to one promise:
 
-  1 No lead is lost ................ every enquiry in exactly one named state; the arrivals add up;
-                                     every key in the trail is on the desk; every failure names its error
+  1 No lead is lost ................ every enquiry in exactly one named state; the arrivals add up and agree
+                                     with the trail; every key in the trail is on the desk; every failure
+                                     names its error
   2 No duplicate is created ........ one contact per normalised e-mail; no two notes, tasks or created
                                      contacts with the same enquiry key
   3 Nothing is written before a person approves
-                                   . every applied plan has a used approval; every ledger row and every
-                                     CRM record that carries an enquiry key has an approval; every
-                                     operation is in the allow-list; every stored plan matches its sha256
-  4 Every step is on the record .... the audit triggers are in place; the hash chain is unbroken; each
-                                     enquiry's state is the last state its trail records
+                                   . every applied plan has a used approval; every approval row matches the
+                                     decision the trail records (who, which plan); every ledger row and every
+                                     CRM record that carries an enquiry key has an approval; every operation
+                                     is in the allow-list; every stored plan matches its sha256
+  4 Every step is on the record .... the audit triggers are in place as written; the hash chain is unbroken;
+                                     every state move follows the one before it; each enquiry's state, stored
+                                     content and plan are the ones its trail last records; every operation in
+                                     the trail has its ledger row, and no step is left half recorded
+
+What it can and cannot find: the trail guards against mistakes, bugs and plain edits of the files. A person
+who can open the desk file can drop the triggers, change rows, recompute every hash and put the triggers
+back; such a rewrite, done consistently, is not found. docs/DESIGN.md lists the cases.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import pathlib
 import re
@@ -129,6 +138,13 @@ def _promise_1(desk) -> list:
     return [named, add_up, trail, errors]
 
 
+def _trail_by_key(desk) -> dict:
+    by_key: dict = {}
+    for row in audit.rows(desk):
+        by_key.setdefault(row[2], []).append((row[0], row[3], audit.detail_of(row), row[5]))
+    return by_key
+
+
 # -- promise 2 ----------------------------------------------------------------------------------------
 
 def _not_checked(promise: int, name: str) -> Check:
@@ -186,6 +202,25 @@ def _promise_3(desk, crm) -> list:
         if state == "applied" and (key, sha) not in used_pairs:
             used.problems.append(f"{key} is applied, but no approval of its plan is used")
 
+    decided = Check(3, "every approval matches the decision its trail records")
+    decisions = {}
+    for row in audit.rows(desk):
+        if row[3] in ("approved", "rejected"):
+            detail = audit.detail_of(row)
+            decisions[detail.get("approval")] = (row[0], row[2], row[3], row[5], detail.get("plan"))
+    rows = desk.execute("SELECT id, key, plan_sha, by, state FROM approvals ORDER BY id").fetchall()
+    for approval_id, key, sha, by, state in rows:
+        want = "rejected" if state == "rejected" else "approved"
+        found = decisions.get(approval_id)
+        if found is None:
+            decided.problems.append(f"approval {approval_id} for {key} has no '{want}' event in the trail: "
+                                    "it was not made through the desk")
+        elif found[1:4] != (key, want, by) or (want == "approved" and found[4] != sha):
+            decided.problems.append(f"approval {approval_id} for {key} does not match the '{want}' event in row "
+                                    f"{found[0]} of the trail (who, or which plan)")
+    for approval_id in sorted(set(decisions) - {row[0] for row in rows}, key=str):
+        decided.problems.append(f"the trail records approval {approval_id}, which is not on the desk")
+
     ledger = Check(3, "every ledger row has an approval of its plan")
     for key, op, sha in desk.execute("SELECT key, op, plan_sha FROM ledger ORDER BY key, op"):
         if (key, sha) not in authorised:
@@ -218,26 +253,69 @@ def _promise_3(desk, crm) -> list:
     for sha, body in desk.execute("SELECT sha, body FROM plans ORDER BY made_at, sha"):
         if sha256_hex(json.loads(body)) != sha:
             intact.problems.append(f"the plan stored as {sha[:12]} does not match its sha256")
-    return [used, ledger, records, allowed, intact]
+    return [used, decided, ledger, records, allowed, intact]
 
 
 # -- promise 4 ----------------------------------------------------------------------------------------
 
 def _promise_4(desk) -> list:
-    triggers = Check(4, "the audit triggers are in place")
-    for name in audit.missing_triggers(desk):
-        triggers.problems.append(f"the trigger {name} is missing: the trail can be changed")
+    triggers = Check(4, "the audit triggers are in place, as written")
+    triggers.problems.extend(audit.trigger_problems(desk))
 
     chain = Check(4, "the audit chain is unbroken")
     chain.problems.extend(audit.chain_problems(desk))
 
-    last = Check(4, "each enquiry's state is the last state its trail records")
-    recorded = {}
-    for row in audit.rows(desk):
-        detail = audit.detail_of(row)
-        if "state" in detail:
-            recorded[row[2]] = detail["state"]
-    for key, state in desk.execute("SELECT key, state FROM enquiries ORDER BY rowid"):
-        if recorded.get(key) != state:
-            last.problems.append(f"{key} is {state}, but its trail last records {recorded.get(key)!r}")
-    return [triggers, chain, last]
+    trail = _trail_by_key(desk)
+    moves = Check(4, "every state move follows the one before it")
+    for key, rows in sorted(trail.items()):
+        before = None
+        for row_id, event, detail, _ in rows:
+            if "state" not in detail:
+                continue
+            if "from" in detail:
+                allowed = states.TRANSITIONS.get((detail["from"], event), frozenset())
+                if detail["from"] != before:
+                    moves.problems.append(f"{key}: row {row_id} ({event}) moves from {detail['from']}, but the rows "
+                                          f"before it leave it in {before}")
+                elif detail["state"] not in allowed:
+                    moves.problems.append(f"{key}: row {row_id} ({event}) from {detail['from']} to "
+                                          f"{detail['state']} is not a move the state table allows")
+            elif event == "arrived":
+                if before is not None or detail["state"] not in states.TRANSITIONS[(None, "arrived")]:
+                    moves.problems.append(f"{key}: row {row_id} records a second arrival, or an arrival in "
+                                          f"{detail['state']}")
+            elif detail["state"] != before:
+                moves.problems.append(f"{key}: row {row_id} ({event}) records {detail['state']}, but the rows "
+                                      f"before it leave it in {before}")
+            before = detail["state"]
+
+    last = Check(4, "each enquiry's state, content and plan are the ones its trail last records")
+    for key, state, payload, plan_sha in desk.execute(
+            "SELECT key, state, payload, plan_sha FROM enquiries ORDER BY rowid"):
+        recorded = {"state": None, "payload_sha256": None, "plan": None}
+        for _, _, detail, _ in trail.get(key, []):
+            for name in recorded:
+                if name in detail:
+                    recorded[name] = detail[name]
+        if recorded["state"] != state:
+            last.problems.append(f"{key} is {state}, but its trail last records {recorded['state']!r}")
+        if recorded["payload_sha256"] != hashlib.sha256(payload.encode("utf-8")).hexdigest():
+            last.problems.append(f"{key}: the stored content does not match the sha256 its trail records")
+        if recorded["plan"] != plan_sha:
+            last.problems.append(f"{key}: its plan is {(plan_sha or 'none')[:12]}, but its trail last records "
+                                 f"{(recorded['plan'] or 'none')[:12]}")
+
+    steps = Check(4, "every operation in the trail has its ledger row; no step is left half recorded")
+    ledger = {(key, op): status for key, op, status in desk.execute("SELECT key, op, status FROM ledger")}
+    state_of = dict(desk.execute("SELECT key, state FROM enquiries"))
+    for key, rows in sorted(trail.items()):
+        for row_id, event, detail, _ in rows:
+            if event == "operation" and (key, detail.get("op")) not in ledger:
+                steps.problems.append(f"{key}: row {row_id} records {detail.get('op')}, but the ledger has no row "
+                                      "for it")
+    for (key, op), status in sorted(ledger.items()):
+        if status == "started" and state_of.get(key) != "apply_failed":
+            steps.problems.append(f"{key}: the step {op} began and its end is not recorded (the process stopped "
+                                  "between the CRM call and its record); `desk.py apply` completes the plan and "
+                                  "finds what is already written")
+    return [triggers, chain, moves, last, steps]

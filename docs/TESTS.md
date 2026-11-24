@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-240 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+251 test methods in 16 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -173,6 +173,22 @@ Integration tests: the one write gate (section 3.5) on real desk and practice CR
 - `test_a_retry_does_not_plan_again_once_a_step_has_started`
 - `test_withdrawn_after_a_failure_then_approved_again_completes_once`
 - `test_a_retry_after_a_failure_that_left_nothing_started_plans_again`
+
+### KilledBetweenWriteAndRecordTests
+
+The intent is on the record before each CRM write; a retry continues the same plan, once.
+
+- `test_killed_right_after_each_write_the_doctor_names_the_step_and_a_retry_completes_once`
+
+### OneApplyAtATimeTests
+
+Two appliers forced to interleave between the look-up and the write: the second is refused.
+
+- `test_a_second_apply_while_one_is_between_its_look_up_and_its_write_is_refused`
+
+### LockedCRMFileTests
+
+- `test_a_practice_crm_file_locked_by_another_program_is_apply_failed_not_a_crash`
 
 ## tests/test_http_crm.py
 
@@ -370,6 +386,19 @@ Beyond the five controls: the doctor names a break of each promise, made directl
 - `test_promise_3_a_write_that_bypassed_the_gate_is_found`
 - `test_promise_4_a_state_changed_off_the_record_is_found`
 - `test_the_doctor_command_fails_when_a_check_fails`
+
+### DoctorFindsTheReviewedManipulationsTests
+
+Edits of the desk file that the review made by hand. What the doctor finds, and, in the last test, what it cannot: a rewrite of the trail done consistently by a person who can open the file.
+
+- `test_a_trigger_replaced_by_one_of_the_same_name_that_does_nothing_is_found`
+- `test_an_approval_inserted_by_sql_with_no_decision_in_the_trail_is_found`
+- `test_the_name_on_an_approval_edited_is_found`
+- `test_an_enquiry_s_stored_content_edited_is_found`
+- `test_a_plan_rewritten_with_its_sha256_changed_everywhere_on_the_desk_is_found`
+- `test_the_ledger_emptied_is_found`
+- `test_a_replay_row_removed_from_the_middle_of_the_trail_is_found`
+- `test_what_it_cannot_find_a_consistent_rewrite_by_a_person_who_can_open_the_file`
 
 ## tests/test_rules.py
 

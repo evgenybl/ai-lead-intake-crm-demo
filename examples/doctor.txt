@@ -11,12 +11,15 @@ promise 2: No duplicate is created
   ok    no two contacts created by the same enquiry
 promise 3: Nothing is written before a person approves
   ok    every applied enquiry has a used approval for its plan
+  ok    every approval matches the decision its trail records
   ok    every ledger row has an approval of its plan
   ok    every CRM record that carries an enquiry key has an approval
   ok    every operation is in the allow-list
   ok    every stored plan matches its sha256
 promise 4: Every step is on the record
-  ok    the audit triggers are in place
+  ok    the audit triggers are in place, as written
   ok    the audit chain is unbroken
-  ok    each enquiry's state is the last state its trail records
-doctor: 16 of 16 checks passed
+  ok    every state move follows the one before it
+  ok    each enquiry's state, content and plan are the ones its trail last records
+  ok    every operation in the trail has its ledger row; no step is left half recorded
+doctor: 19 of 19 checks passed

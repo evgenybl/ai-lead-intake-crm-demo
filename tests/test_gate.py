@@ -4,6 +4,7 @@ import unittest
 
 from intake.canonical import canonical_json, sha256_hex
 from intake.crm.practice import PracticeCRM
+from intake.flow import DeskError
 from intake.gate import GateRefusal, WriteGate
 from intake.home import crm_path
 
@@ -177,7 +178,10 @@ class GateTests(DeskCase):
         joined = " ".join(third.steps)
         self.assertIn("add_note found", joined)
         self.assertIn("add_task found", joined)
-        self.assertEqual(self.problems(), [])
+        # The loss itself stays visible: the trail records a create_contact the ledger no longer holds.
+        self.assertEqual(self.problems(), [
+            "every operation in the trail has its ledger row; no step is left half recorded: webform:test-000001: "
+            "row 6 records create_contact, but the ledger has no row for it"])
 
     def test_a_lost_ledger_mid_plan_on_a_returning_contact_completes_once(self):
         with self.desk() as desk:
@@ -227,6 +231,151 @@ class GateTests(DeskCase):
         second = self.apply()
         self.assertEqual(second.outcome, "replanned")
         self.assertEqual(self.crm_counts()["notes"], 0)
+
+
+class Killed(BaseException):
+    """The process stopped: not an error the gate can catch (as KeyboardInterrupt, or a kill, is not)."""
+
+
+class KilledAfter:
+    """Wraps a CRM: the chosen write happens, then the process 'stops' before the gate records it."""
+
+    def __init__(self, inner, method: str):
+        self._inner, self._method, self._left = inner, method, 1
+
+    def __getattr__(self, name):
+        attribute = getattr(self._inner, name)
+        if name != self._method:
+            return attribute
+
+        def write_then_stop(*args):
+            result = attribute(*args)
+            if self._left:
+                self._left -= 1
+                raise Killed(f"stopped right after {name}")
+            return result
+
+        return write_then_stop
+
+
+class KilledBetweenWriteAndRecordTests(DeskCase):
+    """The intent is on the record before each CRM write; a retry continues the same plan, once."""
+
+    CASES = {
+        "new contact": ({}, ("create_contact", "add_note", "add_task")),
+        "returning contact": ({"email": "celia.marsh@example.com", "phone": "", "name": "Celia Marsh (invented)",
+                               "company": "Marsh Studio (invented)"}, ("fill_empty_fields", "add_note", "add_task")),
+    }
+
+    def test_killed_right_after_each_write_the_doctor_names_the_step_and_a_retry_completes_once(self):
+        for label, (fields, methods) in self.CASES.items():
+            for method in methods:
+                with self.subTest(case=label, killed_after=method):
+                    self.home = self.new_home(f"{label}-{method}")
+                    self.init()
+                    with self.desk() as desk:
+                        desk.receive(enquiry(**fields), via="file")
+                        approve_in(desk, KEY)
+                    with self.desk() as desk:
+                        desk.crm = KilledAfter(desk.crm, method)
+                        with self.assertRaises(Killed):
+                            desk.apply(key=KEY)
+                    with self.desk() as desk:
+                        self.assertEqual(desk.store.get_enquiry(KEY).state, "approved")
+                        started = [e for _, _, _, e, *_ in desk.store.trail(KEY)][-1]
+                    self.assertEqual(started, "operation_started")
+                    self.assertTrue(any(f"the step {method} began and its end is not recorded" in p
+                                        for p in self.problems()), self.problems())
+                    out = self.cli("apply")  # the same approval: no new decision is asked for
+                    self.assertIn(f"{KEY}: applied", out)
+                    self.assertIn("apply: 1 applied", out)
+                    counts = self.crm_counts()
+                    self.assertEqual(counts["contacts"], 11 if label == "new contact" else 10)
+                    self.assertEqual((counts["notes"], counts["tasks"]), (1, 1))
+                    with self.desk() as desk:
+                        self.assertEqual([a.state for a in desk.store.approvals(KEY)], ["used"])
+                    self.assertEqual(self.problems(), [])
+
+    def new_home(self, name):
+        import os
+        return os.path.join(self._tmp.name, name.replace(" ", "-"))
+
+
+class OneApplyAtATimeTests(DeskCase):
+    """Two appliers forced to interleave between the look-up and the write: the second is refused."""
+
+    def test_a_second_apply_while_one_is_between_its_look_up_and_its_write_is_refused(self):
+        import threading
+
+        self.init()
+        with self.desk() as desk:
+            desk.receive(enquiry(email="ada.fenwick@example.com", phone="000-000-0101", name="Ada Fenwick (invented)",
+                                 company="Fenwick Dental (invented)"), via="file")
+            approve_in(desk, KEY)
+        looked, release = threading.Event(), threading.Event()
+
+        class PausedAfterLookUp:
+            def __init__(self, inner):
+                self._inner = inner
+
+            def __getattr__(self, name):
+                attribute = getattr(self._inner, name)
+                if name != "list_notes":
+                    return attribute
+
+                def look_then_wait(*args):
+                    found = attribute(*args)  # the look-up has answered: no note yet
+                    looked.set()
+                    release.wait(10)
+                    return found
+
+                return look_then_wait
+
+        first = []
+
+        def first_apply():
+            with self.desk() as desk:
+                desk.crm = PausedAfterLookUp(desk.crm)
+                first.extend(desk.apply(key=KEY))
+
+        thread = threading.Thread(target=first_apply)
+        thread.start()
+        try:
+            self.assertTrue(looked.wait(10))
+            with self.desk() as desk:
+                with self.assertRaises(DeskError) as refused:
+                    desk.apply(key=KEY)
+            self.assertIn("another `desk.py apply` is running on this desk", str(refused.exception))
+        finally:
+            release.set()
+            thread.join(10)
+        self.assertEqual([r.outcome for r in first], ["applied"])
+        self.assertEqual(self.notes_with_key(KEY), 1)
+        self.assertEqual(self.problems(), [])
+        self.assertEqual(self.cli("apply"), "apply: nothing is approved\n")  # the lock was released
+
+
+class LockedCRMFileTests(DeskCase):
+    def test_a_practice_crm_file_locked_by_another_program_is_apply_failed_not_a_crash(self):
+        import sqlite3
+
+        self.init()
+        with self.desk() as desk:
+            desk.receive(enquiry(), via="file")
+            approve_in(desk, KEY)
+        holder = sqlite3.connect(crm_path(self.home), isolation_level=None)
+        self.addCleanup(holder.close)
+        holder.execute("BEGIN EXCLUSIVE")
+        crm = PracticeCRM(crm_path(self.home))
+        self.addCleanup(crm.close)
+        crm.conn.execute("PRAGMA busy_timeout = 100")
+        with self.desk(crm=crm) as desk:
+            (result,) = desk.apply(key=KEY)
+        self.assertEqual(result.outcome, "apply_failed")
+        self.assertIn("the practice CRM file could not be used (database is locked)", result.message)
+        holder.execute("ROLLBACK")
+        self.assertIn("apply: 1 applied", self.cli("apply"))
+        self.assertEqual(self.problems(), [])
 
 
 if __name__ == "__main__":

@@ -78,6 +78,13 @@ class HomeError(Exception):
     """A desk or CRM file that is missing, or already there when it should not be."""
 
 
+class ApplyBusy(Exception):
+    """Another apply holds this desk's apply lock."""
+
+
+APPLY_LOCK_SUFFIX = "-apply-lock"
+
+
 @dataclass(frozen=True)
 class Enquiry:
     key: str
@@ -146,6 +153,25 @@ class DeskStore:
 
     def close(self) -> None:
         self.conn.close()
+
+    @contextmanager
+    def apply_lock(self):
+        """One apply at a time on this desk. The lock is an exclusive SQLite transaction on a file of its own
+        beside the desk file, held for the whole run; a second apply finds it taken and stops before it reads
+        anything. The operating system releases it when the process ends, so a killed apply never leaves it
+        held. It does not stop another program, or a second desk with files of its own, from writing the CRM."""
+        conn = sqlite3.connect(self.path + APPLY_LOCK_SUFFIX, timeout=0, isolation_level=None)
+        try:
+            try:
+                conn.execute("BEGIN EXCLUSIVE")
+            except sqlite3.OperationalError:
+                raise ApplyBusy(self.path) from None
+            try:
+                yield
+            finally:
+                conn.execute("ROLLBACK")
+        finally:
+            conn.close()
 
     @contextmanager
     def transaction(self):

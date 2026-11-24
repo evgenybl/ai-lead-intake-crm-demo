@@ -11,6 +11,7 @@ from .canonical import canonical_json
 from .crm.base import CRMError
 from .draft import RecordedBackend
 from .identity import idempotency_key
+from .store import ApplyBusy
 
 SYSTEM = "system"
 MAX_NAME_CHARS = 80
@@ -266,6 +267,17 @@ class Desk:
         gate = gate or WriteGate(self, dry_run=dry_run)
         if key is not None:
             self._get(key)
+        if gate.dry_run:
+            return self._apply_each(gate, key)
+        try:
+            with self.store.apply_lock():
+                return self._apply_each(gate, key)
+        except ApplyBusy:
+            raise DeskError("another `desk.py apply` is running on this desk; this one wrote nothing. Run it "
+                            "again when that one has finished") from None
+
+    def _apply_each(self, gate, key: str | None) -> list:
+        if key is not None:
             return [gate.apply(key)]
         keys = [e.key for e in self.store.enquiries(in_states=("approved", "apply_failed"))]
         return [gate.apply(k) for k in keys]

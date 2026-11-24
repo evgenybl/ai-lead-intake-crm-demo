@@ -15,7 +15,7 @@
 <text x="16" y="196" fill="#7ee787">PASS  story 7 ingest it again       0 new, 30 replays; nothing new written</text>
 <text x="16" y="215" fill="#7ee787">PASS  story 8 apply again           nothing approved; nothing written</text>
 <text x="16" y="234" fill="#7ee787">PASS  story 9 report again          the states add up: 27 enquiries + 33 replays = 60 arrived</text>
-<text x="16" y="253" fill="#7ee787">PASS  story 10 doctor               the doctor: 16 of 16 checks passed</text>
+<text x="16" y="253" fill="#7ee787">PASS  story 10 doctor               the doctor: 19 of 19 checks passed</text>
 <text x="16" y="272" fill="#7ee787">PASS  replay-three-times            one contact, one note; the edited copy shown</text>
 <text x="16" y="291" fill="#7ee787">PASS  returning-contact             no second contact; empty field filled; phone shown, kept</text>
 <text x="16" y="310" fill="#7ee787">PASS  two-contacts-held             held, no plan; resolved as contact 7, then as 8</text>

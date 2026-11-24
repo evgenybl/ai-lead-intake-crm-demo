@@ -1,9 +1,11 @@
 """The four promises of section 2, one test each, named by the promise; and the doctor catching a break of each.
 
 The five controls of section 6 (tests/test_controls.py) break the properties these rest on."""
+import json
 import unittest
 
 from intake import audit
+from intake.canonical import canonical_json, sha256_hex
 
 from tests.helpers import DATA_FILE, PERSON, DeskCase, FlakyCRM, enquiry
 
@@ -172,8 +174,109 @@ class DoctorFindsEachBrokenPromiseTests(DeskCase):
     def test_the_doctor_command_fails_when_a_check_fails(self):
         self.desk_db().execute("UPDATE enquiries SET state = 'rejected' WHERE key = 'webform:wf-000103'")
         out = self.cli("doctor", expect=1)
-        self.assertIn("FAIL  each enquiry's state is the last state its trail records", out)
+        self.assertIn("FAIL  each enquiry's state, content and plan are the ones its trail last records", out)
         self.assertIn("checks FAILED", out)
+
+
+class DoctorFindsTheReviewedManipulationsTests(DeskCase):
+    """Edits of the desk file that the review made by hand. What the doctor finds, and, in the last test, what it
+    cannot: a rewrite of the trail done consistently by a person who can open the file."""
+
+    KEY = "webform:wf-000101"
+
+    def setUp(self):
+        super().setUp()
+        self.init()
+        self.cli("ingest", DATA_FILE)
+        self.approve_cli(self.KEY)
+        self.cli("apply")
+        self.assertEqual(self.problems(), [])
+
+    def with_triggers_off(self, *statements):
+        conn = self.desk_db()
+        for name in audit.TRIGGERS:
+            conn.execute(f"DROP TRIGGER {name}")
+        for sql, args in statements:
+            conn.execute(sql, args)
+        conn.executescript(audit.SCHEMA)
+
+    def test_a_trigger_replaced_by_one_of_the_same_name_that_does_nothing_is_found(self):
+        conn = self.desk_db()
+        conn.execute("DROP TRIGGER audit_refuses_update")
+        conn.execute("CREATE TRIGGER audit_refuses_update BEFORE UPDATE ON audit WHEN 0 BEGIN SELECT 1; END")
+        self.assertIn("the audit triggers are in place, as written: the trigger audit_refuses_update is not as "
+                      "written: the trail may be changed", self.problems())
+
+    def test_an_approval_inserted_by_sql_with_no_decision_in_the_trail_is_found(self):
+        key = "webform:wf-000102"
+        conn = self.desk_db()
+        sha = self.plan_sha(key)
+        conn.execute("INSERT INTO approvals (key, plan_sha, by, at, state) VALUES (?, ?, 'nobody', 'now', 'approved')",
+                     (key, sha))
+        conn.execute("UPDATE enquiries SET state = 'approved' WHERE key = ?", (key,))
+        self.cli("apply")  # the gate sees an approval row; the doctor sees it was never decided on the desk
+        found = self.problems()
+        self.assertTrue(any(p.startswith("every approval matches the decision its trail records: approval 2 for "
+                                         f"{key} has no 'approved' event in the trail") for p in found), found)
+        self.assertTrue(any(f"{key}: row" in p and "moves from approved, but the rows before it leave it in "
+                            "awaiting_approval" in p for p in found), found)
+
+    def test_the_name_on_an_approval_edited_is_found(self):
+        self.desk_db().execute("UPDATE approvals SET by = 'Forged Name (invented)'")
+        self.assertTrue(any("does not match the 'approved' event" in p for p in self.problems()))
+
+    def test_an_enquiry_s_stored_content_edited_is_found(self):
+        self.desk_db().execute("UPDATE enquiries SET payload = replace(payload, 'office', 'EDITED office') "
+                               "WHERE key = ?", (self.KEY,))
+        self.assertIn(f"each enquiry's state, content and plan are the ones its trail last records: {self.KEY}: the "
+                      "stored content does not match the sha256 its trail records", self.problems())
+
+    def test_a_plan_rewritten_with_its_sha256_changed_everywhere_on_the_desk_is_found(self):
+        sha = self.plan_sha("webform:wf-000102")
+        conn = self.desk_db()
+        body = json.loads(conn.execute("SELECT body FROM plans WHERE sha = ?", (sha,)).fetchone()[0])
+        body["operations"][1]["body"] += "\nINJECTED LINE"
+        new = sha256_hex(body)
+        conn.execute("PRAGMA foreign_keys = OFF")
+        conn.execute("UPDATE plans SET sha = ?, body = ? WHERE sha = ?", (new, canonical_json(body), sha))
+        conn.execute("UPDATE enquiries SET plan_sha = ? WHERE plan_sha = ?", (new, sha))
+        found = self.problems()
+        self.assertIn(f"each enquiry's state, content and plan are the ones its trail last records: webform:wf-000102: "
+                      f"its plan is {new[:12]}, but its trail last records {sha[:12]}", found)
+
+    def test_the_ledger_emptied_is_found(self):
+        self.desk_db().execute("DELETE FROM ledger")
+        found = self.problems()
+        self.assertTrue(any("records create_contact, but the ledger has no row for it" in p for p in found), found)
+
+    def test_a_replay_row_removed_from_the_middle_of_the_trail_is_found(self):
+        self.cli("ingest", DATA_FILE, at="2026-01-05T10:00:00Z")
+        self.with_triggers_off(("DELETE FROM audit WHERE id = (SELECT min(id) FROM audit WHERE event = 'replay')", ()))
+        found = self.problems()
+        self.assertTrue(any(p.startswith("the audit chain is unbroken: row") for p in found), found)
+        self.assertIn("the arrivals add up, and agree with the trail: the trail records 32 'replay' events, but there "
+                      "are 33 replays", found)
+
+    def test_what_it_cannot_find_a_consistent_rewrite_by_a_person_who_can_open_the_file(self):
+        # The triggers dropped, the approver's name changed in the trail and on the approval, every later hash
+        # recomputed, the triggers put back: nothing on the desk disagrees with anything else.
+        conn = self.desk_db()
+        for name in audit.TRIGGERS:
+            conn.execute(f"DROP TRIGGER {name}")
+        prev = audit.GENESIS
+        for row_id, at, key, event, detail, actor in conn.execute(
+                "SELECT id, at, key, event, detail, actor FROM audit ORDER BY id").fetchall():
+            if event == "approved":
+                actor = "Someone Else (invented)"
+            digest = audit.row_hash(prev, at, key, event, detail, actor)
+            conn.execute("UPDATE audit SET actor = ?, prev_hash = ?, row_hash = ? WHERE id = ?",
+                         (actor, prev, digest + "~", row_id))
+            prev = digest
+        conn.execute("UPDATE audit SET row_hash = substr(row_hash, 1, 64)")
+        conn.execute("UPDATE approvals SET by = 'Someone Else (invented)'")
+        conn.executescript(audit.SCHEMA)
+        self.assertEqual(self.problems(), [])
+        self.assertRegex(self.cli("trail", self.KEY), r"Someone Else \(invented\) +approved")
 
 
 if __name__ == "__main__":

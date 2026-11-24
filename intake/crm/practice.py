@@ -5,6 +5,7 @@ the CRM's own rule; the desk's identity rules and the write gate never rely on i
 """
 from __future__ import annotations
 
+import functools
 import os
 import sqlite3
 
@@ -59,6 +60,17 @@ def _contact(row) -> Contact:
     return Contact(str(row[0]), row[1], row[2], row[3], row[4], row[5])
 
 
+def _as_crm_error(method):
+    """A file that is locked by another program, or cannot be read, is a CRM that did not answer: CRMError."""
+    @functools.wraps(method)
+    def wrapped(self, *args):
+        try:
+            return method(self, *args)
+        except sqlite3.Error as error:
+            raise CRMError(f"the practice CRM file could not be used ({error})") from None
+    return wrapped
+
+
 def _row_id(contact_id) -> int | None:
     """The practice CRM's ids are numbers; the adapter interface passes them as text."""
     text = str(contact_id)
@@ -75,10 +87,13 @@ class PracticeCRM(CRM):
         if not create and not os.path.exists(path):
             raise CRMError(f"no practice CRM at {path}: run `desk.py init` first")
         self.path = path
-        self.conn = sqlite3.connect(path, isolation_level=None)
-        self.conn.execute("PRAGMA foreign_keys = ON")
-        if create:
-            self.conn.executescript(SCHEMA)
+        try:
+            self.conn = sqlite3.connect(path, isolation_level=None)
+            self.conn.execute("PRAGMA foreign_keys = ON")
+            if create:
+                self.conn.executescript(SCHEMA)
+        except sqlite3.Error as error:
+            raise CRMError(f"the practice CRM file could not be used ({error})") from None
 
     def close(self) -> None:
         self.conn.close()
@@ -88,39 +103,48 @@ class PracticeCRM(CRM):
         sql = f"SELECT {_CONTACT_COLUMNS} FROM contacts WHERE {where} ORDER BY id"
         return [_contact(r) for r in self.conn.execute(sql, args)]
 
+    @_as_crm_error
     def find_by_email(self, email: str) -> list:
         return self._contacts("email_norm = ?", (normalise.email(email),))
 
+    @_as_crm_error
     def find_by_phone(self, digits: str) -> list:
         return self._contacts("phone_digits = ? AND phone_digits <> ''", (digits,))
 
+    @_as_crm_error
     def find_by_name(self, name_norm: str, company_norm: str) -> list:
         return self._contacts(
             "name_norm = ? AND company_norm = ? AND name_norm <> '' AND company_norm <> ''", (name_norm, company_norm)
         )
 
+    @_as_crm_error
     def find_by_origin_key(self, key: str) -> list:
         return self._contacts("origin_key = ? AND origin_key <> ''", (key,))
 
+    @_as_crm_error
     def get_contact(self, contact_id: str):
         found = self._contacts("id = ?", (_row_id(contact_id),))
         return found[0] if found else None
 
+    @_as_crm_error
     def list_notes(self, contact_id: str) -> list:
         rows = self.conn.execute("SELECT id, contact_id, body FROM notes WHERE contact_id = ? ORDER BY id",
                                  (_row_id(contact_id),))
         return [Note(str(r[0]), str(r[1]), r[2]) for r in rows]
 
+    @_as_crm_error
     def search_notes(self, text: str) -> list:
         rows = self.conn.execute("SELECT id, contact_id, body FROM notes WHERE instr(body, ?) > 0 ORDER BY id", (text,))
         return [Note(str(r[0]), str(r[1]), r[2]) for r in rows]
 
+    @_as_crm_error
     def list_tasks(self, contact_id: str) -> list:
         rows = self.conn.execute("SELECT id, contact_id, body FROM tasks WHERE contact_id = ? ORDER BY id",
                                  (_row_id(contact_id),))
         return [Task(str(r[0]), str(r[1]), r[2]) for r in rows]
 
     # -- writes: called by intake/gate.py only --
+    @_as_crm_error
     def create_contact(self, fields: dict, origin_key: str) -> Contact:
         values = {name: str(fields.get(name, "")).strip() for name in CONTACT_FIELDS}
         values["email"] = normalise.email(values["email"])
@@ -136,6 +160,7 @@ class PracticeCRM(CRM):
             raise CRMConflict("the practice CRM already has a contact with this e-mail") from None
         return self.get_contact(str(cur.lastrowid))
 
+    @_as_crm_error
     def fill_empty_fields(self, contact_id: str, fields: dict) -> dict:
         unknown = sorted(set(fields) - set(CONTACT_FIELDS))
         if unknown:
@@ -170,12 +195,14 @@ class PracticeCRM(CRM):
         self.conn.execute("COMMIT")
         return {"filled": filled, "kept": kept}
 
+    @_as_crm_error
     def add_note(self, contact_id: str, body: str) -> Note:
         if self.get_contact(contact_id) is None:
             raise CRMError(f"no contact {contact_id}")
         cur = self.conn.execute("INSERT INTO notes (contact_id, body) VALUES (?, ?)", (_row_id(contact_id), body))
         return Note(str(cur.lastrowid), str(contact_id), body)
 
+    @_as_crm_error
     def add_task(self, contact_id: str, body: str) -> Task:
         if self.get_contact(contact_id) is None:
             raise CRMError(f"no contact {contact_id}")

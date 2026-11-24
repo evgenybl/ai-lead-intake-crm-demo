@@ -40,7 +40,7 @@ class StoryTests(DeskCase):
 
         self.assertIn("the states add up: yes: 27 enquiries + 33 replays = 60 arrived", self.cli("report"))
         doctor = self.cli("doctor")
-        self.assertIn("doctor: 16 of 16 checks passed", doctor)
+        self.assertRegex(doctor, r"doctor: (\d+) of \1 checks passed")
 
     def test_outputs_are_the_same_for_the_same_fixed_clock(self):
         outputs = []
@@ -156,7 +156,7 @@ class CommandTests(DeskCase):
         self.assertEqual(self.notes_with_key(key), 1)
         note_contact = self.crm_db().execute("SELECT contact_id FROM notes").fetchone()[0]
         self.assertEqual(note_contact, 8)
-        self.assertIn("doctor: 16 of 16 checks passed", self.cli("doctor"))
+        self.assertRegex(self.cli("doctor"), r"doctor: (\d+) of \1 checks passed")
 
     def test_a_possible_duplicate_resolved_as_new_creates_a_contact(self):
         self.cli("ingest", DATA_FILE)

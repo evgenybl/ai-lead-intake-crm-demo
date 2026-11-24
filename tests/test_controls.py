@@ -125,7 +125,7 @@ class ControlTests(DeskCase):
         (row_id,) = conn.execute("SELECT id FROM audit WHERE event = 'approved'").fetchone()
         found = self.problems()
         self.assertIn(f"the audit chain is unbroken: row {row_id} was changed after it was written", found)
-        self.assertIn("the audit triggers are in place: the trigger audit_refuses_update is missing: "
+        self.assertIn("the audit triggers are in place, as written: the trigger audit_refuses_update is missing: "
                       "the trail can be changed", found)
 
 
