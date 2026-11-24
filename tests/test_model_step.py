@@ -207,6 +207,19 @@ class AnswerTests(unittest.TestCase):
         self.assertNotIn("\x1b", reason)
         self.assertIn("and 2 more", answer.check(dict(GOOD, a=1, b=2, c=3, d=4, e=5), "", FIELDS)[0])
 
+    def test_text_before_or_after_a_fenced_answer_refuses_it(self):
+        fenced = "```json\n" + json.dumps(GOOD) + "\n```"
+        self.assertEqual(answer.parse(fenced)[1], None)
+        for text in (fenced + "\nDone!", "Here it is:\n" + fenced, json.dumps(GOOD) + "\n" + json.dumps(GOOD)):
+            with self.subTest(text=text[:30]):
+                self.assertEqual(answer.parse(text), (None, "the answer is not one JSON object"))
+
+    def test_the_senders_own_phone_in_the_summary_is_refused_however_it_is_written(self):
+        for written in ("000-000-0218", "000/000/0218", "(000) 000 0218"):
+            with self.subTest(written=written):
+                found = self.reasons(dict(GOOD, summary=f"Call the sender on {written}."))
+                self.assertIn("the summary holds the sender's phone", found)
+
     def test_an_unknown_key_refuses_the_whole_answer(self):
         found = self.reasons(dict(GOOD, approve=True))
         self.assertEqual(found, ["the answer has keys beyond the four: 'approve'; it is refused whole"])
@@ -364,6 +377,12 @@ class AnthropicBackendTests(unittest.TestCase):
         self.assertEqual(self.backend.draft(FIELDS)["reason"], "the model declined to answer")
         self.fake.fail(500)
         self.assertEqual(self.backend.draft(FIELDS)["reason"], "the model could not be reached: HTTP 500")
+
+    def test_the_recorded_backend_never_reads_an_answer_for_a_request_that_holds_personal_data(self):
+        with mock.patch.object(request, "scrub", lambda message, fields: message):
+            result = RecordedBackend().draft(FIELDS)
+        self.assertEqual((result["outcome"], result["label"]), ("not sent", "not sent"))
+        self.assertEqual(result["reason"], "the request still held a phone number")
 
     def test_a_request_holding_personal_data_is_never_sent(self):
         with mock.patch.object(request, "scrub", lambda message, fields: message):

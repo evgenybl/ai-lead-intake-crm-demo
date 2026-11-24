@@ -145,6 +145,45 @@ class GateTests(DeskCase):
         self.assertEqual(self.crm_counts(), {"contacts": 11, "notes": 1, "tasks": 1})
         self.assertEqual(self.problems(), [])
 
+    def test_an_operation_that_appears_twice_is_refused_before_anything_leaves(self):
+        with self.desk() as desk:
+            plan = json.loads(desk.store.plan_body(desk.store.get_enquiry(KEY).plan_sha))
+            plan["operations"].append(dict(plan["operations"][1]))  # a second add_note
+            sha = sha256_hex(plan)
+            desk.store.save_plan(sha, KEY, canonical_json(plan))
+            desk.store.set_fields(KEY, plan_sha=sha)
+            approve_in(desk, KEY)
+        before = self.crm_counts()
+        result = self.apply()
+        self.assertEqual(result.outcome, "refused")
+        self.assertIn("an operation that appears more than once: add_note", result.message)
+        self.assertEqual(self.crm_counts(), before)
+
+    def test_a_search_hit_counts_as_the_note_only_when_its_first_line_is_the_key(self):
+        self.approve()
+        conn = self.crm_db()
+        conn.execute("INSERT INTO notes (contact_id, body) VALUES (1, ?)", (f"about something else\nsee {KEY}",))
+        conn.commit()
+        with self.desk() as desk:
+            gate = WriteGate(desk)
+            self.assertEqual([n.first_line for n in desk.crm.search_notes(KEY)], ["about something else"])
+            self.assertIsNone(gate._find_note("1", KEY))
+        result = self.apply()
+        self.assertIn("add_note written", " ".join(result.steps))
+        self.assertEqual(self.notes_with_key(KEY), 1)
+
+    def test_a_contact_created_whose_answer_was_lost_is_found_by_its_origin_key(self):
+        self.approve()
+        with self.desk() as desk:
+            desk.crm = FlakyCRM(desk.crm, "create_contact", "after")
+            self.assertEqual(desk.apply(key=KEY)[0].outcome, "apply_failed")
+        self.assertEqual(self.crm_counts()["contacts"], 11)  # it was written; its answer was lost
+        second = self.apply()
+        self.assertEqual(second.outcome, "applied")
+        self.assertIn("create_contact found by its origin key", " ".join(second.steps))
+        self.assertEqual(self.crm_counts()["contacts"], 11)
+        self.assertEqual(self.problems(), [])
+
     def test_a_lost_answer_is_found_again_not_written_again(self):
         self.approve()
         with self.desk() as desk:

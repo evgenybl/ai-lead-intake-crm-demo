@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-267 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+278 test methods in 16 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -168,6 +168,9 @@ Integration tests: the one write gate (section 3.5) on real desk and practice CR
 - `test_a_dry_run_writes_nothing_even_when_approved`
 - `test_the_gate_refuses_any_write_in_a_dry_run_even_if_called_directly`
 - `test_crm_down_then_retry_completes_and_doubles_nothing`
+- `test_an_operation_that_appears_twice_is_refused_before_anything_leaves`
+- `test_a_search_hit_counts_as_the_note_only_when_its_first_line_is_the_key`
+- `test_a_contact_created_whose_answer_was_lost_is_found_by_its_origin_key`
 - `test_a_lost_answer_is_found_again_not_written_again`
 - `test_a_lost_ledger_writes_nothing_twice`
 - `test_a_lost_ledger_mid_plan_on_a_returning_contact_completes_once`
@@ -194,6 +197,10 @@ Two appliers forced to interleave between the look-up and the write: the second 
 ## tests/test_http_crm.py
 
 The HTTP CRM adapter against the strict fake (section 3.7, section 6). Mock: no real CRM is reached.
+
+### ProxyTests
+
+- `test_the_adapter_ignores_proxy_variables_and_talks_to_the_crm_it_was_given`
 
 ### StrictFakeTests
 
@@ -253,6 +260,8 @@ How the dry run shows the model step: never "None" where an answer was refused.
 - `test_each_text_has_a_length_in_characters_as_well_as_in_words`
 - `test_a_web_address_with_no_scheme_is_refused_in_the_reply`
 - `test_a_key_name_from_the_answer_is_quoted_and_cut_in_the_reason`
+- `test_text_before_or_after_a_fenced_answer_refuses_it`
+- `test_the_senders_own_phone_in_the_summary_is_refused_however_it_is_written`
 - `test_an_unknown_key_refuses_the_whole_answer`
 - `test_the_shape_and_the_limits`
 - `test_the_reply_holds_no_email_phone_or_web_address`
@@ -280,6 +289,7 @@ The live path, against a local mock only.
 - `test_a_failing_answer_gets_one_retry_with_the_reasons`
 - `test_two_failing_answers_are_not_used`
 - `test_a_refusal_or_an_error_leaves_no_ai_text`
+- `test_the_recorded_backend_never_reads_an_answer_for_a_request_that_holds_personal_data`
 - `test_a_request_holding_personal_data_is_never_sent`
 
 ### HiddenInstructionTests
@@ -313,6 +323,7 @@ Section 3.8: the desk pages, `render` and `serve`. No script on any page; everyt
 ### EscapingTests
 
 - `test_everything_from_an_enquiry_or_a_model_is_escaped`
+- `test_an_approver_s_name_a_refusal_reason_and_a_replay_difference_are_escaped`
 
 ### FileNameTests
 
@@ -413,6 +424,9 @@ Edits of the desk file that the review made by hand. What the doctor finds, and,
 - `test_a_plan_rewritten_with_its_sha256_changed_everywhere_on_the_desk_is_found`
 - `test_the_ledger_emptied_is_found`
 - `test_a_replay_row_removed_from_the_middle_of_the_trail_is_found`
+- `test_an_applied_enquiry_whose_approval_is_not_used_is_found`
+- `test_a_stored_plan_that_does_not_match_its_sha256_is_found`
+- `test_a_second_contact_created_by_one_enquiry_is_found`
 - `test_what_it_cannot_find_a_consistent_rewrite_by_a_person_who_can_open_the_file`
 
 ## tests/test_rules.py

@@ -37,6 +37,21 @@ class FakeCRMCase(DeskCase):
             return error.code
 
 
+class ProxyTests(FakeCRMCase):
+    def test_the_adapter_ignores_proxy_variables_and_talks_to_the_crm_it_was_given(self):
+        import os
+        from unittest import mock
+
+        dead = "http://127.0.0.1:9"  # a proxy that does not answer: a request sent there would fail
+        names = {name: dead for name in ("HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY",
+                                         "all_proxy")}
+        names.update({"NO_PROXY": "", "no_proxy": ""})
+        with mock.patch.dict(os.environ, names):
+            self.assertEqual(urllib.request.getproxies().get("http"), dead)  # the variables are seen by urllib
+            crm = HttpCRM(self.url, self.token, timeout=5)
+            self.assertEqual(crm.check()[0], "connected")
+
+
 class StrictFakeTests(FakeCRMCase):
     def test_the_fake_refuses_an_unknown_field_path_or_query(self):
         self.assertEqual(self.raw("POST", "/contacts", {"name": "x", "email": "", "phone": "", "company": "",

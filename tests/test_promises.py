@@ -257,6 +257,25 @@ class DoctorFindsTheReviewedManipulationsTests(DeskCase):
         self.assertIn("the arrivals add up, and agree with the trail: the trail records 32 'replay' events, but there "
                       "are 33 replays", found)
 
+    def test_an_applied_enquiry_whose_approval_is_not_used_is_found(self):
+        self.desk_db().execute("UPDATE approvals SET state = 'withdrawn' WHERE key = ?", (self.KEY,))
+        self.assertIn(f"every applied enquiry has a used approval for its plan: {self.KEY} is applied, but no "
+                      "approval of its plan is used", self.problems())
+
+    def test_a_stored_plan_that_does_not_match_its_sha256_is_found(self):
+        sha = self.plan_sha("webform:wf-000102")
+        self.desk_db().execute("UPDATE plans SET body = replace(body, 'Answer the enquiry', 'Ignore the enquiry') "
+                               "WHERE sha = ?", (sha,))
+        self.assertIn(f"every stored plan matches its sha256: the plan stored as {sha[:12]} does not match its "
+                      "sha256", self.problems())
+
+    def test_a_second_contact_created_by_one_enquiry_is_found(self):
+        conn = self.crm_db()
+        conn.execute("INSERT INTO contacts (name, origin_key) VALUES ('Copy (invented)', ?)", (self.KEY,))
+        conn.commit()
+        self.assertIn(f"no two contacts created by the same enquiry: 2 contacts were created by {self.KEY}",
+                      self.problems())
+
     def test_what_it_cannot_find_a_consistent_rewrite_by_a_person_who_can_open_the_file(self):
         # The triggers dropped, the approver's name changed in the trail and on the approval, every later hash
         # recomputed, the triggers put back: nothing on the desk disagrees with anything else.

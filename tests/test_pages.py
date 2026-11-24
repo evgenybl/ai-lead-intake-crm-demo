@@ -121,6 +121,32 @@ class EscapingTests(DeskCase):
             self.assertNotIn("<img", html_page.lower())
             self.assertIn("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;", html_page)
 
+    def test_an_approver_s_name_a_refusal_reason_and_a_replay_difference_are_escaped(self):
+        self.init()
+        refused = {"backend": "test", "label": "Recorded", "outcome": "refused", "request": "",
+                   "reason": "the answer has keys beyond the four: " + MARKUP, "summary": None, "intent": None,
+                   "urgency": None, "reply_draft": None}
+
+        class Drafter:
+            def draft(self, fields):
+                return refused
+
+        approver = '<b onmouseover="x()">Rev</b> & co (invented)'
+        with self.desk() as desk:
+            desk.drafter = Drafter()
+            desk.receive(enquiry(), via="file")
+            desk.receive(enquiry(message="Edited: " + MARKUP), via="http")  # a replay with different content
+            desk.approve("webform:test-000001", approver, desk.store.get_enquiry("webform:test-000001").plan_sha)
+            page = pages.enquiry_page(desk.store, "webform:test-000001", pages.ServerLinks(), pages.Decisions("t"))
+            index = pages.desk_page(desk.store, pages.ServerLinks(), pages.Decisions("t"))
+        for html_page in (page, index):
+            self.assertNotIn("<script", html_page.lower())
+            self.assertNotIn("<img", html_page.lower())
+            self.assertNotIn("<b onmouseover", html_page)
+        self.assertIn("&lt;b onmouseover=&quot;x()&quot;&gt;Rev&lt;/b&gt; &amp; co (invented)", page)
+        self.assertIn("keys beyond the four: &lt;script&gt;", page)
+        self.assertIn("Edited: &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;", page)
+
 
 class ServeCase(DeskCase):
     allow_decisions = False

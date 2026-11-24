@@ -91,6 +91,12 @@ class CommandTests(DeskCase):
         refused = self.cli("approve", "webform:wf-000101", "--by", PERSON, "--plan", "0123456789ab", expect=1)
         self.assertIn("nothing approved", refused)
         self.assertIn("refused", self.cli("approve", "webform:wf-000101", "--by", PERSON, "--plan", "0123", expect=1))
+        sha = self.plan_sha("webform:wf-000101")
+        self.assertIn("its first 8 or more hex digits",
+                      self.cli("approve", "webform:wf-000101", "--by", PERSON, "--plan", sha[:7], expect=1))
+        self.assertIn("approved: webform:wf-000101",
+                      self.cli("approve", "webform:wf-000101", "--by", PERSON, "--plan", sha[:8].upper()))
+        self.cli("withdraw", "webform:wf-000101", "--by", PERSON)
         plan = self.cli("plan")
         sha = plan.split("--plan ")[1].split()[0]
         self.assertIn("approved: webform:wf-000101", self.cli("approve", "webform:wf-000101", "--by", PERSON, "--plan", sha))
