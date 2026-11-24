@@ -1,7 +1,6 @@
 # Design decisions
 
-Phase 1 of the build: the core. This page records the points the specification left open, how each was
-settled, and why. Where this page and the code disagree, the code and its tests are right and this page
+This page records the points the specification left open, how each was settled, and why. Where this page and the code disagree, the code and its tests are right and this page
 is wrong; please report it.
 
 ## Where things are
@@ -21,10 +20,17 @@ is wrong; please report it.
 | `intake/audit.py` | The audit trail: its triggers and its hash chain |
 | `intake/doctor.py` | The invariants of the four promises |
 | `intake/crm/` | The adapter interface, the practice CRM (SQLite) and the HTTP adapter |
-| `intake/server.py` | `POST /intake` |
+| `intake/server.py` | `POST /intake`, and the desk pages under `serve` |
+| `intake/pages.py` | The desk pages, rendered on the server with no script |
 | `intake/clock.py` | The one clock |
-| `intake/draft.py` | The `template` stand-in (no model) |
+| `intake/request.py` | The request to a model: the fixed prompt, the scrubbed message, and the guard |
+| `intake/answer.py` | Reading a model's answer strictly, and its checks |
+| `intake/draft.py` | The three backends of the model step: `recorded`, `template`, `anthropic` |
+| `intake/reports.py` | The text of `report`, `trail`, `plan` and `doctor` |
 | `intake/cli.py`, `desk.py` | The command line |
+| `demo.py`, `make_examples.py` | The demo of section 5, and the examples made from its run |
+| `tools/recordings.py` | Writes the requests and the constructed answers; keeps a real answer as it came |
+| `tools/term_svg.py`, `tools/list_tests.py` | The demo's picture; `docs/TESTS.md` |
 
 ## The states
 
@@ -209,6 +215,79 @@ is unchanged (a returning contact), the gate completes it at once and finds what
 - If the CRM cannot be read when an enquiry arrives, the enquiry is kept as `received` and the answer is
   201; `desk.py plan` assesses it later. A lead is not lost because the CRM was down.
 
+## A replay with different content
+
+A copy that arrives under a known key is a replay, whatever it holds: the first content stands and nothing
+new is planned. When its content differs (any field but the time it was sent), the trail's replay row
+records each differing field with both values, and `report`, `ingest` and the desk page say "replayed with
+different content" and name the fields, so that a person sees an edited resend. The invented data holds
+one: the third copy of the first enquiry, whose message was edited.
+
+## The model step
+
+- **The request** is one text: a fixed prompt, the fixed list of intents, and the message. It never holds
+  the name, e-mail or phone fields. The message is scrubbed of the sender's own e-mail and phone as written,
+  of anything shaped like an e-mail address or a phone number (7 to 15 digits; an ISO date such as
+  2026-02-02 is kept), and of each word of the sender's name, as whole words in any letter case. All
+  replacements are found on the original text in one pass, so one replacement never makes or hides another.
+  A guard reads the finished request again and refuses to send it if any of these is still there. Any
+  number of 7 or more digits counts as a possible phone, so a large figure in a message is scrubbed too.
+- **The request's sha256** is over its UTF-8 bytes and names it; `recorded/requests/<sha256>.txt` holds it.
+  `python -I tools/recordings.py requests` writes one for every invented enquiry that reaches the model:
+  the ones not refused, and not replays (a held enquiry reaches it: its draft helps the person resolve it).
+- **The answer** must be one JSON object with exactly the four keys; a fifth key refuses the whole answer.
+  The object may stand alone or inside one ```` ```json ```` fence, and nothing else may surround it.
+  `reply_draft` may be null (the prompt asks for null on spam); when it is text it must hold `{{name}}`.
+- **Numbers** are compared as numbers written in digits: `1,200` and `1200` are one, `02` and `2` are one.
+  Each must appear in the message the model saw.
+- **An answer that fails** is not used: the desk keeps no part of it, shows "AI draft refused" with the
+  reasons, and the plan is the plan with no AI text (the draft is never part of a plan). The reasons name a
+  check, never a personal value, so the one retry of the live path can carry them back to the model.
+- **The live path** sends the Messages API request with `anthropic-version: 2026-10-21` and the default
+  model `claude-opus-5-5` (`INTAKE_MODEL` changes it), with no sampling parameters, and asks for the
+  server-side fallback on a refusal (`fallbacks: "default"`, the `server-side-fallback-2026-07-01` beta).
+  It reads only the answer's `text` blocks (a thinking block may come first), treats `stop_reason:
+  "refusal"` as no AI text, and on the one retry sends the first answer back unchanged, thinking blocks
+  included, followed by the reasons. It has been run against a local mock only.
+- **Labels are earned.** "Recorded" needs an answer in `recorded/answers/` whose meta file says
+  `"origin": "recorded"` and whose request file and answer file both match the sha256s it names. An
+  answer in `recorded/constructed/` is "Constructed answer, not from a model"; its meta file says
+  `"origin": "constructed"` and how it was made. `tools/recordings.py add` is the only writer of
+  `"origin": "recorded"`, and it copies the answer byte for byte.
+- **The gallery** (`recorded/gallery/`) holds constructed bad answers for two demo cases: one with a fifth
+  key, one with a figure that is not in the message. Each is named as constructed.
+
+## The desk pages
+
+- Rendered on the server as plain HTML; no page has a script, and `serve` sends a Content-Security-Policy
+  that allows none. Every value from an enquiry, a person or a model passes through one escape function.
+- The counts come first, in plain words for each state, then the enquiries grouped by state, those waiting
+  for a person first. Each enquiry names the label of its model step.
+- **Approve and Reject** appear as forms only when `serve` was started with `--allow-decisions`. Each needs
+  the ticked confirmation box and a name (the two locks), and carries the plan's sha256, so the approval is
+  for the plan on the page. Each form also carries a token made when the server started; the server answers
+  only requests addressed to 127.0.0.1 or localhost on its own port, and takes a decision only when the
+  Origin, if the browser sends one, is its own. Without the switch the page shows the commands.
+- `serve` with no secret still shows the desk; only `POST /intake` answers 503. `listen` stays as before:
+  the intake alone, refusing every request when it has no secret.
+- `render --out` writes the same pages as files, with relative links and never a form. A key becomes a file
+  name by writing `~` for `:`; neither a source nor a source_id may hold `~`, so the names do not collide.
+- **A person's name** is refused when it starts with `=`, `+`, `-`, `@`, a tab or a carriage return, on the
+  command line and in the form. The project writes no CSV, but a name is kept in the trail and could reach a
+  spreadsheet some day.
+
+## The demo and the examples
+
+- `demo.py` drives the real commands through `main(argv)` on new files, with a fixed clock and an
+  environment of its own, so nothing from the caller's environment changes it. A CRM that is down is
+  simulated by a wrapper that fails one call; the two intake cases start a server on 127.0.0.1.
+- `make_examples.py` runs the whole demo and keeps what it printed and wrote: the outputs of the story's
+  steps, the desk pages after the story, the closing table, and `docs/img/demo.svg` drawn from that table by
+  `tools/term_svg.py`. No path of the computer that ran it is in any of them, so `--check` gives the same
+  answer on every computer.
+- In the closing table the cases `refused-inputs` and `ai-answer-refused` are named `inputs-not-taken` and
+  `ai-answer-not-used`: the picture tool draws any line with the word "refused" red, as a failure.
+
 ## Changes against the specification, and additions
 
 - **Added the state `received`**, for an enquiry taken while the CRM could not be read (see above).
@@ -222,9 +301,17 @@ is unchanged (a returning contact), the gate completes it at once and finds what
   look-up by origin key, a search of notes, a list of a contact's tasks and a health check: identity, the
   idempotent writes and `status` need them.
 - **Added commands:** `init` creates the two files and loads the practice CRM's starting contacts;
-  `listen` offers `POST /intake` alone (phase 2's `serve` adds the desk pages).
+  `listen` offers `POST /intake` alone; `serve` adds the desk pages.
 - Unknown fields in an enquiry are ignored, and their names are recorded in the trail.
 - Blank lines in a `.jsonl` file are skipped and not reported.
+- **The model step adds a fourth kind of draft source**, the constructed answer, so that the desk and the
+  demo show the model step before real answers are recorded. It is never labelled "Recorded".
+- **The answer may sit in one ```` ```json ```` fence**, and `reply_draft` may be null.
+- **The live path asks for the server-side fallback** on a refusal, as the Messages API documentation
+  advises for this model.
+- **The third copy of the first enquiry has an edited message**, so the data holds a replay with different
+  content. The data still holds three replays.
+- **The closing table renames two cases** (see "The demo and the examples").
 
 ## Limits
 
