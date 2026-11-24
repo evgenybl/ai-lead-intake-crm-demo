@@ -14,7 +14,7 @@ from tests.helpers import ROOT
 QUOTE = re.compile(r"<!-- from (examples/[^ ]+) -->\n([ \t]*)```[a-z]*\n(.*?)\n[ \t]*```", re.DOTALL)
 ANSWER_QUOTE = re.compile(r"<!-- quote (recorded/answers/[0-9a-f]{64}\.answer\.txt) -->\n[ \t]*> (.+)\n")
 IMAGE = re.compile(r"!\[[^\]]*\]\(([^)\s]+)\)|<img[^>]+src=\"([^\"]+)\"")
-SECTION_5_CASES = ["replay-three-times", "returning-contact", "two-contacts-held", "possible-duplicate-held",
+GALLERY_CASES = ["replay-three-times", "returning-contact", "two-contacts-held", "possible-duplicate-held",
                    "refused-inputs", "hidden-instruction", "ai-answer-refused", "apply-without-approval",
                    "approval-for-another-plan", "apply-twice", "crm-down-then-retry", "wrong-secret",
                    "no-secret-configured"]
@@ -57,7 +57,8 @@ class DocumentTests(unittest.TestCase):
     def test_every_block_quoted_from_the_examples_is_a_real_slice_of_its_file(self):
         readme = read("README.md")
         quotes = QUOTE.findall(readme)
-        self.assertGreaterEqual(len(quotes), 5)
+        self.assertEqual({source for source, _, _ in quotes}, {"examples/plan-one-in-full.txt", "examples/report.txt",
+                                                              "examples/doctor.txt", "examples/ingest-again.txt"})
         for source, indent, block in quotes:
             with self.subTest(source=source):
                 lines = [line[len(indent):] if line.startswith(indent) else line for line in block.split("\n")]
@@ -145,9 +146,9 @@ class PictureToolTests(unittest.TestCase):
 
 
 class DemoTests(unittest.TestCase):
-    def test_the_demo_has_every_case_of_section_5(self):
+    def test_the_demo_has_every_case_of_the_gallery(self):
         demo = load("demo_for_tests", "demo.py")
-        self.assertEqual(list(demo.CASES), SECTION_5_CASES)
+        self.assertEqual(list(demo.CASES), GALLERY_CASES)
 
     def test_one_case_runs_on_its_own_new_files(self):
         demo = load("demo_for_tests", "demo.py")

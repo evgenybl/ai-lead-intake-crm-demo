@@ -1,0 +1,18 @@
+the dry run: nothing below has been written to the CRM
+
+webform:wf-000109  [awaiting_approval]
+  identity: returning: contact 2, found by e-mail
+  draft (Recorded; intent booking, urgency normal): The sender moved their phone line and asks whether the cleaning service can be moved to Mondays.
+  plan e9a616cc484b4abcfc35cd327cc13e0f5b41844b39532e669b4923be64cd964b
+    1. add_note on contact 2, exactly this text:
+         webform:wf-000109
+         Enquiry from webform, received 2026-01-05T09:52:00Z.
+
+         We moved our phone line. Can the cleaning move to Mondays?
+    2. add_task on contact 2, exactly this text:
+         webform:wf-000109
+         Answer the enquiry from Bruno Calloway (invented).
+    shown for a person: phone: the CRM has '000-000-0102', the enquiry says '000-000-0199', not overwritten
+  to approve: desk.py approve webform:wf-000109 --by <name> --plan e9a616cc484b
+
+plan: 1 waiting (1 awaiting_approval)

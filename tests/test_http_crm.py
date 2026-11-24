@@ -1,4 +1,4 @@
-"""The HTTP CRM adapter against the strict fake (section 3.7, section 6). Mock: no real CRM is reached."""
+"""The HTTP CRM adapter against the strict fake. Mock: no real CRM is reached."""
 import json
 import secrets
 import unittest

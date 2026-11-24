@@ -1,4 +1,4 @@
-"""The flow of section 3: arrive, validate, identity, draft, plan; and a person's decisions on it.
+"""The flow of an enquiry: arrive, validate, identity, draft, plan; and a person's decisions on it.
 
 Writes to the CRM are not here: they happen in intake/gate.py, and only there.
 """

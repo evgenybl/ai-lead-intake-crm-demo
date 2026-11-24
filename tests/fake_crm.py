@@ -1,4 +1,4 @@
-"""A strict fake of the HTTP CRM of docs/CRM-API.md, for the tests only (section 6).
+"""A strict fake of the HTTP CRM of docs/CRM-API.md, for the tests only.
 
 - It refuses an unknown path, method, query parameter or body field, and records each refusal in
   `violations`, so a test can assert that the adapter never sent one.

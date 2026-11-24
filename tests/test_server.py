@@ -1,4 +1,4 @@
-"""End-to-end tests of POST /intake (section 3.1): it fails closed, and it binds 127.0.0.1 only."""
+"""End-to-end tests of POST /intake: it fails closed, and it binds 127.0.0.1 only."""
 import http.client
 import io
 import json

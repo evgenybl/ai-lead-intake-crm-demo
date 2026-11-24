@@ -3,11 +3,11 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-278 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+282 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
-Integration tests on a real desk file: the append-only trail (section 3.6) and the store's rules.
+Integration tests on a real desk file: the append-only trail and the store's rules.
 
 ### AuditTrailTests
 
@@ -43,6 +43,7 @@ The whole story of the invented data, command by command.
 
 - `test_a_line_that_is_not_json_is_named_and_the_others_are_taken`
 - `test_a_missing_desk_or_file_is_a_usage_error`
+- `test_a_desk_file_held_by_another_program_is_a_plain_message_and_nothing_is_changed`
 - `test_a_bad_fixed_time_is_a_usage_error`
 - `test_approve_checks_the_plan_the_person_saw`
 - `test_an_approval_without_the_plan_is_refused_so_a_plan_made_again_is_never_approved_unseen`
@@ -58,7 +59,7 @@ The whole story of the invented data, command by command.
 
 ## tests/test_controls.py
 
-The five controls of section 6. Each breaks one property in memory or in its own temporary files, and asserts that `desk.py doctor`, or the matching test's check, reports the break. A control that passed while the property was broken would mean the doctor could not see that failure.
+The five controls. Each breaks one property in memory or in its own temporary files, and asserts that `desk.py doctor`, or the matching test's check, reports the break. A control that passed while the property was broken would mean the doctor could not see that failure.
 
 ### ControlTests
 
@@ -70,13 +71,13 @@ The five controls of section 6. Each breaks one property in memory or in its own
 
 ## tests/test_data.py
 
-The invented data of section 4: the files equal the generator's output, and each case does what it is for.
+The invented data: the files equal the generator's output, and each case does what it is for.
 
 ### GeneratorTests
 
 - `test_the_files_equal_the_generators_output`
 - `test_the_generator_gives_the_same_output_every_time`
-- `test_the_data_holds_every_case_section_4_asks_for`
+- `test_the_data_holds_every_case_the_demo_needs`
 - `test_everyone_is_invented_and_reachable_only_at_placeholders`
 
 ### CasesReachTheirStatesTests
@@ -106,7 +107,7 @@ The documents say only what a run printed; the demo and the examples are what th
 
 ### DemoTests
 
-- `test_the_demo_has_every_case_of_section_5`
+- `test_the_demo_has_every_case_of_the_gallery`
 - `test_one_case_runs_on_its_own_new_files`
 - `test_the_examples_and_the_picture_are_what_a_new_run_makes`
 
@@ -154,7 +155,7 @@ Unit tests: the clock, canonical JSON, normalisation, the draft stand-in, the al
 
 ## tests/test_gate.py
 
-Integration tests: the one write gate (section 3.5) on real desk and practice CRM files.
+Integration tests: the one write gate on real desk and practice CRM files.
 
 ### GateTests
 
@@ -196,7 +197,7 @@ Two appliers forced to interleave between the look-up and the write: the second 
 
 ## tests/test_http_crm.py
 
-The HTTP CRM adapter against the strict fake (section 3.7, section 6). Mock: no real CRM is reached.
+The HTTP CRM adapter against the strict fake. Mock: no real CRM is reached.
 
 ### ProxyTests
 
@@ -228,7 +229,7 @@ The whole flow with the HTTP adapter in place of the practice CRM.
 
 ## tests/test_model_step.py
 
-Section 3.4: the request and its guard, the strict answer, the three backends, and the hidden instruction.
+The request and its guard, the strict answer, the three backends, and the hidden instruction.
 
 ### RequestTests
 
@@ -294,7 +295,7 @@ The live path, against a local mock only.
 
 ### HiddenInstructionTests
 
-Section 3.4's three proofs for the enquiry whose message tells the software to approve itself.
+Three proofs for the enquiry whose message tells the software to approve itself.
 
 - `test_whatever_a_model_answers_the_enquiry_still_needs_a_persons_approval`
 - `test_an_answer_with_any_key_beyond_the_four_is_refused_whole`
@@ -307,7 +308,7 @@ Section 3.4's three proofs for the enquiry whose message tells the software to a
 
 ## tests/test_pages.py
 
-Section 3.8: the desk pages, `render` and `serve`. No script on any page; everything from an enquiry or a model is escaped; Approve and Reject take two locks and work only with --allow-decisions.
+The desk pages, `render` and `serve`. No script on any page; everything from an enquiry or a model is escaped; Approve and Reject take two locks and work only with --allow-decisions.
 
 ### RenderTests
 
@@ -347,7 +348,7 @@ Section 3.8: the desk pages, `render` and `serve`. No script on any page; everyt
 
 ## tests/test_planner.py
 
-Unit and integration tests: the plan (section 3.5), its sha256, and when it changes.
+Unit and integration tests: the plan, its sha256, and when it changes.
 
 ### PlannerTests
 
@@ -368,7 +369,7 @@ Unit and integration tests: the plan (section 3.5), its sha256, and when it chan
 
 ## tests/test_practice_crm.py
 
-Integration tests: the practice CRM on a real SQLite file (section 3.7).
+Integration tests: the practice CRM on a real SQLite file.
 
 ### PracticeCRMTests
 
@@ -384,7 +385,7 @@ Integration tests: the practice CRM on a real SQLite file (section 3.7).
 
 ## tests/test_promises.py
 
-The four promises of section 2, one test each, named by the promise; and the doctor catching a break of each.
+The four promises, one test each, named by the promise; and the doctor catching a break of each.
 
 ### PromiseTests
 
@@ -429,14 +430,24 @@ Edits of the desk file that the review made by hand. What the doctor finds, and,
 - `test_a_second_contact_created_by_one_enquiry_is_found`
 - `test_what_it_cannot_find_a_consistent_rewrite_by_a_person_who_can_open_the_file`
 
+## tests/test_readme.py
+
+The README's commands, run in the order it gives them, print what it shows.
+
+### ReadmeCommandTests
+
+- `test_the_blocks_are_there`
+- `test_every_command_prints_what_the_readme_shows_in_the_readme_s_order`
+
 ## tests/test_rules.py
 
-Rules of the repository itself (section 1), checked on every file, and the one-gate rule on the code.
+Rules of the repository itself, checked on every file, and the one-gate rule on the code.
 
 ### RepositoryRuleTests
 
 - `test_there_are_files_to_check`
 - `test_no_absolute_path_in_any_file`
+- `test_no_file_points_to_a_document_the_reader_does_not_have`: Each rule is said where it applies, never as a pointer to an outside document or its numbered parts.
 - `test_no_key_shaped_or_token_shaped_literal_in_any_file`: A sha256 digest (exactly 64 lowercase hex digits) names a file's content; it is not a secret.
 - `test_every_email_address_is_at_example_com`
 - `test_every_text_file_has_lf_line_ends`
@@ -450,7 +461,7 @@ Rules of the repository itself (section 1), checked on every file, and the one-g
 
 ## tests/test_server.py
 
-End-to-end tests of POST /intake (section 3.1): it fails closed, and it binds 127.0.0.1 only.
+End-to-end tests of POST /intake: it fails closed, and it binds 127.0.0.1 only.
 
 ### NoSecretTests
 
@@ -493,12 +504,12 @@ A client that drips its request, and a desk file another program holds.
 
 ## tests/test_validate_and_identity.py
 
-Unit tests: validation (section 3.2), the idempotency key and contact matching (section 3.3).
+Unit tests: validation, the idempotency key and contact matching.
 
 ### ValidateTests
 
 - `test_a_good_enquiry_is_taken`
-- `test_each_refusal_of_section_3_2_with_its_reason`
+- `test_each_refusal_with_its_reason`
 - `test_the_boundaries`
 - `test_consent_must_be_the_json_value_true`
 - `test_every_reason_is_kept_not_only_the_first`
@@ -520,7 +531,7 @@ Unit tests: validation (section 3.2), the idempotency key and contact matching (
 
 ### MatchTests
 
-The table of section 3.3, against a real practice CRM file.
+The matching table of intake/identity.py, against a real practice CRM file.
 
 - `test_new`
 - `test_returning_by_email_whatever_its_case`

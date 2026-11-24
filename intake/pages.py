@@ -1,4 +1,4 @@
-"""Section 3.8: the desk pages, rendered on the server as plain HTML. There is no script on any page.
+"""The desk pages, rendered on the server as plain HTML. There is no script on any page.
 
 Every value that comes from an enquiry, a person or a model passes through esc() before it reaches the
 page; tests/test_pages.py puts markup in a message, a name and a model's answer and finds it shown as text.

@@ -1,4 +1,4 @@
-"""Unit tests: validation (section 3.2), the idempotency key and contact matching (section 3.3)."""
+"""Unit tests: validation, the idempotency key and contact matching."""
 import os
 import tempfile
 import unittest
@@ -21,7 +21,7 @@ class ValidateTests(unittest.TestCase):
         self.assertEqual(reasons_of(enquiry(email="")), [])  # a phone alone is a way to answer
         self.assertEqual(reasons_of(enquiry(phone="")), [])  # an e-mail alone too
 
-    def test_each_refusal_of_section_3_2_with_its_reason(self):
+    def test_each_refusal_with_its_reason(self):
         cases = {
             "no_name": enquiry(name="  "),
             "no_message": enquiry(message="\n"),
@@ -135,7 +135,7 @@ class KeyTests(unittest.TestCase):
 
 
 class MatchTests(unittest.TestCase):
-    """The table of section 3.3, against a real practice CRM file."""
+    """The matching table of intake/identity.py, against a real practice CRM file."""
 
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()

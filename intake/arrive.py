@@ -1,4 +1,4 @@
-"""Section 3.1: reading what arrives. One JSON object per HTTP body, or per line of a .jsonl file.
+"""Reading what arrives. One JSON object per HTTP body, or per line of a .jsonl file.
 
 What is not one JSON object never becomes an enquiry: the HTTP answer is 400, and `desk.py ingest`
 names the line and takes the others. A key that appears twice in one object, NaN or Infinity, and text

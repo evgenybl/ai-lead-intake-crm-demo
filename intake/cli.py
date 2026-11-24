@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sqlite3
 import sys
 
 import secrets
@@ -56,7 +57,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="let the desk page take Approve and Reject, each with a ticked box and a name")
     p = sub.add_parser("render", parents=[common], help="write the desk pages as files, for a reader with no server")
     p.add_argument("--out", required=True, help="the folder to write index.html and enquiry/*.html into")
-    sub.add_parser("plan", parents=[common], help="the dry run: print every waiting plan; writes nothing to the CRM")
+    p = sub.add_parser("plan", parents=[common], help="the dry run: print every waiting plan; writes nothing to the CRM")
+    p.add_argument("--key", help="print this enquiry only")
+    p.add_argument("--full", action="store_true", help="print each note and task in full, as it would be written")
     p = sub.add_parser("approve", parents=[common], help="approve the waiting plan of one enquiry")
     p.add_argument("key")
     p.add_argument("--by", required=True, help="the name of the person who decides")
@@ -112,6 +115,10 @@ def main(argv=None, out=None, environ=None) -> int:
     except CRMError as error:
         say(f"the CRM did not answer as expected: {error}")
         return 1
+    except sqlite3.OperationalError as error:
+        say(f"the desk file could not be used ({error}): another program may hold it. Nothing was changed by this "
+            "command; run it again in a moment")
+        return 1
 
 
 # -- the commands -----------------------------------------------------------------------------------
@@ -123,16 +130,17 @@ def cmd_init(args, say, home, choice, clock, environ, out) -> int:
             raise HomeError(f"{path} is already there; nothing was changed")
     os.makedirs(home, exist_ok=True)
     DeskStore.create(desk_file, clock).close()
-    say(f"created {desk_file}")
+    say(f"created {os.path.basename(desk_file)} in {home}")
     crm = PracticeCRM(crm_file, create=True)
     try:
         if args.empty_crm:
-            say(f"created {crm_file} with no contacts")
+            say(f"created {os.path.basename(crm_file)} in {home}, with no contacts")
             return 0
         raw = _read_file(os.path.join(REPO_ROOT, *STARTING_CONTACTS))
         contacts = [obj for _, obj, problem in read_lines(raw) if not problem]
         loaded = crm.load_starting_contacts(contacts)
-        say(f"created {crm_file} with the {loaded} starting contacts of {'/'.join(STARTING_CONTACTS)}")
+        say(f"created {os.path.basename(crm_file)} in {home}, with the {loaded} starting contacts of "
+            f"{'/'.join(STARTING_CONTACTS)}")
     finally:
         crm.close()
     return 0
@@ -228,6 +236,14 @@ def cmd_plan(args, say, home, choice, clock, environ, out) -> int:
         for key, change in desk.prepare():
             say(f"{key}: {change}")
         groups = desk.waiting()
+        if args.key is not None:
+            one = desk.store.get_enquiry(args.key)
+            if one is None:
+                raise DeskError(f"no enquiry with the key {args.key!r}")
+            groups = {name: [e for e in found if e.key == args.key] for name, found in groups.items()}
+            if not any(groups.values()):
+                say(f"{args.key} waits for nothing: it is {one.state}")
+                return 0
         say("the dry run: nothing below has been written to the CRM")
         shown = 0
         for state, enquiries in groups.items():
@@ -236,7 +252,7 @@ def cmd_plan(args, say, home, choice, clock, environ, out) -> int:
                 if state == "approved":
                     note = _freshness(desk, enquiry)
                 say()
-                for line in reports.enquiry_lines(desk.store, enquiry, note):
+                for line in reports.enquiry_lines(desk.store, enquiry, note, full=args.full):
                     say(line)
                 shown += 1
         say()

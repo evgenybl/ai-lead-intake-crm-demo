@@ -1,4 +1,4 @@
-"""Section 3.8: the desk pages, `render` and `serve`. No script on any page; everything from an enquiry or a
+"""The desk pages, `render` and `serve`. No script on any page; everything from an enquiry or a
 model is escaped; Approve and Reject take two locks and work only with --allow-decisions."""
 import http.client
 import io

@@ -1,4 +1,4 @@
-"""Rules of the repository itself (section 1), checked on every file, and the one-gate rule on the code."""
+"""Rules of the repository itself, checked on every file, and the one-gate rule on the code."""
 import ast
 import os
 import re
@@ -59,6 +59,13 @@ class RepositoryRuleTests(unittest.TestCase):
     def test_no_absolute_path_in_any_file(self):
         found = [f"{relative(p)}: {m.group(0)!r}" for p in repository_files()
                  for m in ABSOLUTE_PATH.finditer(read(p).decode("utf-8"))]
+        self.assertEqual(found, [])
+
+    def test_no_file_points_to_a_document_the_reader_does_not_have(self):
+        """Each rule is said where it applies, never as a pointer to an outside document or its numbered parts."""
+        outside = re.compile(r"\b(?:section|sections)\s+\d|\bthe\s+" + "specif" + r"ication\b", re.IGNORECASE)
+        found = [f"{relative(p)}: {m.group(0)!r}" for p in repository_files()
+                 for m in outside.finditer(read(p).decode("utf-8"))]
         self.assertEqual(found, [])
 
     def test_no_key_shaped_or_token_shaped_literal_in_any_file(self):

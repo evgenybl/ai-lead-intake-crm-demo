@@ -83,6 +83,24 @@ class CommandTests(DeskCase):
         self.assertIn("run `desk.py init` first", self.cli("report", expect=2))
         self.assertIn("run `desk.py init` first", self.cli("doctor", expect=2))
 
+    def test_a_desk_file_held_by_another_program_is_a_plain_message_and_nothing_is_changed(self):
+        import sqlite3
+        from unittest import mock
+
+        from intake.home import desk_path
+
+        holder = sqlite3.connect(desk_path(self.home), isolation_level=None)
+        self.addCleanup(holder.close)
+        holder.execute("BEGIN EXCLUSIVE")
+        try:
+            with mock.patch("intake.store.BUSY_SECONDS", 0.2):
+                out = self.cli("ingest", DATA_FILE, expect=1)
+        finally:
+            holder.execute("ROLLBACK")
+        self.assertIn("the desk file could not be used (database is locked)", out)
+        self.assertNotIn("Traceback", out)
+        self.assertIn("first arrivals               0", self.cli("report"))
+
     def test_a_bad_fixed_time_is_a_usage_error(self):
         self.assertIn("must look like", self.cli("report", at="tomorrow", expect=2))
 

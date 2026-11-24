@@ -1,4 +1,4 @@
-"""Integration tests: the one write gate (section 3.5) on real desk and practice CRM files."""
+"""Integration tests: the one write gate on real desk and practice CRM files."""
 import json
 import unittest
 

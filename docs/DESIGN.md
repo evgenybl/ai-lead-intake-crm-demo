@@ -1,14 +1,14 @@
 # Design decisions
 
-This page records the points the specification left open, how each was settled, and why. Where this page and the code disagree, the code and its tests are right and this page
-is wrong; please report it.
+This page records each decision behind the desk, and why. Where this page and the code disagree, the code and its
+tests are right and this page is wrong; please report it.
 
 ## Where things are
 
 | Module | What it does |
 |---|---|
 | `intake/arrive.py` | Reads one JSON object from an HTTP body or a line of a `.jsonl` file |
-| `intake/validate.py` | The refusals of section 3.2, each with its reason |
+| `intake/validate.py` | The refusals, each with its reason |
 | `intake/normalise.py` | What "normalised" means for an e-mail, a phone, a name and a message |
 | `intake/identity.py` | The idempotency key, and matching a contact by exact keys |
 | `intake/planner.py` | The plan: the exact operations an enquiry would cause, and its sha256 |
@@ -16,7 +16,7 @@ is wrong; please report it.
 | `intake/gate.py` | The one write gate: every CRM write passes through it |
 | `intake/flow.py` | Arrival, assessment, and a person's decisions (resolve, approve, reject, withdraw) |
 | `intake/states.py` | The named states and the only moves between them |
-| `intake/store.py` | The desk's SQLite file |
+| `intake/store.py` | The desk's SQLite file, and the apply lock |
 | `intake/audit.py` | The audit trail: its triggers and its hash chain |
 | `intake/doctor.py` | The invariants of the four promises |
 | `intake/crm/` | The adapter interface, the practice CRM (SQLite) and the HTTP adapter |
@@ -26,9 +26,9 @@ is wrong; please report it.
 | `intake/request.py` | The request to a model: the fixed prompt, the scrubbed message, and the guard |
 | `intake/answer.py` | Reading a model's answer strictly, and its checks |
 | `intake/draft.py` | The three backends of the model step: `recorded`, `template`, `anthropic` |
-| `intake/reports.py` | The text of `report`, `trail`, `plan` and `doctor` |
+| `intake/reports.py` | The text of `report`, `trail`, `plan` and `doctor`, printed so that outside text cannot forge a line |
 | `intake/cli.py`, `desk.py` | The command line |
-| `demo.py`, `make_examples.py` | The demo of section 5, and the examples made from its run |
+| `demo.py`, `make_examples.py` | The demo of the whole story and its gallery of cases, and the examples made from its run |
 | `tools/recordings.py` | Writes the requests and the constructed answers; keeps a real answer as it came |
 | `tools/term_svg.py`, `tools/list_tests.py` | The demo's picture; `docs/TESTS.md` |
 
@@ -40,9 +40,9 @@ counted and recorded, and it changes no state.
 | State | Meaning |
 |---|---|
 | `received` | Taken; identity not checked yet, because the CRM could not be read |
-| `refused` | Failed validation; kept with its reasons; never reaches the model or the CRM |
+| `refused` | Failed validation; kept with its reasons; never reaches the model or the CRM, until a copy that passes arrives under the same key |
 | `held_two_contacts` | The e-mail and the phone point to different contacts; waits for a person |
-| `held_possible_duplicate` | No exact key matches, but a contact has the same name and company; waits for a person |
+| `held_possible_duplicate` | A contact might be the same person: only the phone matches and the e-mails do not agree, or no key matches but the name and company do; waits for a person |
 | `awaiting_approval` | A plan is ready and waits for a person's approval |
 | `approved` | A person approved exactly this plan; not applied yet |
 | `rejected` | A person rejected the plan, with a reason; nothing is written |
@@ -50,11 +50,12 @@ counted and recorded, and it changes no state.
 | `apply_failed` | A CRM call failed; the error is named; a retry completes what is missing |
 
 The moves (`intake/states.py`, `TRANSITIONS`). Any other move raises an error, and every move that
-happens is an audit row that records the state it ends in.
+happens is an audit row that records the state it comes from and the state it ends in.
 
 | From | Event | To | Who |
 |---|---|---|---|
 | (not on the desk) | `arrived` | `refused` or `received` | system |
+| `refused` | `resent` | `received` | system (a copy that passes, under the same key) |
 | `received` | `assessed` | `awaiting_approval`, or a held state | system |
 | a held state | `resolved` | `awaiting_approval`, or a held state if the resolution no longer applies | a person |
 | `awaiting_approval` | `replanned` | `awaiting_approval`, or a held state | system (`desk.py plan`, when the CRM changed) |
@@ -67,12 +68,21 @@ happens is an audit row that records the state it ends in.
 | `apply_failed` | `replanned` | `awaiting_approval`, or a held state | system (a retry where no step had started, and the CRM changed) |
 | `apply_failed` | `withdrawn` | `awaiting_approval` | a person |
 
-`refused`, `rejected` and `applied` are final.
+`rejected` and `applied` are final. `refused` is final unless a corrected copy arrives (see "A corrected copy").
+
+## What is refused
+
+No name; no message; neither e-mail nor phone; an e-mail that is not an address; a phone that is not a phone
+number (7 to 15 digits); consent that is not the JSON value `true`; the honeypot field filled; a message above
+5,000 characters after trimming; a `received_at` that is not a date and time; a text field sent as another JSON
+type; a name or company that starts like a spreadsheet formula (`=`, `+`, `-`, `@`, a tab or a carriage return,
+as sent or after trimming); a name or company that holds a control character, or a character that reorders or
+hides text (a bidi control, a zero-width space). Every reason that applies is kept, in a fixed order.
 
 ## What "normalised" means
 
-- **E-mail:** trimmed and lowercased (the whole address, as the specification says). It is an address when
-  it has exactly one `@`, no whitespace, a dot after the `@`, and at most 254 characters.
+- **E-mail:** trimmed and lowercased, the whole address. It is an address when it has exactly one `@`, no
+  whitespace, a dot after the `@`, and at most 254 characters.
 - **Phone:** its ASCII digits only. `(000) 000-0106` and `000-000-0106` are the same phone. It is a phone
   number when it has 7 to 15 digits. Nothing is known about country codes: `+1 000...` and `000...` differ.
 - **Name and company:** Unicode NFKC, case-folded, every run of characters that are not letters or digits
@@ -86,7 +96,8 @@ happens is an audit row that records the state it ends in.
   letters, digits, `_` or `-`. A source of `hash` is refused so that no source can imitate a hashed key.
 - Otherwise `hash:` and the first 32 hex digits of the sha256 of the canonical JSON of
   `{"date", "email", "message", "phone"}`, normalised. The date is the UTC date of `received_at`; an
-  enquiry with no `received_at` gets its arrival time, from the desk's clock.
+  enquiry with no `received_at` gets its arrival time, from the desk's clock. A message that differs only in
+  letter case, by a full stop, or by another Unicode form of a letter makes another key.
 - The source_id is case-sensitive: a form system's ids are its own.
 
 ## What a replay returns, and what it changes
@@ -100,14 +111,27 @@ original's. Nothing else changes: no new plan, no new approval, no CRM write.
 withdraw it, renew it or apply it. A replay with different content under the same key is still a replay;
 the trail notes `same_content=false` and the original content is kept.
 
+## A corrected copy
+
+A refused enquiry never holds its key against a later copy that passes. When a copy that passes validation
+arrives under the key of an enquiry in `refused`, it becomes the enquiry: its content replaces the refused
+content, the enquiry moves `refused` → `received` (event `resent`, with the earlier reasons and the names of the
+fields that changed), and it is assessed as any new enquiry. The arrival is counted as a `resend`; `report` and
+`doctor` add the arrivals up as enquiries + replays + corrected resends. A copy that does not pass, under any
+known key, is a replay; so is a bad copy of a good enquiry, which changes nothing. HTTP answers a corrected
+copy 201 with `"earlier_copy_refused": true`.
+
 ## Identity
 
-Section 3.3's table, made precise: the contacts found by the e-mail and by the phone form one set.
+The contacts found by the e-mail and by the phone form one set.
 
-- One contact in the set: **returning**. This includes the case where the e-mail and the phone both
-  point to the same contact.
+- One contact in the set: **returning**, with one exception. When the contact was found by the phone alone, it
+  is returning only if neither the enquiry nor the contact has an e-mail. If the enquiry gives an e-mail the
+  contact does not have, or the contact has an e-mail the enquiry does not give, the enquiry is **held: phone
+  only** (state `held_possible_duplicate`): a colleague on a shared office line must not be attached to someone
+  else's contact, and the plan must not write a new person's e-mail into it.
 - Two or more: **held: two contacts**. This includes a phone that alone belongs to two contacts (phones
-  are not unique in a CRM), which the table did not name.
+  are not unique in a CRM).
 - None: a contact with the same normalised name **and** the same normalised company is a **possible
   duplicate**. Both must be non-empty: two people with one name and no company are not evidence of
   anything. Otherwise **new**.
@@ -120,7 +144,7 @@ Section 3.3's table, made precise: the contacts found by the e-mail and by the p
   This stops a mistyped id from attaching an enquiry to an unrelated contact.
 - `new` is refused while the enquiry's e-mail belongs to a contact: a second contact with that e-mail
   would break promise 2. For a two-contacts hold that is found by its e-mail, a person therefore chooses
-  between the contacts found. A possible duplicate can be resolved either way.
+  between the contacts found. A possible duplicate, and a phone-only hold, can be resolved either way.
 - The resolution is an audit row with the person's name, and the enquiry gets its plan at once.
 - A resolution applies only while it still makes sense: `new` stops applying if the e-mail later
   belongs to a contact; `contact:<id>` stops applying if the contact is gone. The plan then follows the
@@ -142,14 +166,19 @@ not depend on it.
 `desk.py plan` is the dry run: it writes nothing to the CRM. It does write to the desk: it assesses any
 enquiry still `received` and re-plans any `awaiting_approval` enquiry whose plan the CRM has changed, each
 with its audit row, so that what it prints is the plan as it stands now. It never changes an approval; an
-approved plan the CRM has changed is printed with a warning, and the gate deals with it.
+approved plan the CRM has changed is printed with a warning, and the gate deals with it. `--key` prints one
+enquiry; `--full` prints each note and task exactly as it would be written, instead of its first line.
 
 ## Approvals
 
 An approval is a row: key, plan sha256, who, when, state (`approved`, `used`, `withdrawn`, `rejected`)
 and a reason (required for `rejected`, by the database too). At most one approval per enquiry is
-`approved` at a time (a unique index). `approve --plan <first 8+ hex digits>` refuses unless the waiting
-plan is the one the person saw.
+`approved` at a time (a unique index).
+
+**An approval must name its plan**: `approve <key> --by <name> --plan <sha256, or its first 8 or more hex
+digits>`, and the desk page's form carries the plan's sha256. There is no approval of "whatever plan waits
+now": the desk may have planned again since the person read the plan (the CRM changed), and an approval that
+names the old plan is refused, so a plan is never approved unseen.
 
 When the plan changes under a live approval, the system withdraws that approval (`closed_by` is
 `system`, with the reason) rather than leave an approval for a plan that no longer exists. A person's
@@ -166,12 +195,17 @@ withdrawal and the system's are told apart by `closed_by`.
    is not the approved one, the approval is for another plan: refused, re-planned, it waits again;
 5. a dry run stops here and writes nothing; the gate's one write method also refuses in a dry run.
 
-**A first attempt** is an enquiry in `approved`, or one in `apply_failed` none of whose plan's steps has
-started. A retry after a step has started does not re-plan: the CRM now holds this plan's own first
+**A first attempt** is one where no step of this plan has started (no ledger row for its sha256), whatever the
+enquiry's state. Once a step has started, the gate does not re-plan: the CRM may now hold this plan's own first
 writes, which are not a change by anyone else. It completes the approved plan step by step.
 
-**Idempotent writes.** The ledger has one row per enquiry and operation kind, `started` before the call
-and `done` after it, with the CRM's id. Before each write the gate looks:
+**The intent is recorded before each write.** For each operation, the ledger row `started` and the audit row
+`operation_started` are written in one transaction before the CRM is called; after the call, the ledger row
+`done`, with the CRM's id, and the audit row `operation`. A process killed between a write and its record
+leaves the enquiry `approved` with a step `started`: `doctor` names that step, and the next `apply` continues the
+same plan under the same approval, and finds the write (below).
+
+**Idempotent writes.** Before each write the gate looks:
 
 - `create_contact`: the ledger, then a contact whose origin key is this enquiry's key. The contact
   records the key of the enquiry that created it (`origin_key`), so a contact the gate created is found
@@ -183,37 +217,86 @@ and `done` after it, with the CRM's id. Before each write the gate looks:
 - `fill_empty_fields`: the CRM itself writes only fields that are still empty, so calling it again writes
   nothing new.
 
+**One apply at a time.** `Desk.apply` holds the desk's apply lock for the whole run: an exclusive SQLite
+transaction on a file of its own beside the desk file (`desk.sqlite3-apply-lock`). A second `apply` started
+meanwhile finds it taken and stops before it reads anything, with a message, and writes nothing. The operating
+system releases the lock when the process ends, so a killed apply never leaves it held. A test forces two
+appliers to interleave between a look-up and a write: the second is refused, and one note is written. The lock
+does not stop another program, or a second desk with files of its own, from writing the same CRM.
+
 **A lost ledger writes nothing twice**, and asks a person again when it matters: with no ledger, nothing
 on the desk shows that a step started, so the gate treats the apply as a first attempt and re-plans. If
 the plan created a contact, the CRM now holds that contact, the plan changes, and the enquiry waits for
 a new approval; applying the new plan finds the note and the task and writes nothing twice. If the plan
-is unchanged (a returning contact), the gate completes it at once and finds what is already there.
+is unchanged (a returning contact), the gate completes it at once and finds what is already there. `doctor`
+names each operation of the trail whose ledger row is gone.
+
+**An `apply_failed` that a retry cannot finish.** When the CRM changed so that the approved plan cannot be
+written (the e-mail now belongs to a contact someone else made), each retry fails the same way, because a retry
+continues the plan it started. `plan` and the enquiry page say what clears it: `withdraw`, then `plan`, which
+plans the enquiry again against the CRM as it is now, for a new approval.
+
+A practice CRM file that another program holds locked is a CRM that did not answer: the SQLite error becomes a
+CRM error, and the enquiry is `apply_failed` with it named (or stays `received`, when it arrived meanwhile).
 
 ## The record
 
-- `arrivals` has one row per arrival, `first` or `replay`; a unique index allows one `first` per key.
+- `arrivals` has one row per arrival, `first`, `replay` or `resend`; a unique index allows one `first` per key.
   `report` says the states add up when the enquiries in their states equal the first arrivals; with the
-  replays, that is everything that arrived.
+  replays and the corrected resends, that is everything that arrived.
 - A body or a line that is not one JSON object never becomes an enquiry: HTTP answers 400, `ingest` names
   the line. It is not counted as an arrival, because there is nothing to key or to keep.
+- Each arrival and each corrected resend records the sha256 of the content it stored.
 - The audit trail is append-only by three triggers: no update, no delete, and no insert that does not
   name the last row's hash or that reuses a row number (`INSERT OR REPLACE` skips delete triggers, so
-  this one is needed). Each row also carries the sha256 of its content and of the row before it; the
-  doctor recomputes the chain. Without the triggers, a changed or removed row is found; removing only
-  the very last row leaves no gap in the chain, and is not found by it.
+  this one is needed). Each row also carries the sha256 of its content and of the row before it.
+
+**What the trail guards against, and what it does not.** It guards against mistakes, bugs, and plain edits of
+the file, by the program or by hand. It does not guard against a person who can open the database file: such a
+person can drop the triggers (SQLite does not refuse a `DROP TRIGGER`), change rows, recompute every hash and put the
+triggers back as written. Nothing inside one file can tell that rewrite from the truth; a deployment that needs
+to would keep a copy of the chain's last hash somewhere that person cannot write.
+
+`desk.py doctor` checks, beyond the counts: each trigger's SQL against the SQL the desk writes; the hash chain;
+each state move against the one before it in the trail, and against the state table; each approval row against
+the person's decision in the trail (who, which plan); each enquiry's state, stored content and plan against the
+last ones its trail records; every operation in the trail against its ledger row; no step of a current plan left
+`started` outside `apply_failed`; and the arrival counts against the trail's arrival events.
+
+The review of this project changed the desk file by hand in these ways. What `doctor` reports now (each is a
+test in `tests/test_promises.py`, `DoctorFindsTheReviewedManipulationsTests`, or was run with the review's own
+script):
+
+| The manipulation | What `doctor` reports |
+|---|---|
+| 1. With the triggers in place: `UPDATE`, `DELETE`, `INSERT OR REPLACE` on the trail | Each is refused by the database itself. `DROP TRIGGER` is not; a missing trigger is reported |
+| 2. Triggers dropped, rows removed, triggers put back: the last row only | Reported: the enquiry's state is not the last state its trail records |
+| 2. The same, a row in the middle (a replay) | Reported: the chain is broken, and the replay count no longer agrees with the trail |
+| 2. The same, a whole enquiry that arrived last, with its trail rows, arrivals and enquiry row | **Not reported**: nothing left on the desk names it |
+| 3. Triggers dropped, a row changed (the approver's name), every later hash recomputed, the approval row changed to match, triggers put back | **Not reported**: every part of the file agrees with every other |
+| 4. A trigger replaced by one of the same name that does nothing | Reported: the trigger is not as written |
+| 5. Outside the trail: the stored content of an enquiry edited; the name on an approval edited; the ledger emptied | Reported: the content does not match its recorded sha256; the approval does not match the decision in the trail; operations of the trail have no ledger row |
+| Also: an approval row inserted with SQL, and the enquiry set to `approved` | Reported: the approval has no decision in the trail, and the next move does not follow the one before it |
+| Also: a plan rewritten, with its sha256 changed everywhere on the desk | Reported: the enquiry's plan is not the plan its trail records |
 
 ## The intake endpoint
 
 - Fails closed: no `INTAKE_SECRET`, or one shorter than 16 characters, means every request gets 503. The
-  header is compared in constant time. The log line of a request is its method, its path and its status.
+  header is compared in constant time. A secret with a character that is not printable ASCII (a space, an
+  accented letter) stops `listen` and `serve` at start with the reason: an HTTP header carries ASCII only, so
+  no request could ever match it. The log line of a request is its method, its path and its status.
 - One request at a time (a plain `HTTPServer`), and every answer closes its connection, so the desk file
-  has one writer and no client holds the server open.
+  has one writer and no client holds the server open. Each request has a deadline of 10 seconds from
+  connecting to its last byte; a client that drips its request slowly is cut off, and the next one is served.
 - A body above 64 KiB is 413; no `Content-Length` is 411. A body that is a JSON object but has a key
   twice, `NaN`, or text UTF-8 cannot carry is 400.
 - A refused enquiry is answered 201 with its state `refused` and no reasons: a script that fills the
   honeypot is not told which rule caught it. `ingest` shows the reasons to the operator.
 - If the CRM cannot be read when an enquiry arrives, the enquiry is kept as `received` and the answer is
   201; `desk.py plan` assesses it later. A lead is not lost because the CRM was down.
+- A desk file that another program holds locked is answered 503 with a plain line ("send it again"), on
+  `POST /intake` and on the desk pages; a request that fails in a way no answer covers is logged as one plain
+  line, never a traceback.
 
 ## A replay with different content
 
@@ -221,29 +304,47 @@ A copy that arrives under a known key is a replay, whatever it holds: the first 
 new is planned. When its content differs (any field but the time it was sent), the trail's replay row
 records each differing field with both values, and `report`, `ingest` and the desk page say "replayed with
 different content" and name the fields, so that a person sees an edited resend. The invented data holds
-one: the third copy of the first enquiry, whose message was edited.
+one: the third copy of the first enquiry, whose message was edited. Those values stay in the append-only trail
+for good (see "Limits").
 
 ## The model step
 
 - **The request** is one text: a fixed prompt, the fixed list of intents, and the message. It never holds
-  the name, e-mail or phone fields. The message is scrubbed of the sender's own e-mail and phone as written,
-  of anything shaped like an e-mail address or a phone number (7 to 15 digits; an ISO date such as
-  2026-02-02 is kept), and of each word of the sender's name, as whole words in any letter case (the data's
-  marker word "invented", from "(invented)", is not a name word and stays). All
-  replacements are found on the original text in one pass, so one replacement never makes or hides another.
-  A guard reads the finished request again and refuses to send it if any of these is still there. Any
-  number of 7 or more digits counts as a possible phone, so a large figure in a message is scrubbed too.
+  the name, e-mail or phone fields. A **run of digits** is digits with nothing but non-letters between them
+  (spaces of any kind, line breaks, dashes of any kind, dots, slashes, underscores, brackets). The message is
+  scrubbed of exactly these, each replaced by `[email]`, `[phone]` or `[name]`:
+  the sender's own e-mail as written, in any letter case; the digits of the sender's own phone, wherever a run
+  of digits holds them, whatever stands between them; anything shaped like an e-mail address, with letters of
+  any alphabet; any run of 7 or more digits, except a date written `2026-02-02` (a date is never part of a run,
+  so two dates side by side stay); each word of the sender's name (two letters or more), as a whole word in
+  any letter case, where an underscore also ends a word (the data's marker word "invented", from "(invented)",
+  is not a name word and stays). All replacements are found on the original text in one pass, so one
+  replacement never makes or hides another.
+- **What the scrub does not recognise:** an address written out in words (`name at example dot com`,
+  `name(at)example.com`, spaces around the `@`); a name joined to another word with no separator, changed
+  (`Danas`) or given as an initial; anyone else's name; a street address; a number of 6 digits or fewer;
+  anything else that identifies a person. A test sends such a message and shows it reaches the request as it
+  was. A **guard** reads the finished request again and refuses to send it if any of the replaced kinds is
+  still there, by the same comparisons (the digits of the sender's phone in any run; any run of 7 or more).
 - **The request's sha256** is over its UTF-8 bytes and names it; `recorded/requests/<sha256>.txt` holds it.
   `python -I tools/recordings.py requests` writes one for every invented enquiry that reaches the model:
   the ones not refused, and not replays (a held enquiry reaches it: its draft helps the person resolve it).
 - **The answer** must be one JSON object with exactly the four keys; a fifth key refuses the whole answer.
   The object may stand alone or inside one ```` ```json ```` fence, and nothing else may surround it.
   `reply_draft` may be null (the prompt asks for null on spam); when it is text it must hold `{{name}}`.
+- **The limits:** a summary of 1 to 40 words and at most 400 characters; a reply of at most 120 words and
+  1,200 characters. No field may hold a control character, a bidi control or a zero-width character; the
+  reply may hold line breaks (LF). A web address in the reply is refused with or without its scheme
+  (`evil.example/pay`, `bit.ly/x`, `javascript:`), as are an e-mail address and a phone number.
 - **Numbers** are compared as numbers written in digits: `1,200` and `1200` are one, `02` and `2` are one.
   Each must appear in the message the model saw.
 - **An answer that fails** is not used: the desk keeps no part of it, shows "AI draft refused" with the
   reasons, and the plan is the plan with no AI text (the draft is never part of a plan). The reasons name a
-  check, never a personal value, so the one retry of the live path can carry them back to the model.
+  check, never a personal value, so the one retry of the live path can carry them back to the model. Where a
+  reason names something the answer holds (a key, a number), it is quoted and cut to 40 characters.
+- **Printing.** Text from outside the desk (a sender's message, a model's answer, a CRM's error) is printed by
+  `plan`, `trail`, `report` and `apply` with every control or format character written as its escape, so it
+  cannot move the cursor, clear the screen or begin a line of its own.
 - **The live path** sends the Messages API request with `anthropic-version: 2026-10-21` and the default
   model `claude-opus-5-5` (`INTAKE_MODEL` changes it), with no sampling parameters, and asks for the
   server-side fallback on a refusal (`fallbacks: "default"`, the `server-side-fallback-2026-07-01` beta).
@@ -255,13 +356,13 @@ one: the third copy of the first enquiry, whose message was edited.
   answer in `recorded/constructed/` is "Constructed answer, not from a model"; its meta file says
   `"origin": "constructed"` and how it was made. `tools/recordings.py add` is the only writer of
   `"origin": "recorded"`, and it copies the answer byte for byte.
-- **The real answers.** All 20 requests have a recorded answer. Each meta file's `how` records how it was
-  obtained: the request text, whole and unchanged, given as the whole prompt to a Claude Code subagent on
-  2026-11-24, whose transcript names the model as claude-haiku-5-5; such a subagent also runs under its
-  harness's own system prompt, so this is not the live path's API call. A sha256 shows only that a file has
-  not changed since it was added and which request it answers; the origin is the author's record.
-  `python -I tools/recordings.py status` runs the desk's own checks on each kept answer and prints the
-  result.
+- **The real answers.** All 20 requests have a recorded answer, from a small model: each meta file's `how`
+  records that the request text, whole and unchanged, was given as the whole prompt to a Claude Code subagent
+  on 2026-11-24, whose transcript names the model as claude-haiku-5-5. Such a subagent also runs under its
+  harness's own system prompt, so this is not the live path's API call, and the live path's default model is
+  another one. A sha256 shows only that a file has not changed since it was added and which request it
+  answers; the origin is the author's record. `python -I tools/recordings.py status` runs the desk's own
+  checks on each kept answer and prints the result.
 - **When a constructed answer is used:** the `recorded` backend reads `recorded/answers/` first and
   `recorded/constructed/` only for a request with no recorded answer, so with all 20 recorded the desk and
   the demo use none of them. They stay as the fallback, and they are what a test uses (in a folder that holds
@@ -292,40 +393,46 @@ one: the third copy of the first enquiry, whose message was edited.
 - `serve` with no secret still shows the desk; only `POST /intake` answers 503. `listen` stays as before:
   the intake alone, refusing every request when it has no secret.
 - `render --out` writes the same pages as files, with relative links and never a form. A key becomes a file
-  name by writing `~` for `:`; neither a source nor a source_id may hold `~`, so the names do not collide.
-- **A person's name** is refused when it starts with `=`, `+`, `-`, `@`, a tab or a carriage return, on the
-  command line and in the form. The project writes no CSV, but a name is kept in the trail and could reach a
-  spreadsheet some day.
+  name by writing `~` for `:`, then `-` and 8 hex digits of the key's sha256. Neither a source nor a source_id
+  may hold `~`; the hash keeps two keys that differ only in letter case (a source_id is case-sensitive) apart on
+  a file system that ignores case, as Windows' and macOS' usually do. A served page whose hash does not fit its
+  key is 404.
+- **A person's name** is refused when it starts with `=`, `+`, `-`, `@`, a tab or a carriage return, or holds
+  a control character, on the command line and in the form. The project writes no CSV, but a name is kept in
+  the trail and could reach a spreadsheet some day.
 
 ## The demo and the examples
 
 - `demo.py` drives the real commands through `main(argv)` on new files, with a fixed clock and an
   environment of its own, so nothing from the caller's environment changes it. A CRM that is down is
-  simulated by a wrapper that fails one call; the two intake cases start a server on 127.0.0.1.
+  simulated by a wrapper that fails one call; the two intake cases start a server on 127.0.0.1. The story
+  resolves the phone-only hold as contact 6 before it approves.
 - `make_examples.py` runs the whole demo and keeps what it printed and wrote: the outputs of the story's
-  steps, the desk pages after the story, the closing table, and `docs/img/demo.svg` drawn from that table by
-  `tools/term_svg.py`. No path of the computer that ran it is in any of them, so `--check` gives the same
-  answer on every computer.
+  steps (`plan-one-in-full.txt` is the plan the README opens with), the desk pages after the story, the closing
+  table, and `docs/img/demo.svg` drawn from that table by `tools/term_svg.py`. No path of the computer that ran
+  it is in any of them, so `--check` gives the same answer on every computer.
 - In the closing table the cases `refused-inputs` and `ai-answer-refused` are named `inputs-not-taken` and
   `ai-answer-not-used`: the picture tool draws any line with the word "refused" red, as a failure.
+- `tests/test_readme.py` runs the README's commands in the README's order, with `INTAKE_NOW` fixed, and
+  compares every line it shows.
 
-## Changes against the specification, and additions
+## Decisions beyond the basic flow
 
-- **Added the state `received`**, for an enquiry taken while the CRM could not be read (see above).
-- **Added a refusal:** a phone with digits, but not 7 to 15 of them. The specification refuses an e-mail
-  that is not an address; a phone of two digits would otherwise become a matching key.
-- **Added a refusal:** a field that must be text but is another JSON type, and a `received_at` that is not
-  a date and time.
+- **The state `received`**, for an enquiry taken while the CRM could not be read (see above).
+- **A phone with digits, but not 7 to 15 of them, is refused**, as an e-mail that is not an address is; a phone
+  of two digits would otherwise become a matching key.
+- **A field that must be text but is another JSON type, and a `received_at` that is not a date and time,** are
+  refused.
 - **A secret shorter than 16 characters counts as no secret** (503).
 - **`resolve --as new` is refused** while the e-mail belongs to a contact (see "How a hold is resolved").
-- **The REST shape** of `docs/CRM-API.md` adds, to the calls section 3.7 lists, a look-up by name, a
+- **The REST shape** of `docs/CRM-API.md` adds, to the calls the desk's core needs, a look-up by name, a
   look-up by origin key, a search of notes, a list of a contact's tasks and a health check: identity, the
   idempotent writes and `status` need them.
-- **Added commands:** `init` creates the two files and loads the practice CRM's starting contacts;
-  `listen` offers `POST /intake` alone; `serve` adds the desk pages.
+- **Commands:** `init` creates the two files and loads the practice CRM's starting contacts; `listen` offers
+  `POST /intake` alone; `serve` adds the desk pages; `render` writes them as files.
 - Unknown fields in an enquiry are ignored, and their names are recorded in the trail.
 - Blank lines in a `.jsonl` file are skipped and not reported.
-- **The model step adds a fourth kind of draft source**, the constructed answer: the fallback for a request
+- **The model step has a fourth kind of draft source**, the constructed answer: the fallback for a request
   with no recorded answer, and the two gallery cases. It is never labelled "Recorded".
 - **The answer may sit in one ```` ```json ```` fence**, and `reply_draft` may be null.
 - **The live path asks for the server-side fallback** on a refusal, as the Messages API documentation
@@ -336,13 +443,24 @@ one: the third copy of the first enquiry, whose message was edited.
 
 ## Limits
 
-- One writer at a time is assumed. SQLite's locking keeps both files consistent, and a move that lost a
-  race is refused by the state table, but the command that lost it stops with an error.
 - The doctor lists only the practice CRM; with the HTTP adapter its CRM checks say "not checked".
 - The HTTP adapter's look-up by name sends the first word of the normalised name and keeps exact
   matches; a CRM whose search folds letters differently could miss a possible duplicate.
 - A note written while search lags, on a contact other than the one the plan names, would not be seen;
   the gate looks on the named contact first, where it is written.
+- One apply runs at a time per desk; another program writing the same CRM, or a second desk with its own
+  files, is not stopped by the apply lock, and only the look-ups before each write stand between them and a
+  second note.
+- A command other than `apply` that loses a race for the desk file (two people deciding at once) is refused by
+  the state table, or waits up to 5 seconds for the file and then stops with a plain message; its transaction is
+  rolled back, so nothing half done is kept.
+- **Personal values stay in the trail for good.** The trail is append-only: a replay with different content
+  records both versions of each differing field, and a refused enquiry is kept with its content. A real
+  deployment needs a deletion story (on request, and after a retention period), which this desk does not have.
+- **The hashed key** treats letter case, a dropped full stop or another Unicode form of the same letter in the
+  message as a new enquiry, and the same message sent either side of midnight (UTC) as two.
+- **A match by phone alone is held** whenever the e-mails do not agree, so a person confirms every such case,
+  even a customer calling from their known number without giving an e-mail.
 - **The checks cannot catch an answer that is well formed and wrong.** The real answers show four kinds, each
   passing every check: an assumed date (the figures enquiry: "2026-02-02 appears to be in the past", though
   the model was given no date and the enquiry arrives in January 2026); an invented service ("Yes, we do clean

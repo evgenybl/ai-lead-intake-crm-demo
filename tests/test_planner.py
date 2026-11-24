@@ -1,4 +1,4 @@
-"""Unit and integration tests: the plan (section 3.5), its sha256, and when it changes."""
+"""Unit and integration tests: the plan, its sha256, and when it changes."""
 import os
 import tempfile
 import unittest

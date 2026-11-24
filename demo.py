@@ -1,4 +1,4 @@
-"""The whole story, and every case of the gallery (section 5), each on new files, one line per step.
+"""The whole story, and every case of the gallery, each on new files, one line per step.
 
     python -I demo.py --out demo-run                the whole story, then every case
     python -I demo.py --case <name> [--out <dir>]   one case
@@ -159,6 +159,7 @@ def story(run: Run, folder: str, keep: dict | None = None) -> str:
 
     _, out = home.desk("plan", at="2026-01-05T09:20:00Z")
     keep["plan.txt"] = out
+    _, keep["plan-one.txt"] = home.desk("plan", "--key", "webform:wf-000109", "--full", at="2026-01-05T09:21:00Z")
     after = home.counts()
     got = last_line(out, "plan: ")
     run.step("story 4 dry run (plan)", "every waiting plan printed; nothing written",

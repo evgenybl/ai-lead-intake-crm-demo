@@ -1,4 +1,4 @@
-"""The draft step (section 3.4): a summary, an intent, an urgency and a reply draft, used only if they pass.
+"""The draft step: a summary, an intent, an urgency and a reply draft, used only if they pass.
 
 The CRM path never depends on this step: its result is shown on the desk and is never part of a plan.
 

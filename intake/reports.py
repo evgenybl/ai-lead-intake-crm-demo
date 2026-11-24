@@ -109,11 +109,34 @@ def draft_line(draft: dict) -> str:
     return f"draft ({label}): no AI text: {printable(draft.get('reason'))}"
 
 
-def enquiry_lines(store, enquiry, crm_note: str = "") -> list:
+def identity_text(found: dict) -> str:
+    """What identity found, in plain words, as `plan` prints it."""
+    kind = found.get("kind")
+    if kind == "new":
+        text = "new: a person decided so" if found.get("resolution") == "new" else \
+            "new: no contact has this e-mail or phone"
+    elif kind == "returning":
+        ways = [w for w, k in (("e-mail", "by_email"), ("phone", "by_phone")) if found.get(k)]
+        how = " and ".join(ways) if ways else "a person's decision"
+        text = f"returning: contact {found.get('contact')}, found by {how}"
+    elif kind == "two_contacts":
+        text = (f"held: the e-mail belongs to contact {', '.join(found.get('by_email', [])) or 'none'}, the phone "
+                f"to contact {', '.join(found.get('by_phone', [])) or 'none'}")
+    elif kind == "phone_only":
+        text = f"held: only the phone matches contact {', '.join(found.get('by_phone', []))}, and the e-mails differ"
+    elif kind == "possible_duplicate":
+        text = f"held: contact {', '.join(found.get('by_name_and_company', []))} has the same name and company"
+    else:
+        text = _brief(found)
+    notes = "; ".join(found.get("notes", []))
+    return printable(text + (f" ({notes})" if notes else ""))
+
+
+def enquiry_lines(store, enquiry, crm_note: str = "", full: bool = False) -> list:
     lines = [f"{enquiry.key}  [{enquiry.state}]"]
     found = enquiry.identity or {}
     if found:
-        lines.append(f"  identity: {_brief(found)}")
+        lines.append(f"  identity: {identity_text(found)}")
     if enquiry.draft:
         lines.append("  " + draft_line(enquiry.draft))
     if enquiry.state in ("held_two_contacts", "held_possible_duplicate"):
@@ -126,7 +149,11 @@ def enquiry_lines(store, enquiry, crm_note: str = "") -> list:
         plan = json.loads(store.plan_body(enquiry.plan_sha))
         lines.append(f"  plan {enquiry.plan_sha}")
         for number, op in enumerate(plan["operations"], start=1):
-            lines.append(f"    {number}. {_operation(op)}")
+            if full and "body" in op:
+                lines.append(f"    {number}. {op['op']} on contact {op['contact']}, exactly this text:")
+                lines += [("         " + printable(line)).rstrip() for line in op["body"].split("\n")]
+            else:
+                lines.append(f"    {number}. {_operation(op)}")
         for diff in plan["shown"]:
             extra = f" ({diff['not_filled']})" if "not_filled" in diff else ", not overwritten"
             lines.append(f"    shown for a person: {diff['field']}: the CRM has {diff['crm']!r}, "

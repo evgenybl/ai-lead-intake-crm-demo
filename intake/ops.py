@@ -1,4 +1,4 @@
-"""The allow-list: the only four operations a plan may hold (section 3.5).
+"""The allow-list: the only four operations a plan may hold.
 
 The write gate refuses a plan with any other operation before anything leaves, and `desk.py doctor`
 checks every stored plan and every ledger row against this same list.

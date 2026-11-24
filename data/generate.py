@@ -1,4 +1,4 @@
-"""The invented data of section 4, from a generator with a fixed seed.
+"""The invented data, from a generator with a fixed seed.
 
     python -I data/generate.py           write both files
     python -I data/generate.py --check   exit 1 if a file differs from what the generator makes

@@ -1,4 +1,4 @@
-"""The five controls of section 6. Each breaks one property in memory or in its own temporary files, and
+"""The five controls. Each breaks one property in memory or in its own temporary files, and
 asserts that `desk.py doctor`, or the matching test's check, reports the break. A control that passed
 while the property was broken would mean the doctor could not see that failure."""
 import unittest

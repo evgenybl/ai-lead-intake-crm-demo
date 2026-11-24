@@ -1,4 +1,4 @@
-"""Make examples/ and docs/img/demo.svg from a real run of the whole demo (section 5).
+"""Make examples/ and docs/img/demo.svg from a real run of the whole demo.
 
     python -I make_examples.py          write them
     python -I make_examples.py --check  compare with what is committed; exit 1 on any difference
@@ -28,6 +28,7 @@ KEPT = {  # file in examples/ -> what the story kept under that name
     "ingest-first.txt": "ingest-1.txt",
     "report-first.txt": "report-1.txt",
     "plan.txt": "plan.txt",
+    "plan-one-in-full.txt": "plan-one.txt",
     "apply.txt": "apply-1.txt",
     "ingest-again.txt": "ingest-2.txt",
     "report.txt": "report-2.txt",

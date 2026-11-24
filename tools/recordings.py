@@ -1,4 +1,4 @@
-"""The requests to the model, and the answers kept for them under recorded/ (section 3.4).
+"""The requests to the model, and the answers kept for them under recorded/.
 
     python -I tools/recordings.py requests [--check]   write recorded/requests/<sha256>.txt for every invented
                                                         enquiry that reaches the model

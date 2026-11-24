@@ -43,9 +43,9 @@ fake (`tests/fake_crm.py`) only. A real CRM needs its own adapter of about the s
 
 `GET /contacts` takes exactly one of its four query parameters.
 
-## Against section 3.7 of the specification
+## Why each call is here
 
-Section 3.7 lists: find a contact by e-mail or phone, create, fill empty fields, list and add notes, add
-a task. This shape adds the look-up by name (for the possible-duplicate rule), the look-up by origin key
+The desk's core needs: find a contact by e-mail or phone, create one, fill its empty fields, list and add
+notes, add a task. This shape adds the look-up by name (for the possible-duplicate rule), the look-up by origin key
 and the list of a contact's tasks (so that a write is found again without the desk's ledger), the search
 of notes (the third place the gate looks), and a health check (for `desk.py status`).

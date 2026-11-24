@@ -1,4 +1,4 @@
-"""Section 3.6: the audit trail, append-only by the database itself.
+"""The audit trail, append-only by the database itself.
 
 Three triggers stand guard:
     audit_refuses_update ... no row is ever changed
@@ -7,7 +7,11 @@ Three triggers stand guard:
                              (this also stops INSERT OR REPLACE, which skips delete triggers)
 
 Each row also carries the sha256 of its own content and of the row before it. If the triggers are
-dropped and a row is changed, the chain no longer adds up and `desk.py doctor` names the row.
+dropped, or replaced, and a row is changed, `desk.py doctor` names the trigger and the row.
+
+What this guards against: mistakes, bugs, and plain edits of the file by the program or by hand. What it
+does not: a person who can open the database file can drop the triggers, change rows, recompute every
+hash and put the triggers back as written. Nothing inside one file can tell that rewrite apart.
 """
 from __future__ import annotations
 

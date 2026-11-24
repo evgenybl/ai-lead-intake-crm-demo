@@ -1,4 +1,4 @@
-"""Section 3.3: the idempotency key, and matching a contact by exact keys only.
+"""The idempotency key, and matching a contact by exact keys only.
 
 The key
     With a valid source and source_id: "<source>:<source_id>". Otherwise "hash:" and the first 32 hex
@@ -81,7 +81,7 @@ class Match:
 
 
 def match_contact(fields: dict, crm) -> Match:
-    """Apply the table of section 3.3 to the CRM as it is now. Reads only."""
+    """Apply the matching table above to the CRM as it is now. Reads only."""
     email = normalise.email(fields.get("email", ""))
     digits = normalise.phone_digits(fields.get("phone", ""))
     by_email = crm.find_by_email(email) if email else []

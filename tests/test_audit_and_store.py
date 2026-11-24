@@ -1,4 +1,4 @@
-"""Integration tests on a real desk file: the append-only trail (section 3.6) and the store's rules."""
+"""Integration tests on a real desk file: the append-only trail and the store's rules."""
 import sqlite3
 import unittest
 

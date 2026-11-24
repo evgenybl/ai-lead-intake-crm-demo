@@ -1,4 +1,4 @@
-"""The desk's own SQLite file (section 3.6): enquiries, arrivals, plans, approvals, the ledger, the trail.
+"""The desk's own SQLite file: enquiries, arrivals, plans, approvals, the ledger, the trail.
 
 Every change happens inside `transaction()`, and every change of state goes through `move()`, which
 checks the state table and writes the audit row in the same transaction.

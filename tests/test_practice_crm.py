@@ -1,4 +1,4 @@
-"""Integration tests: the practice CRM on a real SQLite file (section 3.7)."""
+"""Integration tests: the practice CRM on a real SQLite file."""
 import os
 import tempfile
 import unittest

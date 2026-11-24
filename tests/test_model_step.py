@@ -1,4 +1,4 @@
-"""Section 3.4: the request and its guard, the strict answer, the three backends, and the hidden instruction."""
+"""The request and its guard, the strict answer, the three backends, and the hidden instruction."""
 import contextlib
 import hashlib
 import io
@@ -392,7 +392,7 @@ class AnthropicBackendTests(unittest.TestCase):
 
 
 class HiddenInstructionTests(DeskCase):
-    """Section 3.4's three proofs for the enquiry whose message tells the software to approve itself."""
+    """Three proofs for the enquiry whose message tells the software to approve itself."""
 
     KEY = "webform:wf-000120"
 

@@ -1,4 +1,4 @@
-"""The one write gate (section 3.5). Every CRM write in this project passes through WriteGate.apply.
+"""The one write gate. Every CRM write in this project passes through WriteGate.apply.
 
 Before anything leaves, the gate refuses:
   1. an operation outside the allow-list (intake/ops.py), or one that appears twice;
@@ -58,7 +58,7 @@ class WriteGate:
         self.allowed_ops = tuple(allowed_ops)
         self.dry_run = dry_run
 
-    # -- the checks, in the order of section 3.5 --------------------------------------------------
+    # -- the checks, in their order ----------------------------------------------------------------
 
     def _check_allow_list(self, plan: dict) -> None:
         outside = operations_outside(plan, self.allowed_ops)

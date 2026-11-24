@@ -1,6 +1,6 @@
-"""The four promises of section 2, one test each, named by the promise; and the doctor catching a break of each.
+"""The four promises, one test each, named by the promise; and the doctor catching a break of each.
 
-The five controls of section 6 (tests/test_controls.py) break the properties these rest on."""
+The five controls (tests/test_controls.py) break the properties these rest on."""
 import json
 import unittest
 

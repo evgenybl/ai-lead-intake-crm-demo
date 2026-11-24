@@ -1,4 +1,4 @@
-"""Section 3.2: what is refused, and why.
+"""What is refused, and why.
 
 A refused enquiry is a state, not an error: it is kept with every reason that applies, counted in the
 report and shown in its trail. It never reaches the model or the CRM.

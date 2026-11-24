@@ -1,4 +1,4 @@
-"""The invented data of section 4: the files equal the generator's output, and each case does what it is for."""
+"""The invented data: the files equal the generator's output, and each case does what it is for."""
 import json
 import os
 import re
@@ -25,7 +25,7 @@ class GeneratorTests(unittest.TestCase):
     def test_the_generator_gives_the_same_output_every_time(self):
         self.assertEqual(generate.render(), generate.render())
 
-    def test_the_data_holds_every_case_section_4_asks_for(self):
+    def test_the_data_holds_every_case_the_demo_needs(self):
         cases = [case for case, _ in generate.CASES]
 
         def count(prefix):

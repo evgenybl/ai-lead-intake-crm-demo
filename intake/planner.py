@@ -1,4 +1,4 @@
-"""Section 3.5: what an enquiry would write, as an exact list of operations (the plan).
+"""What an enquiry would write, as an exact list of operations (the plan).
 
 A plan is canonical JSON; its sha256 is its identity, and an approval names that sha256. The plan holds
 everything the person approves: what identity found, each operation with its values, and the
@@ -48,7 +48,7 @@ def assess(key: str, fields: dict, resolution: str | None, crm) -> Assessment:
 
 
 def identify(fields: dict, resolution: str | None, crm) -> identity.Match:
-    """The rules of section 3.3, after a person's resolution when there is one that still applies."""
+    """The matching rules of intake/identity.py, after a person's resolution when there is one that still applies."""
     notes = []
     if resolution == "new":
         email = normalise.email(fields.get("email", ""))
