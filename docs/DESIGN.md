@@ -366,8 +366,9 @@ for good (see "Limits").
   date is never part of a run, so two dates side by side stay; `5550-14-23` and `2026-02-30` are not dates, so
   they are part of one); each word of the sender's name (two letters or more), as a whole word. Names are
   compared folded: Unicode NFKC, case folding, NFKC again, and the dotted and dotless i of Turkish taken as
-  `i`, so `Weiß` and `WEISS`, `İbrahim` and `IBRAHIM`, a composed and a decomposed `ë`, a full-width `Ｄａｎａ`
-  and `Dana`, are one. A word is a run of letters, digits and combining marks: anything else, an underscore
+  `i`. So a sharp s (U+00DF) and `ss` are one, as are a capital I with a dot above (U+0130) and `I`, a letter with
+  an accent typed as one character (U+00EB) or as a letter and a combining mark (U+0065 U+0308), and `Dana` in
+  full-width letters (U+FF24 U+FF41 U+FF4E U+FF41) and in ASCII. A word is a run of letters, digits and combining marks: anything else, an underscore
   too, ends it. A name word in a script written without spaces (Han, Hiragana, Katakana, Bopomofo, Thai, Lao,
   Khmer, Myanmar, Tibetan, Yi, Javanese, Balinese) is found wherever it stands, inside a longer run of letters
   too. The data's marker word "invented", from "(invented)", is not a name word and stays. All replacements are

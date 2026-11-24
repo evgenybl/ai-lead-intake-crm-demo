@@ -1,7 +1,9 @@
 """Rules of the repository itself, checked on every file, and the one-gate rule on the code."""
 import ast
+import json
 import os
 import re
+import unicodedata
 import unittest
 
 from intake.server import HOST
@@ -41,6 +43,18 @@ OUTSIDE = re.compile(
     + r"|(?-i:" + _REVIEW.capitalize() + r"ed)(?=[A-Z])"  # inside a name written in capitalised words
     + r"|\b" + "pha" + r"se[\s-]*(?:\d|one|two|three)\b",
     re.IGNORECASE)
+
+
+def letter_runs(text):
+    """Each run of letters and combining marks in the text, in Unicode NFC."""
+    runs, current = [], []
+    for c in text + " ":
+        if unicodedata.category(c)[0] in "LM":
+            current.append(c)
+        elif current:
+            runs.append(unicodedata.normalize("NFC", "".join(current)))
+            current = []
+    return runs
 
 
 def repository_files():
@@ -103,6 +117,27 @@ class RepositoryRuleTests(unittest.TestCase):
                  for m in EMAIL.finditer(read(p).decode("utf-8"))
                  if not m.group(0).lower().endswith("@example.com")]
         self.assertEqual(found, [])
+
+    def test_every_letter_outside_ascii_is_part_of_an_invented_name(self):
+        """English text, in ASCII letters: the only letters outside ASCII are words of the invented names and
+        companies in data/ (Zo\u00eb, \u00c5ngstr\u00f6m). Any other is written as its code point (U+00DF) in
+        prose, or as an escape (\\u00df) in code."""
+        invented = set()
+        for name in ("enquiries.synthetic.jsonl", "crm-start.synthetic.jsonl"):
+            for line in read(os.path.join(ROOT, "data", name)).decode("utf-8").splitlines():
+                if line.strip():
+                    obj = json.loads(line)
+                    invented.update(letter_runs(f"{obj.get('name') or ''} {obj.get('company') or ''}"))
+        found = [f"{relative(p)}: {word!r}" for p in repository_files() for word in letter_runs(read(p).decode("utf-8"))
+                 if any(ord(c) > 127 for c in word) and word not in invented]
+        self.assertEqual(found, [])
+
+    def test_no_file_holds_an_invisible_character_written_as_itself(self):
+        """A character that is not shown (a byte-order mark, a zero-width space, a bidi control) is written as an
+        escape, so that a reader of the file sees it."""
+        found = [f"{relative(p)}: U+{ord(c):04X}" for p in repository_files() for c in set(read(p).decode("utf-8"))
+                 if unicodedata.category(c) in ("Cf", "Co", "Cs")]
+        self.assertEqual(sorted(found), [])
 
     def test_every_text_file_has_lf_line_ends(self):
         self.assertEqual([relative(p) for p in repository_files() if b"\r" in read(p)], [])

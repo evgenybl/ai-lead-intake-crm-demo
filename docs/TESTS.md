@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-337 test methods in 17 files. Where a test uses subTest, one method checks several cases.
+339 test methods in 17 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -519,6 +519,8 @@ Rules of the repository itself, checked on every file, and the one-gate rule on 
 - `test_the_pointer_rule_catches_each_kind_it_names`
 - `test_no_key_shaped_or_token_shaped_literal_in_any_file`: A sha256 digest (exactly 64 lowercase hex digits) names a file's content; it is not a secret.
 - `test_every_email_address_is_at_example_com`
+- `test_every_letter_outside_ascii_is_part_of_an_invented_name`: English text, in ASCII letters: the only letters outside ASCII are words of the invented names and companies in data/ (Zoë, Ångström). Any other is written as its code point (U+00DF) in prose, or as an escape (\u00df) in code.
+- `test_no_file_holds_an_invisible_character_written_as_itself`: A character that is not shown (a byte-order mark, a zero-width space, a bidi control) is written as an escape, so that a reader of the file sees it.
 - `test_every_text_file_has_lf_line_ends`
 - `test_every_python_file_is_valid_python_3_11`
 - `test_servers_bind_127_0_0_1_only`

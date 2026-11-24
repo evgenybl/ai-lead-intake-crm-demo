@@ -314,8 +314,9 @@ holds the name, e-mail or phone fields, and the message is scrubbed first. **Exa
 - any run of 7 or more digits (a long figure, a card number, someone else's phone), except a real date written
   `2026-02-02` (`5550-14-23` is not a date, so it is taken out);
 - each word of the sender's own name (two letters or more) as a whole word, compared after Unicode
-  normalisation (NFKC) and case folding: `Weiß`, `WEISS` and `Weiss` are one word, as are `İbrahim`, `IBRAHIM`
-  and `ibrahim`, and an `ë` typed as one character or as an `e` with a combining mark. An underscore ends a word.
+  normalisation (NFKC) and case folding: a sharp s (U+00DF) and `ss` are one, so `WEISS` matches a name written with
+  it; a capital I with a dot above (U+0130), `I` and `i` are one; and a letter with an accent is the same letter
+  typed as one character (U+00EB) or as a letter and a combining mark (`e` and U+0308). An underscore ends a word.
   A name word in a script written without spaces (Chinese, Japanese, Thai and the like) is found inside a longer
   run of letters too.
 

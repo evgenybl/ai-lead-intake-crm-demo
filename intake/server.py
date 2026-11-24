@@ -71,8 +71,9 @@ class SecretError(Exception):
 def secret_from(environ) -> str | None:
     """The configured secret, or None when there is none usable: the intake endpoint then refuses everything.
 
-    Raises SecretError for a secret with a character that is not printable ASCII (a space, a letter such
-    as é): a header carries ASCII only, so no request could ever give it, and every enquiry would be 401."""
+    Raises SecretError for a secret with a character that is not printable ASCII (a space, an accented letter
+    such as U+00E9): a header carries ASCII only, so no request could ever give it, and every enquiry would be
+    401."""
     value = environ.get(SECRET_ENV, "")
     if any(not 33 <= ord(c) <= 126 for c in value):
         raise SecretError(f"{SECRET_ENV} holds a character that is not printable ASCII (a space, an accented "

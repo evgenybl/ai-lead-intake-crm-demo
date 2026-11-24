@@ -17,8 +17,8 @@ The message is scrubbed of exactly these, each replaced by [email], [phone] or [
 - any run of 7 or more digits (a long figure, a card number, a phone of anyone), except a real date
   written 2026-02-02 (5550-14-23 is not a date, so it is part of a run);
 - every word of the sender's own name (two letters or more), compared after Unicode NFKC and case
-  folding, so "Weiss", "WEISS" and "Weiß" are one, as are "İbrahim" in any case and a composed and a
-  decomposed "Zoë". A word is a run of letters, digits and combining marks: anything else, an underscore
+  folding, so "WEISS" and a "Weiss" written with a sharp s (U+00DF) are one, as are a capital I with a dot
+  above (U+0130) and "I", and a composed and a decomposed "Zoë". A word is a run of letters, digits and combining marks: anything else, an underscore
   too, ends it ("Dana_Reviewer" is two words), and a name word must be a whole word. A name word in a
   script written without spaces (Han, Hiragana, Katakana, Thai, Lao, Khmer, Myanmar and the like) is found
   wherever it stands, inside a longer run of letters too.
@@ -158,8 +158,9 @@ NO_SPACE_SCRIPTS = (
 
 def fold(text: str) -> str:
     """Text as a name is compared: Unicode NFKC, then case folding, then NFKC again; and the dotted and the
-    dotless i of Turkish compared as i, which case folding alone does not do ("İBRAHİM" folds to two dotted i's,
-    "İbrahim" to one). "Weiß" and "WEISS" fold to one form, as do a composed and a decomposed "ë"."""
+    dotless i of Turkish compared as i, which case folding alone does not do (a capital I with a dot above, U+0130,
+    folds to an i and a combining dot). A sharp s (U+00DF) and "SS" fold to one form, as do a composed and a
+    decomposed "Zoë"."""
     folded = unicodedata.normalize("NFKC", unicodedata.normalize("NFKC", text).casefold())
     return folded.replace("i\u0307", "i").replace("\u0131", "i")  # i with a dot above; dotless i
 

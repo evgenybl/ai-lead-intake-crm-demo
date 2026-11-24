@@ -30,7 +30,7 @@ class ClockTests(unittest.TestCase):
 class CanonicalTests(unittest.TestCase):
     def test_sorted_keys_fixed_separators_utf8(self):
         self.assertEqual(canonical_json({"b": 1, "a": "Zoë"}), '{"a":"Zoë","b":1}')
-        self.assertEqual(canonical_bytes({"a": "å"}), b'{"a":"\xc3\xa5"}')
+        self.assertEqual(canonical_bytes({"a": "\u00e5"}), b'{"a":"\xc3\xa5"}')
 
     def test_the_same_value_gives_the_same_sha_whatever_the_key_order(self):
         self.assertEqual(sha256_hex({"a": 1, "b": [1, 2]}), sha256_hex({"b": [1, 2], "a": 1}))
@@ -54,7 +54,7 @@ class NormaliseTests(unittest.TestCase):
     def test_phone_is_its_ascii_digits(self):
         self.assertEqual(normalise.phone_digits("(000) 000-0106"), "0000000106")
         self.assertEqual(normalise.phone_digits("+000 000 0106 ext"), "0000000106")
-        self.assertEqual(normalise.phone_digits("١٢٣"), "")  # digits of another script are not read
+        self.assertEqual(normalise.phone_digits("\u0661\u0662\u0663"), "")  # digits of another script are not read
         self.assertTrue(normalise.is_phone("0000000"))
         self.assertFalse(normalise.is_phone("000000"))
         self.assertFalse(normalise.is_phone("0" * 16))
@@ -62,7 +62,7 @@ class NormaliseTests(unittest.TestCase):
     def test_name_ignores_case_spacing_and_punctuation_not_letters(self):
         self.assertEqual(normalise.name("  Ada   O'Neil-Fenwick "), "ada o neil fenwick")
         self.assertEqual(normalise.name("ADA O NEIL FENWICK"), normalise.name("Ada O'Neil-Fenwick"))
-        self.assertEqual(normalise.name("Zoë"), normalise.name("Zoë"))  # one letter, two encodings
+        self.assertEqual(normalise.name("Zoe\u0308"), normalise.name("Zoë"))  # one letter, two encodings
         self.assertNotEqual(normalise.name("Zoe"), normalise.name("Zoë"))
 
     def test_message_whitespace_is_collapsed(self):

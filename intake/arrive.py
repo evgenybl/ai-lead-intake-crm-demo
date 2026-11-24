@@ -34,7 +34,7 @@ def parse_object(raw: bytes) -> tuple:
         text = raw.decode("utf-8")
     except UnicodeDecodeError:
         return None, "not UTF-8 text"
-    if text.startswith("﻿"):
+    if text.startswith("\ufeff"):  # a byte-order mark
         text = text[1:]
     try:
         obj = json.loads(text, object_pairs_hook=_no_duplicates, parse_constant=_no_constants)

@@ -72,7 +72,7 @@ class ValidateTests(unittest.TestCase):
         self.assertIn("starts like a spreadsheet formula", validate.describe("formula_start:name"))
 
     def test_a_name_or_company_with_control_characters_is_refused(self):
-        for value in ("A\x00B", "Esc\x1b[2J", "Bidi ‮evil", "Zero​width", "C1 \x9b"):
+        for value in ("A\x00B", "Esc\x1b[2J", "Bidi \u202eevil", "Zero\u200bwidth", "C1 \x9b"):
             with self.subTest(value=value):
                 self.assertEqual(reasons_of(enquiry(name=value)), ["control_characters:name"])
                 self.assertEqual(reasons_of(enquiry(company=value)), ["control_characters:company"])
