@@ -3,7 +3,7 @@
 Generated from `tests/` by `python -I tools/list_tests.py`; CI fails if it is out of date. Run every test with
 `python -I run_tests.py`. A test's name says what it proves; the line under a name is its docstring.
 
-234 test methods in 16 files. Where a test uses subTest, one method checks several cases.
+236 test methods in 16 files. Where a test uses subTest, one method checks several cases.
 
 ## tests/test_audit_and_store.py
 
@@ -423,6 +423,8 @@ Unit tests: validation (section 3.2), the idempotency key and contact matching (
 - `test_every_reason_is_kept_not_only_the_first`
 - `test_a_phone_with_too_few_digits_is_not_a_phone`
 - `test_a_field_of_the_wrong_type_is_a_reason_not_a_crash`
+- `test_a_name_or_company_a_spreadsheet_would_read_as_a_formula_is_refused`
+- `test_a_name_or_company_with_control_characters_is_refused`
 - `test_received_at`
 - `test_times_are_read_the_same_way_on_every_python`
 - `test_unknown_fields_are_ignored_and_named`

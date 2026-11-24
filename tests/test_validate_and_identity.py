@@ -61,6 +61,23 @@ class ValidateTests(unittest.TestCase):
         self.assertIn("not_text:message", found)
         self.assertIn("honeypot_filled", reasons_of(enquiry(website=True)))
 
+    def test_a_name_or_company_a_spreadsheet_would_read_as_a_formula_is_refused(self):
+        for start in ("=HYPERLINK(1)", "+SUM(A1)", "-x", "@cmd", "\tTab", "\rReturn", " =spaced"):
+            for field in ("name", "company"):
+                with self.subTest(field=field, start=start):
+                    found = reasons_of(enquiry(**{field: start + " (invented)"}))
+                    self.assertEqual(found[0], f"formula_start:{field}")  # a tab or a return is a control character too
+                    self.assertTrue(set(found) <= {f"formula_start:{field}", f"control_characters:{field}"}, found)
+        self.assertEqual(reasons_of(enquiry(name="Ada-Marie Fenwick (invented)", company="A+B Cleaning (invented)")), [])
+        self.assertIn("starts like a spreadsheet formula", validate.describe("formula_start:name"))
+
+    def test_a_name_or_company_with_control_characters_is_refused(self):
+        for value in ("A\x00B", "Esc\x1b[2J", "Bidi ‮evil", "Zero​width", "C1 \x9b"):
+            with self.subTest(value=value):
+                self.assertEqual(reasons_of(enquiry(name=value)), ["control_characters:name"])
+                self.assertEqual(reasons_of(enquiry(company=value)), ["control_characters:company"])
+        self.assertEqual(reasons_of(enquiry(name="Zoë Ångström (invented)")), [])
+
     def test_received_at(self):
         extracted = validate.extract({k: v for k, v in enquiry().items() if k != "received_at"}, ARRIVED)
         self.assertTrue(extracted.received_at_filled)

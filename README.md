@@ -377,8 +377,9 @@ Every row is a case of the demo: `python -I demo.py --case <name>`.
 - The checks cannot catch a reply that is well formed and wrong: an assumed date, an invented service, a promise
   nobody made, a mistaken intent (see "What the checks cannot catch").
 - A refused enquiry is still kept, which a real deployment must weigh against its privacy duties.
-- No reply is ever sent. The HTTP CRM is a shape defined here. This project writes no CSV file; a name that
-  starts with `=`, `+`, `-` or `@` is refused anyway, so it can never become a formula in a spreadsheet.
+- No reply is ever sent. The HTTP CRM is a shape defined here. This project writes no CSV file. Even so, an
+  enquiry whose name or company starts with `=`, `+`, `-`, `@`, a tab or a carriage return is refused, and so is
+  such a name given with `--by`, so none of them can become a formula in a spreadsheet that opens an export.
 
 ## How this was built
 

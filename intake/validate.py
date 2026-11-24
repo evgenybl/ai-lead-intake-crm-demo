@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import re
+import unicodedata
 from dataclasses import dataclass
 
 from . import normalise
@@ -14,6 +15,9 @@ from . import normalise
 FIELDS = ("source", "source_id", "received_at", "name", "email", "phone", "company", "message", "consent", "website")
 TEXT_FIELDS = ("source", "source_id", "received_at", "name", "email", "phone", "company", "message")
 MAX_MESSAGE_CHARS = 5000
+# A value that starts so could be read as a formula by a spreadsheet that opens an export of the CRM or the trail.
+FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
+SPREADSHEET_FIELDS = ("name", "company")
 
 REASONS = {
     "no_name": "no name",
@@ -26,6 +30,8 @@ REASONS = {
     "message_too_long": "a message above 5,000 characters",
     "received_at_invalid": "received_at is not a date and time",
     "not_text": "a field that must be text is not text",
+    "formula_start": "a field that starts like a spreadsheet formula (=, +, -, @, a tab or a carriage return)",
+    "control_characters": "a field that holds control characters",
 }
 
 _STAMP = re.compile(
@@ -97,6 +103,16 @@ def honeypot_filled(value) -> bool:
     return True  # a number, a list, true: a person's browser sends none of these
 
 
+def starts_like_formula(value: str) -> bool:
+    """True when the value, as sent or with its outer spaces removed, starts with a formula sign."""
+    return bool(value) and (value[:1] in FORMULA_STARTS or value.strip()[:1] in FORMULA_STARTS)
+
+
+def has_control_characters(value: str) -> bool:
+    """True for a C0 or C1 control character, or a character that reorders or hides text (bidi, zero width)."""
+    return any(unicodedata.category(c) in ("Cc", "Cf") for c in value)
+
+
 def reasons(extracted: Extracted) -> list:
     """Every reason that applies, in a fixed order. An empty list means the enquiry is taken."""
     f = extracted.fields
@@ -122,6 +138,11 @@ def reasons(extracted: Extracted) -> list:
         found.append("message_too_long")
     if f["received_at"].strip() and parse_time(f["received_at"]) is None:
         found.append("received_at_invalid")
+    for name in SPREADSHEET_FIELDS:
+        if starts_like_formula(f[name]):
+            found.append(f"formula_start:{name}")
+        if has_control_characters(f[name]):
+            found.append(f"control_characters:{name}")
     found.extend(extracted.problems)
     return found
 

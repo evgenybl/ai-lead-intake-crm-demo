@@ -16,8 +16,6 @@ SYSTEM = "system"
 MAX_NAME_CHARS = 80
 MAX_REASON_CHARS = 500
 MIN_PLAN_PREFIX = 8  # hex digits of the plan's sha256 an approval must name
-# A name that starts so could be read as a formula by a spreadsheet that opens an export of the trail.
-FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
 
 
 class DeskError(Exception):
@@ -49,8 +47,10 @@ def person(name: str) -> str:
     cleaned = " ".join((name or "").split())
     if not cleaned:
         raise DeskError("a decision needs a person's name (--by)")
-    if (name or "")[:1] in FORMULA_STARTS or cleaned[:1] in FORMULA_STARTS:
+    if validate.starts_like_formula(name or ""):
         raise DeskError("a name may not start with =, +, -, @, a tab or a carriage return")
+    if validate.has_control_characters(cleaned):
+        raise DeskError("a name may not hold control characters")
     if len(cleaned) > MAX_NAME_CHARS:
         raise DeskError(f"a name may have at most {MAX_NAME_CHARS} characters")
     if cleaned.casefold() == SYSTEM:
