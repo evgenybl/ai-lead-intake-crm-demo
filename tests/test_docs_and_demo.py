@@ -57,9 +57,15 @@ class DocumentTests(unittest.TestCase):
         self.assertIn("*A capture of `examples/desk/enquiry/webform~wf-000109-ad3b9127.html`", readme)
         page = os.path.join(ROOT, "examples", "desk", "enquiry", "webform~wf-000109-ad3b9127.html")
         self.assertTrue(os.path.exists(page))
-        # The picture is older than the story's present clock, and the caption says so, with the hour the page shows.
-        self.assertIn("each time of the desk's own steps on the page, from the arrival at 15:00 on, is\nsix hours later "
-                      "than in the picture", readme)
+        # The caption says when the picture was taken and from which version of the page, and the file is the frame
+        # it names. No test can look at the picture: the page it was taken from still shows the hour of that day.
+        self.assertIn("the top of the page at 1280 by 1200, in a\nheadless browser with no network, taken on 25 November "
+                      "2026 from the page as it is at commit 33663c2", readme)
+        self.assertNotIn("They differ today", readme)
+        with open(os.path.join(ROOT, "docs", "img", "enquiry-page.png"), "rb") as handle:
+            head = handle.read(24)
+        self.assertEqual(head[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertEqual((int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")), (1280, 1200))
         with open(page, encoding="utf-8") as handle:
             self.assertIn("(arrived 2026-01-05T15:00:00Z, by file)", handle.read())
 

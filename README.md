@@ -185,11 +185,9 @@ One enquiry's page from that folder, after its plan was approved and written:
 
 ![An enquiry's page: who it is from, the recorded model step with its summary and reply draft, the plan with the note and the task in full, and the changed phone number shown and not overwritten](docs/img/enquiry-page.png)
 
-*A capture of `examples/desk/enquiry/webform~wf-000109-ad3b9127.html` at 1280 by 1200 in a headless browser with no
-network, taken on 24 November 2026. The page is written by `desk.py render`; CI does not make the picture again, so if
-the two ever differ, the page is right. They differ today in one way: the example story's clock was moved six hours
-later after the picture was taken, so each time of the desk's own steps on the page, from the arrival at 15:00 on, is
-six hours later than in the picture. Nothing else on the page changed.*
+*A capture of `examples/desk/enquiry/webform~wf-000109-ad3b9127.html`, the top of the page at 1280 by 1200, in a
+headless browser with no network, taken on 25 November 2026 from the page as it is at commit 33663c2. The page is
+written by `desk.py render`; CI does not make the picture again, so if the two ever differ, the page is right.*
 
 **The tests:** `python -I run_tests.py` runs every test. `docs/TESTS.md` lists them.
 
